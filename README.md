@@ -87,26 +87,15 @@ Or if installed globally:
 
 ## Available Tools
 
-### 1. `nano_banana`
-Unified Nano Banana tool for image generation, editing, and upscaling. The mode is automatically detected based on parameters provided.
+### 1. `nano_banana_generate`
+Generate images using Nano Banana.
 
 **Parameters:**
-- `prompt` (string, required for generate/edit): Text description (max 5000 chars)
-- `image_urls` (array, optional for edit mode): URLs of images to edit (max 10)
-- `image` (string, optional for upscale mode): URL of image to upscale (max 10MB)
+- `prompt` (string, required): Text description of the image to generate (max 5000 chars)
 - `output_format` (string, optional): "png" or "jpeg" (default: "png")
 - `image_size` (string, optional): Aspect ratio - "1:1", "9:16", "16:9", "3:4", "4:3", "3:2", "2:3", "5:4", "4:5", "21:9", "auto" (default: "1:1")
-- `scale` (integer, optional for upscale mode): Upscale factor 1-4 (default: 2)
-- `face_enhance` (boolean, optional for upscale mode): Enable GFPGAN face enhancement (default: false)
 
-**Auto-detection:**
-- **Generate mode**: Only `prompt` provided
-- **Edit mode**: `prompt` + `image_urls` provided
-- **Upscale mode**: `image` provided (prompt optional)
-
-**Examples:**
-
-Generate mode:
+**Example:**
 ```json
 {
   "prompt": "A surreal painting of a giant banana floating in space",
@@ -115,16 +104,34 @@ Generate mode:
 }
 ```
 
-Edit mode:
+### 2. `nano_banana_edit`
+Edit images using natural language prompts.
+
+**Parameters:**
+- `prompt` (string, required): Description of edits to make (max 5000 chars)
+- `image_urls` (array, required): URLs of images to edit (max 10)
+- `output_format` (string, optional): "png" or "jpeg" (default: "png")
+- `image_size` (string, optional): Aspect ratio (default: "1:1")
+
+**Example:**
 ```json
 {
   "prompt": "Add a rainbow arching over the mountains",
   "image_urls": ["https://example.com/image.jpg"],
-  "output_format": "png"
+  "output_format": "png",
+  "image_size": "16:9"
 }
 ```
 
-Upscale mode:
+### 3. `nano_banana_upscale`
+Upscale images with optional face enhancement.
+
+**Parameters:**
+- `image` (string, required): URL of image to upscale (max 10MB, jpeg/png/webp)
+- `scale` (integer, optional): Upscale factor 1-4 (default: 2)
+- `face_enhance` (boolean, optional): Enable GFPGAN face enhancement (default: false)
+
+**Example:**
 ```json
 {
   "image": "https://example.com/image.jpg",
@@ -133,7 +140,7 @@ Upscale mode:
 }
 ```
 
-### 2. `veo3_generate_video`
+### 4. `veo3_generate_video`
 Generate videos using Veo3.
 
 **Parameters:**
@@ -158,20 +165,20 @@ Generate videos using Veo3.
 }
 ```
 
-### 3. `get_task_status`
+### 5. `get_task_status`
 Check the status of a generation task.
 
 **Parameters:**
 - `task_id` (string, required): Task ID to check
 
-### 4. `list_tasks`
+### 6. `list_tasks`
 List recent tasks with their status.
 
 **Parameters:**
 - `limit` (integer, optional): Max tasks to return (default: 20, max: 100)
 - `status` (string, optional): Filter by status ("pending", "processing", "completed", "failed")
 
-### 5. `veo3_get_1080p_video`
+### 7. `veo3_get_1080p_video`
 Get 1080P high-definition version of a Veo3 video.
 
 **Parameters:**
@@ -187,7 +194,9 @@ The server interfaces with these Kie.ai API endpoints:
 - **Veo3 Video Generation**: `POST /api/v1/veo/generate` ✅ **VALIDATED**
 - **Veo3 Video Status**: `GET /api/v1/veo/record-info` ✅ **VALIDATED**  
 - **Veo3 1080p Upgrade**: `GET /api/v1/veo/get-1080p-video` ✅ **VALIDATED**
-- **Nano Banana (Generate/Edit/Upscale)**: `POST /api/v1/jobs/createTask`
+- **Nano Banana Generation**: `POST /api/v1/jobs/createTask` 
+- **Nano Banana Edit**: `POST /api/v1/jobs/createTask`
+- **Nano Banana Upscale**: `POST /api/v1/jobs/createTask`
 - **Nano Banana Status**: `GET /api/v1/jobs/recordInfo`
 
 All endpoints follow official Kie.ai API documentation.
@@ -200,7 +209,7 @@ The server uses SQLite to track tasks:
 CREATE TABLE tasks (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   task_id TEXT UNIQUE NOT NULL,
-  api_type TEXT NOT NULL,  -- 'nano-banana', 'veo3'
+  api_type TEXT NOT NULL,  -- 'nano-banana', 'nano-banana-edit', 'veo3'
   status TEXT DEFAULT 'pending',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -217,7 +226,7 @@ CREATE TABLE tasks (
 curl -X POST http://localhost:3000/tools/call \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "nano_banana",
+    "name": "nano_banana_generate",
     "arguments": {
       "prompt": "A cat wearing a space helmet"
     }
@@ -326,18 +335,6 @@ MIT License - see LICENSE file for details.
 
 ## Changelog
 
-### v1.1.3 (2025-01-14)
-
-**Breaking Changes:**
-- Consolidated `nano_banana_generate`, `nano_banana_edit`, and `nano_banana_upscale` into unified `nano_banana` tool
-- Tool now auto-detects mode based on parameters (generate/edit/upscale)
-- Updated tool numbering in documentation (5 tools total instead of 7)
-
-**Improvements:**
-- Simplified user experience with single Nano Banana tool interface
-- Reduced cognitive load for users by consolidating related functionality
-- Maintained backwards compatibility through parameter-based mode detection
-
 ### v1.1.1 (2025-01-14)
 
 **Improvements:**
@@ -355,13 +352,13 @@ MIT License - see LICENSE file for details.
 
 **New Features:**
 - Added `upscale_nano_banana` tool for image upscaling (1-4x) with optional GFPGAN face enhancement
-- Consolidated Nano Banana tools into unified `nano_banana` tool with auto-detection of mode (generate/edit/upscale)
-- Added `output_format` parameter (png/jpeg) for Nano Banana operations
-- Added `image_size` parameter (11 aspect ratios) for Nano Banana operations
+- Added `upscale_nano_banana` tool for image upscaling (1-4x) with optional GFPGAN face enhancement
+- Added `output_format` parameter (png/jpeg) to `generate_nano_banana` and `edit_nano_banana`
+- Added `image_size` parameter (11 aspect ratios) to `generate_nano_banana` and `edit_nano_banana`
 
 **Improvements:**
 - Increased prompt max length from 1,000 to 5,000 characters for Nano Banana tools
-- Increased max input images from 5 to 10 for Nano Banana edit mode
+- Increased max input images from 5 to 10 for `edit_nano_banana`
 - Enhanced `get_task_status` to properly parse `resultJson` and extract result URLs
 - Improved task status mapping: `waiting` → `processing`, `success` → `completed`, `fail` → `failed`
 - Task status now automatically updates local database with API responses
