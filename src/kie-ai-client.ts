@@ -129,7 +129,11 @@ export class KieAiClient {
   }
 
   async generateSunoMusic(request: SunoGenerateRequest): Promise<KieAiResponse<TaskResponse>> {
-    return this.makeRequest<TaskResponse>('/generate', 'POST', request);
+    const jobRequest = {
+      ...request,
+      model: request.model || 'V5'
+    };
+    return this.makeRequest<TaskResponse>('/generate', 'POST', jobRequest);
   }
 
   async generateElevenLabsTTS(request: ElevenLabsTTSRequest): Promise<KieAiResponse<TaskResponse>> {

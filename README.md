@@ -212,7 +212,7 @@ Generate music with AI using Suno models.
 - `prompt` (string, required): Description of desired audio content (max 5000 chars for V4_5+, V5; 3000 for V3_5, V4; 500 chars for non-custom mode)
 - `customMode` (boolean, required): Enable advanced parameter customization
 - `instrumental` (boolean, required): Generate instrumental music (no lyrics)
-- `model` (enum, required): AI model version - "V3_5", "V4", "V4_5", "V4_5PLUS", or "V5"
+- `model` (enum, optional): AI model version - "V3_5", "V4", "V4_5", "V4_5PLUS", or "V5" (default: "V5")
 - `callBackUrl` (string, optional): URL to receive task completion updates (uses KIE_AI_CALLBACK_URL environment variable if not provided)
 - `style` (string, optional): Music style/genre (required in custom mode, max 1000 chars for V4_5+, V5; 200 for V3_5, V4)
 - `title` (string, optional): Track title (required in custom mode, max 80 chars)
@@ -242,12 +242,21 @@ Using environment variable (KIE_AI_CALLBACK_URL):
 {
   "prompt": "A relaxing electronic music track",
   "customMode": false,
+  "instrumental": false
+}
+```
+
+Using explicit model (overrides default V5):
+```json
+{
+  "prompt": "A relaxing electronic music track",
+  "customMode": false,
   "instrumental": false,
   "model": "V4_5PLUS"
 }
 ```
 
-**Note**: In custom mode, `style` and `title` are required. If `instrumental` is false, `prompt` is used as exact lyrics. The `callBackUrl` is optional and will use the `KIE_AI_CALLBACK_URL` environment variable if not provided.
+**Note**: In custom mode, `style` and `title` are required. If `instrumental` is false, `prompt` is used as exact lyrics. The `callBackUrl` is optional and will use the `KIE_AI_CALLBACK_URL` environment variable if not provided. The `model` parameter defaults to "V5" but can be explicitly set to any available version.
 
 ### 9. `elevenlabs_tts`
 Generate speech from text using ElevenLabs multilingual TTS v2 model.

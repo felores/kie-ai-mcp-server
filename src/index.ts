@@ -373,7 +373,7 @@ class KieAiMcpServer {
                   multipleOf: 0.01
                 }
               },
-              required: ['prompt', 'customMode', 'instrumental', 'model']
+              required: ['prompt', 'customMode', 'instrumental']
             }
           },
           {
@@ -1090,7 +1090,7 @@ class KieAiMcpServer {
                 task_id: response.data.taskId,
                 message: 'Music generation task created successfully',
                 parameters: {
-                  model: request.model,
+                  model: request.model || 'V5',
                   customMode: request.customMode,
                   instrumental: request.instrumental,
                   callBackUrl: request.callBackUrl

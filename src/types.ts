@@ -36,7 +36,7 @@ export const SunoGenerateSchema = z.object({
   prompt: z.string().min(1).max(5000),
   customMode: z.boolean(),
   instrumental: z.boolean(),
-  model: z.enum(['V3_5', 'V4', 'V4_5', 'V4_5PLUS', 'V5']),
+  model: z.enum(['V3_5', 'V4', 'V4_5', 'V4_5PLUS', 'V5']).default('V5').optional(),
   callBackUrl: z.string().url().optional(),
   style: z.string().max(1000).optional(),
   title: z.string().max(80).optional(),
