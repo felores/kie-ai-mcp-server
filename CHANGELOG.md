@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.2] - 2025-01-14
+
+### Fixed
+- **Critical Suno Task Status Bug**: Corrected endpoint from `/generate` to `/generate/record-info`
+- **Suno Response Parsing**: Fixed handling of Suno's complex response structure
+- **Status Mapping**: Implemented proper Suno status mapping (PENDING → SUCCESS, etc.)
+- **Audio URL Extraction**: Fixed extraction of audio URLs from `sunoData` array
+- **Task Tracking**: Suno music generation tasks can now be properly tracked
+
+### Technical Details
+- Updated API endpoint to match official Suno documentation
+- Added type-specific response parsing for different APIs
+- Enhanced task status responses with Suno metadata
+- Fixed database result_url handling for multiple audio files
+
 ## [1.2.1] - 2025-01-14
 
 ### Fixed
