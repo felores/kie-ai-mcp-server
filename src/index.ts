@@ -1301,7 +1301,7 @@ class KieAiMcpServer {
                   text: request.text.substring(0, 100) + (request.text.length > 100 ? '...' : ''),
                   duration_seconds: request.duration_seconds || 'Auto-determined',
                   prompt_influence: request.prompt_influence || 0.3,
-                  output_format: request.output_format || 'mp3_44100_128',
+                  output_format: request.output_format || 'mp3_44100_192',
                   loop: request.loop || false
                 },
                 next_steps: [

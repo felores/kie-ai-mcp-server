@@ -114,7 +114,7 @@ export const ElevenLabsSoundEffectsSchema = z.object({
     'pcm_22050', 'pcm_24000', 'pcm_44100', 'pcm_48000', 
     'ulaw_8000', 'alaw_8000', 'opus_48000_32', 'opus_48000_64', 
     'opus_48000_96', 'opus_48000_128', 'opus_48000_192'
-  ]).default('mp3_44100_128').optional(),
+  ]).default('mp3_44100_192').optional(),
   callBackUrl: z.string().url().optional()
 });
 

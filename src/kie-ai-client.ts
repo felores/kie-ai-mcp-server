@@ -182,7 +182,7 @@ export class KieAiClient {
         loop: request.loop || false,
         ...(request.duration_seconds !== undefined && { duration_seconds: request.duration_seconds }),
         prompt_influence: request.prompt_influence || 0.3,
-        output_format: request.output_format || 'mp3_44100_128'
+        output_format: request.output_format || 'mp3_44100_192'
       },
       callBackUrl: request.callBackUrl || process.env.KIE_AI_CALLBACK_URL
     };

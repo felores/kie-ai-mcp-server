@@ -362,7 +362,7 @@ Generate sound effects from text descriptions using ElevenLabs Sound Effects v2 
 - `loop` (boolean, optional): Whether to create a sound effect that loops smoothly (default: false)
 - `duration_seconds` (number, optional): Duration in seconds (0.5-22, step 0.1). If not specified, optimal duration will be determined from prompt
 - `prompt_influence` (number, optional): How closely to follow the prompt (0-1, step 0.01, default: 0.3). Higher values mean less variation
-- `output_format` (string, optional): Audio output format (default: "mp3_44100_128")
+- `output_format` (string, optional): Audio output format (default: "mp3_44100_192")
   - MP3 options: `mp3_22050_32`, `mp3_44100_32`, `mp3_44100_64`, `mp3_44100_96`, `mp3_44100_128`, `mp3_44100_192`
   - PCM options: `pcm_8000`, `pcm_16000`, `pcm_22050`, `pcm_24000`, `pcm_44100`, `pcm_48000`
   - Telephony: `ulaw_8000`, `alaw_8000`
