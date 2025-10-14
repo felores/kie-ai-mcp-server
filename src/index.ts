@@ -597,28 +597,57 @@ class KieAiMcpServer {
         
         // Update local database with API response
         if (apiResponse?.data) {
-          const { state, resultJson, failCode, failMsg } = apiResponse.data;
+          const apiData = apiResponse.data;
           
-          // Map API state to our status
+          // Handle different response formats for different API types
           let status: 'pending' | 'processing' | 'completed' | 'failed' = 'pending';
-          if (state === 'success') status = 'completed';
-          else if (state === 'fail') status = 'failed';
-          else if (state === 'waiting') status = 'processing';
+          let resultUrl = undefined;
+          let errorMessage = undefined;
           
-          // Parse resultJson if available
-          if (resultJson) {
-            try {
-              parsedResult = JSON.parse(resultJson);
-            } catch (e) {
-              // Invalid JSON in resultJson
+          if (localTask?.api_type === 'suno') {
+            // Suno-specific status mapping
+            const sunoStatus = apiData.status;
+            if (sunoStatus === 'SUCCESS') status = 'completed';
+            else if (sunoStatus === 'CREATE_TASK_FAILED' || sunoStatus === 'GENERATE_AUDIO_FAILED' || 
+                     sunoStatus === 'CALLBACK_EXCEPTION' || sunoStatus === 'SENSITIVE_WORD_ERROR') status = 'failed';
+            else if (sunoStatus === 'PENDING' || sunoStatus === 'TEXT_SUCCESS' || sunoStatus === 'FIRST_SUCCESS') status = 'processing';
+            
+            // Extract audio URLs from Suno response
+            if (apiData.response?.sunoData && apiData.response.sunoData.length > 0) {
+              // Use the first audio URL as the primary result
+              resultUrl = apiData.response.sunoData[0].audioUrl;
             }
+            
+            // Extract error message for Suno
+            if (apiData.errorMessage) {
+              errorMessage = apiData.errorMessage;
+            }
+          } else {
+            // Original logic for other APIs (Nano Banana, Veo3)
+            const { state, resultJson, failCode, failMsg } = apiData;
+            
+            if (state === 'success') status = 'completed';
+            else if (state === 'fail') status = 'failed';
+            else if (state === 'waiting') status = 'processing';
+            
+            // Parse resultJson if available
+            if (resultJson) {
+              try {
+                parsedResult = JSON.parse(resultJson);
+              } catch (e) {
+                // Invalid JSON in resultJson
+              }
+            }
+            
+            resultUrl = parsedResult?.resultUrls?.[0] || undefined;
+            errorMessage = failMsg || undefined;
           }
           
           // Update database
           await this.db.updateTask(task_id, {
             status,
-            result_url: parsedResult?.resultUrls?.[0] || undefined,
-            error_message: failMsg || undefined
+            result_url: resultUrl,
+            error_message: errorMessage
           });
         }
       } catch (error) {
@@ -628,19 +657,61 @@ class KieAiMcpServer {
       // Fetch updated local task
       const updatedTask = await this.db.getTask(task_id);
       
+      // Prepare response based on API type
+      let responseData: any = {
+        success: true,
+        task_id: task_id,
+        status: updatedTask?.status,
+        result_urls: updatedTask?.result_url ? [updatedTask.result_url] : [],
+        error: updatedTask?.error_message,
+        api_response: apiResponse,
+        message: updatedTask ? 'Task found' : 'Task not found in local database'
+      };
+      
+      // Add Suno-specific information if applicable
+      if (localTask?.api_type === 'suno' && apiResponse?.data) {
+        const sunoData = apiResponse.data;
+        responseData.status = sunoData.status; // Use Suno's status directly
+        
+        // Add detailed Suno information
+        if (sunoData.response?.sunoData) {
+          responseData.audio_files = sunoData.response.sunoData.map((audio: any) => ({
+            id: audio.id,
+            audio_url: audio.audioUrl,
+            stream_url: audio.streamAudioUrl,
+            image_url: audio.imageUrl,
+            title: audio.title,
+            duration: audio.duration,
+            model_name: audio.modelName,
+            tags: audio.tags,
+            create_time: audio.createTime
+          }));
+          
+          // Update result_urls with all audio URLs
+          responseData.result_urls = sunoData.response.sunoData.map((audio: any) => audio.audioUrl);
+        }
+        
+        // Add Suno-specific metadata
+        responseData.suno_metadata = {
+          task_type: sunoData.type,
+          operation_type: sunoData.operationType,
+          parent_music_id: sunoData.parentMusicId,
+          parameters: sunoData.param ? JSON.parse(sunoData.param) : null,
+          error_code: sunoData.errorCode,
+          error_message: sunoData.errorMessage
+        };
+      } else {
+        // Use original logic for other APIs
+        responseData.status = apiResponse?.data?.state || updatedTask?.status;
+        responseData.result_urls = parsedResult?.resultUrls || (updatedTask?.result_url ? [updatedTask.result_url] : []);
+        responseData.error = apiResponse?.data?.failMsg || updatedTask?.error_message;
+      }
+      
       return {
         content: [
           {
             type: 'text',
-            text: JSON.stringify({
-              success: true,
-              task_id: task_id,
-              status: apiResponse?.data?.state || updatedTask?.status,
-              result_urls: parsedResult?.resultUrls || (updatedTask?.result_url ? [updatedTask.result_url] : []),
-              error: apiResponse?.data?.failMsg || updatedTask?.error_message,
-              api_response: apiResponse,
-              message: updatedTask ? 'Task found' : 'Task not found in local database'
-            }, null, 2)
+            text: JSON.stringify(responseData, null, 2)
           }
         ]
       };

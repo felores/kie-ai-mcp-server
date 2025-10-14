@@ -8,16 +8,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.2.1] - 2025-01-14
 
 ### Fixed
-- **Suno Callback URL**: Made callBackUrl optional and added environment variable support
+- **Suno Task Status Endpoint**: Corrected endpoint from `/generate` to `/generate/record-info`
+- **Suno Response Parsing**: Added proper handling for Suno's complex response structure
+- **Status Mapping**: Implemented Suno-specific status mapping (PENDING, TEXT_SUCCESS, FIRST_SUCCESS, SUCCESS, etc.)
+- **Audio URL Extraction**: Properly extract audio URLs from Suno's `sunoData` array
+- **Callback URL**: Made callBackUrl optional and added environment variable support
 - **Environment Variable**: Suno tool now uses KIE_AI_CALLBACK_URL as fallback like Veo3 tool
 - **Validation**: Updated schema validation to check both direct and environment variable callback URL
-- **Documentation**: Added examples showing both explicit and environment variable approaches
-- **Consistency**: Suno tool now behaves consistently with other tools in the package
 
 ### Changed
-- Updated SunoGenerateSchema to make callBackUrl optional
-- Enhanced error messages to clarify environment variable usage
-- Improved tool schema descriptions for better user understanding
+- **Enhanced Task Status Response**: Added Suno-specific metadata and audio file details
+- **Multiple Audio Support**: Handle multiple audio files from Suno response
+- **Documentation**: Added examples showing both explicit and environment variable approaches
+- **Error Handling**: Improved error messages and status reporting for Suno tasks
+
+### Technical Details
+- Updated `getTaskStatus` to handle different response formats per API type
+- Added comprehensive Suno metadata in task status responses
+- Improved database result_url handling for multiple audio URLs
+- Enhanced API response parsing with type-specific logic
 
 ## [1.2.0] - 2025-01-14
 

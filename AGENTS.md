@@ -32,6 +32,14 @@
 - **Response format**: Return MCP tool responses with JSON.stringify and `null, 2`
 - **Async/await**: Use async/await, avoid promises directly
 
+## Callback URL Pattern
+For tools requiring callback URLs (like Veo3, Suno):
+- **Schema**: Make `callBackUrl` optional in Zod schema
+- **Fallback**: Use `KIE_AI_CALLBACK_URL` environment variable if not provided
+- **Validation**: Check both direct parameter and environment variable in refine
+- **Handler**: Add fallback logic before API call: `if (!request.callBackUrl && process.env.KIE_AI_CALLBACK_URL)`
+- **Documentation**: Show both explicit and environment variable approaches in examples
+
 ## Environment
 - Required: `KIE_AI_API_KEY`
 - Optional: `KIE_AI_BASE_URL`, `KIE_AI_TIMEOUT`, `KIE_AI_DB_PATH`, `KIE_AI_CALLBACK_URL`

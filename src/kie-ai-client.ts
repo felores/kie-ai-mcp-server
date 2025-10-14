@@ -104,7 +104,7 @@ export class KieAiClient {
     } else if (apiType === 'nano-banana' || apiType === 'nano-banana-edit' || apiType === 'nano-banana-upscale') {
       return this.makeRequest<any>(`/jobs/recordInfo?taskId=${taskId}`, 'GET');
     } else if (apiType === 'suno') {
-      return this.makeRequest<any>(`/generate?taskId=${taskId}`, 'GET');
+      return this.makeRequest<any>(`/generate/record-info?taskId=${taskId}`, 'GET');
     }
     
     // Fallback: try jobs first, then veo, then generate (for tasks not in database)
@@ -115,7 +115,7 @@ export class KieAiClient {
         return await this.makeRequest<any>(`/veo/record-info?taskId=${taskId}`, 'GET');
       } catch (veoError) {
         try {
-          return await this.makeRequest<any>(`/generate?taskId=${taskId}`, 'GET');
+          return await this.makeRequest<any>(`/generate/record-info?taskId=${taskId}`, 'GET');
         } catch (sunoError) {
           throw error;
         }
