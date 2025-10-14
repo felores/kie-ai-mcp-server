@@ -5,6 +5,44 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2025-01-14
+
+### Added
+- **ElevenLabs TTS Integration**: New `elevenlabs_tts` tool for text-to-speech generation
+- **ElevenLabs TTS Turbo**: New `elevenlabs_tts_turbo` tool for faster text-to-speech with language enforcement
+- **Multilingual Support**: Support for ElevenLabs multilingual TTS v2 model
+- **Turbo 2.5 Model**: Faster generation with ISO 639-1 language code enforcement
+- **21 Voice Options**: Full support for all ElevenLabs voices (Rachel, Aria, Roger, Sarah, etc.)
+- **Advanced Voice Controls**: Stability, similarity boost, style, and speed parameters
+- **Word Timestamps**: Optional timestamp generation for each word
+- **Text Continuity**: Previous/next text support for improved speech continuity
+- **Language Enforcement**: ISO 639-1 language code support for Turbo 2.5 model
+- **Task Status Integration**: Full task tracking and status polling for TTS generation
+- **Callback Support**: Optional callback URL for TTS completion notifications
+
+### Performance Improvements
+- **Faster TTS Generation**: Turbo 2.5 model processes text in 15-60 seconds (vs 30-120 seconds for multilingual)
+- **Language Consistency**: Turbo model provides better language enforcement for multilingual content
+
+### Voice Options
+- **Female Voices**: Rachel, Aria, Sarah, Laura, Charlotte, Alice, Matilda, Jessica, Lily
+- **Male Voices**: Roger, Charlie, George, Callum, River, Liam, Will, Eric, Chris, Brian, Daniel, Bill
+
+### Advanced Parameters
+- **Stability** (0-1): Control voice stability and consistency
+- **Similarity Boost** (0-1): Enhance voice similarity to original
+- **Style** (0-1): Control style exaggeration and expressiveness
+- **Speed** (0.7-1.2): Adjust speech rate
+- **Timestamps**: Get word-level timing information
+- **Continuity**: Previous/next text for seamless concatenation
+
+### Technical Details
+- Uses `/jobs/createTask` endpoint for TTS generation
+- Supports `/jobs/recordInfo` for task status checking
+- Response parsing for `resultUrls` array with audio file URLs
+- Integration with existing task management system
+- Environment variable support for callback URLs
+
 ## [1.2.2] - 2025-01-14
 
 ### Fixed

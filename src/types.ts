@@ -65,12 +65,52 @@ export const SunoGenerateSchema = z.object({
   path: ["callBackUrl"]
 });
 
+export const ElevenLabsTTSSchema = z.object({
+  text: z.string().min(1).max(5000),
+  voice: z.enum([
+    'Rachel', 'Aria', 'Roger', 'Sarah', 'Laura', 'Charlie', 
+    'George', 'Callum', 'River', 'Liam', 'Charlotte', 
+    'Alice', 'Matilda', 'Will', 'Jessica', 'Eric', 
+    'Chris', 'Brian', 'Daniel', 'Lily', 'Bill'
+  ]).default('Rachel').optional(),
+  stability: z.number().min(0).max(1).multipleOf(0.01).default(0.5).optional(),
+  similarity_boost: z.number().min(0).max(1).multipleOf(0.01).default(0.75).optional(),
+  style: z.number().min(0).max(1).multipleOf(0.01).default(0).optional(),
+  speed: z.number().min(0.7).max(1.2).multipleOf(0.01).default(1).optional(),
+  timestamps: z.boolean().default(false).optional(),
+  previous_text: z.string().max(5000).default('').optional(),
+  next_text: z.string().max(5000).default('').optional(),
+  language_code: z.string().max(500).default('').optional(),
+  callBackUrl: z.string().url().optional()
+});
+
+export const ElevenLabsTTSTurboSchema = z.object({
+  text: z.string().min(1).max(5000),
+  voice: z.enum([
+    'Rachel', 'Aria', 'Roger', 'Sarah', 'Laura', 'Charlie', 
+    'George', 'Callum', 'River', 'Liam', 'Charlotte', 
+    'Alice', 'Matilda', 'Will', 'Jessica', 'Eric', 
+    'Chris', 'Brian', 'Daniel', 'Lily', 'Bill'
+  ]).default('Rachel').optional(),
+  stability: z.number().min(0).max(1).multipleOf(0.01).default(0.5).optional(),
+  similarity_boost: z.number().min(0).max(1).multipleOf(0.01).default(0.75).optional(),
+  style: z.number().min(0).max(1).multipleOf(0.01).default(0).optional(),
+  speed: z.number().min(0.7).max(1.2).multipleOf(0.01).default(1).optional(),
+  timestamps: z.boolean().default(false).optional(),
+  previous_text: z.string().max(5000).default('').optional(),
+  next_text: z.string().max(5000).default('').optional(),
+  language_code: z.string().max(500).default('').optional(),
+  callBackUrl: z.string().url().optional()
+});
+
 // TypeScript types
 export type NanoBananaGenerateRequest = z.infer<typeof NanoBananaGenerateSchema>;
 export type NanaBananaEditRequest = z.infer<typeof NanoBananaEditSchema>;
 export type NanoBananaUpscaleRequest = z.infer<typeof NanoBananaUpscaleSchema>;
 export type Veo3GenerateRequest = z.infer<typeof Veo3GenerateSchema>;
 export type SunoGenerateRequest = z.infer<typeof SunoGenerateSchema>;
+export type ElevenLabsTTSRequest = z.infer<typeof ElevenLabsTTSSchema>;
+export type ElevenLabsTTSTurboRequest = z.infer<typeof ElevenLabsTTSTurboSchema>;
 
 export interface KieAiResponse<T = any> {
   code: number;
@@ -90,7 +130,7 @@ export interface TaskResponse {
 export interface TaskRecord {
   id?: number;
   task_id: string;
-  api_type: 'nano-banana' | 'nano-banana-edit' | 'nano-banana-upscale' | 'veo3' | 'suno';
+  api_type: 'nano-banana' | 'nano-banana-edit' | 'nano-banana-upscale' | 'veo3' | 'suno' | 'elevenlabs-tts' | 'elevenlabs-tts-turbo';
   status: 'pending' | 'processing' | 'completed' | 'failed';
   created_at: string;
   updated_at: string;

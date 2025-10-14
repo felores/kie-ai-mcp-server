@@ -1,6 +1,6 @@
 # Kie.ai MCP Server
 
-An MCP (Model Context Protocol) server that provides access to Kie.ai's AI APIs including Nano Banana image generation/editing and Veo3 video generation.
+An MCP (Model Context Protocol) server that provides access to Kie.ai's AI APIs including Nano Banana image generation/editing, Veo3 video generation, Suno music generation, and ElevenLabs text-to-speech.
 
 ## Features
 
@@ -10,6 +10,7 @@ An MCP (Model Context Protocol) server that provides access to Kie.ai's AI APIs 
 - **Veo3 Video Generation**: Professional-quality video generation with text-to-video and image-to-video capabilities
 - **1080p Video Upgrade**: Get high-definition versions of Veo3 videos
 - **Suno Music Generation**: AI-powered music creation with multiple models (V3_5, V4, V4_5, V4_5PLUS, V5)
+- **ElevenLabs Text-to-Speech**: Multilingual TTS with 21 voice options and advanced voice controls
 - **Task Management**: SQLite-based task tracking with status polling
 - **Smart Endpoint Routing**: Automatic detection of task types for status checking
 - **Error Handling**: Comprehensive error handling and validation
@@ -231,6 +232,111 @@ Using environment variable (KIE_AI_CALLBACK_URL):
 ```
 
 **Note**: In custom mode, `style` and `title` are required. If `instrumental` is false, `prompt` is used as exact lyrics. The `callBackUrl` is optional and will use the `KIE_AI_CALLBACK_URL` environment variable if not provided.
+
+### 9. `elevenlabs_tts`
+Generate speech from text using ElevenLabs multilingual TTS v2 model.
+
+**Parameters:**
+- `text` (string, required): The text to convert to speech (max 5000 characters)
+- `voice` (enum, optional): Voice to use - "Rachel", "Aria", "Roger", "Sarah", "Laura", "Charlie", "George", "Callum", "River", "Liam", "Charlotte", "Alice", "Matilda", "Will", "Jessica", "Eric", "Chris", "Brian", "Daniel", "Lily", "Bill" (default: "Rachel")
+- `stability` (number, optional): Voice stability (0-1, step 0.01, default: 0.5)
+- `similarity_boost` (number, optional): Similarity boost (0-1, step 0.01, default: 0.75)
+- `style` (number, optional): Style exaggeration (0-1, step 0.01, default: 0)
+- `speed` (number, optional): Speech speed (0.7-1.2, step 0.01, default: 1.0)
+- `timestamps` (boolean, optional): Whether to return timestamps for each word (default: false)
+- `previous_text` (string, optional): Text that came before current request for continuity (max 5000 chars)
+- `next_text` (string, optional): Text that comes after current request for continuity (max 5000 chars)
+- `language_code` (string, optional): ISO 639-1 language code for language enforcement (max 500 chars)
+- `callBackUrl` (string, optional): URL to receive task completion updates (uses KIE_AI_CALLBACK_URL environment variable if not provided)
+
+**Examples:**
+
+Basic TTS generation:
+```json
+{
+  "text": "Hello, this is a test of the ElevenLabs text-to-speech system.",
+  "voice": "Rachel"
+}
+```
+
+Advanced voice controls:
+```json
+{
+  "text": "Welcome to our presentation on artificial intelligence",
+  "voice": "Aria",
+  "stability": 0.8,
+  "similarity_boost": 0.9,
+  "style": 0.3,
+  "speed": 1.1
+}
+```
+
+With continuity for longer texts:
+```json
+{
+  "text": "This is the second part of our conversation.",
+  "voice": "Roger",
+  "previous_text": "This is the first part of our conversation.",
+  "next_text": "This is the third part of our conversation."
+}
+```
+
+**Note**: The `callBackUrl` is optional and will use the `KIE_AI_CALLBACK_URL` environment variable if not provided. Generation typically takes 30 seconds to 2 minutes depending on text length.
+
+### 10. `elevenlabs_tts_turbo`
+Generate speech from text using ElevenLabs Turbo 2.5 TTS model (faster generation with language enforcement support).
+
+**Parameters:**
+- `text` (string, required): The text to convert to speech (max 5000 characters)
+- `voice` (enum, optional): Voice to use - "Rachel", "Aria", "Roger", "Sarah", "Laura", "Charlie", "George", "Callum", "River", "Liam", "Charlotte", "Alice", "Matilda", "Will", "Jessica", "Eric", "Chris", "Brian", "Daniel", "Lily", "Bill" (default: "Rachel")
+- `stability` (number, optional): Voice stability (0-1, step 0.01, default: 0.5)
+- `similarity_boost` (number, optional): Similarity boost (0-1, step 0.01, default: 0.75)
+- `style` (number, optional): Style exaggeration (0-1, step 0.01, default: 0)
+- `speed` (number, optional): Speech speed (0.7-1.2, step 0.01, default: 1.0)
+- `timestamps` (boolean, optional): Whether to return timestamps for each word (default: false)
+- `previous_text` (string, optional): Text that came before current request for continuity (max 5000 chars)
+- `next_text` (string, optional): Text that comes after current request for continuity (max 5000 chars)
+- `language_code` (string, optional): ISO 639-1 language code for language enforcement - Turbo 2.5 supports this feature (max 500 chars)
+- `callBackUrl` (string, optional): URL to receive task completion updates (uses KIE_AI_CALLBACK_URL environment variable if not provided)
+
+**Examples:**
+
+Fast TTS generation:
+```json
+{
+  "text": "This is a fast generation using the Turbo model.",
+  "voice": "Aria"
+}
+```
+
+With language enforcement:
+```json
+{
+  "text": "Bonjour, comment allez-vous?",
+  "voice": "Rachel",
+  "language_code": "fr"
+}
+```
+
+Advanced controls with continuity:
+```json
+{
+  "text": "This is part two of our series.",
+  "voice": "Roger",
+  "stability": 0.9,
+  "similarity_boost": 0.8,
+  "previous_text": "This is part one of our series.",
+  "language_code": "en"
+}
+```
+
+**Key Differences from Multilingual TTS:**
+- **Faster Generation**: Turbo 2.5 processes text 15-60 seconds (vs 30-120 seconds for multilingual)
+- **Language Enforcement**: Supports ISO 639-1 language codes for consistent language output
+- **Same Voice Options**: All 21 voices available
+- **Same Quality**: Maintains high audio quality with faster processing
+
+**Note**: The `callBackUrl` is optional and will use the `KIE_AI_CALLBACK_URL` environment variable if not provided. Turbo 2.5 generation is faster and supports language enforcement.
 
 ## API Endpoints
 

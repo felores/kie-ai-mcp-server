@@ -6,6 +6,8 @@ import {
   NanoBananaUpscaleRequest,
   Veo3GenerateRequest,
   SunoGenerateRequest,
+  ElevenLabsTTSRequest,
+  ElevenLabsTTSTurboRequest,
   ImageResponse,
   TaskResponse 
 } from './types.js';
@@ -105,6 +107,8 @@ export class KieAiClient {
       return this.makeRequest<any>(`/jobs/recordInfo?taskId=${taskId}`, 'GET');
     } else if (apiType === 'suno') {
       return this.makeRequest<any>(`/generate/record-info?taskId=${taskId}`, 'GET');
+    } else if (apiType === 'elevenlabs-tts' || apiType === 'elevenlabs-tts-turbo') {
+      return this.makeRequest<any>(`/jobs/recordInfo?taskId=${taskId}`, 'GET');
     }
     
     // Fallback: try jobs first, then veo, then generate (for tasks not in database)
@@ -125,6 +129,48 @@ export class KieAiClient {
 
   async generateSunoMusic(request: SunoGenerateRequest): Promise<KieAiResponse<TaskResponse>> {
     return this.makeRequest<TaskResponse>('/generate', 'POST', request);
+  }
+
+  async generateElevenLabsTTS(request: ElevenLabsTTSRequest): Promise<KieAiResponse<TaskResponse>> {
+    const jobRequest = {
+      model: 'elevenlabs/text-to-speech-multilingual-v2',
+      input: {
+        text: request.text,
+        voice: request.voice || 'Rachel',
+        stability: request.stability || 0.5,
+        similarity_boost: request.similarity_boost || 0.75,
+        style: request.style || 0,
+        speed: request.speed || 1,
+        timestamps: request.timestamps || false,
+        previous_text: request.previous_text || '',
+        next_text: request.next_text || '',
+        language_code: request.language_code || ''
+      },
+      callBackUrl: request.callBackUrl || process.env.KIE_AI_CALLBACK_URL
+    };
+
+    return this.makeRequest<TaskResponse>('/jobs/createTask', 'POST', jobRequest);
+  }
+
+  async generateElevenLabsTTSTurbo(request: ElevenLabsTTSTurboRequest): Promise<KieAiResponse<TaskResponse>> {
+    const jobRequest = {
+      model: 'elevenlabs/text-to-speech-turbo-2-5',
+      input: {
+        text: request.text,
+        voice: request.voice || 'Rachel',
+        stability: request.stability || 0.5,
+        similarity_boost: request.similarity_boost || 0.75,
+        style: request.style || 0,
+        speed: request.speed || 1,
+        timestamps: request.timestamps || false,
+        previous_text: request.previous_text || '',
+        next_text: request.next_text || '',
+        language_code: request.language_code || ''
+      },
+      callBackUrl: request.callBackUrl || process.env.KIE_AI_CALLBACK_URL
+    };
+
+    return this.makeRequest<TaskResponse>('/jobs/createTask', 'POST', jobRequest);
   }
 
   async getVeo1080pVideo(taskId: string, index?: number): Promise<KieAiResponse<any>> {
