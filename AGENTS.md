@@ -91,12 +91,30 @@
    ```
 
 6. **Creating GitHub releases** (optional but recommended):
-   ```bash
-   # Agent has access to gh CLI for creating releases
-   gh release create vX.Y.Z \
-     --title "Release vX.Y.Z" \
-     --notes "See CHANGELOG.md for details"
-   ```
+    ```bash
+    # Agent has access to gh CLI for creating releases
+    gh release create vX.Y.Z \
+      --title "Release vX.Y.Z" \
+      --notes "See CHANGELOG.md for details"
+    ```
+
+7. **Automated Publishing via GitHub Actions**:
+    - **Release workflow**: `.github/workflows/release.yml` - Full automated publishing
+    - **Publish workflow**: `.github/workflows/publish.yml` - GitHub Packages only
+    - **Trigger**: Pushing a git tag (vX.Y.Z) automatically triggers release workflow
+    - **Permissions**: Requires `contents: write` and `packages: write` in GitHub Actions
+
+8. **GitHub Packages Integration**:
+    - **Registry**: https://npm.pkg.github.com/
+    - **Package**: @felores/kie-ai-mcp-server
+    - **Installation**: `npm install @felores/kie-ai-mcp-server --registry https://npm.pkg.github.com/`
+    - **Authentication**: Requires GitHub token with `read:packages` scope
+
+### Repository Metadata Management
+- **About section**: Updated with concise description and npm package link
+- **Topics**: Added relevant tags for discoverability (mcp, kie-ai, ai, etc.)
+- **Homepage**: Links to npm package page
+- **Release notes**: Include installation instructions and key features
 
 ### Important Notes
 - **Never publish without updating CHANGELOG.md** - users need to know what changed
@@ -105,3 +123,70 @@
 - **Check package size** - should be ~10-15KB (shown in dry-run)
 - **2FA timeout** - OTP codes expire quickly, have it ready before running publish
 - **Package.json files field** - Only dist/, README.md, LICENSE are published (configured)
+- **GitHub Actions secrets**: Ensure `NPM_TOKEN` and `GITHUB_TOKEN` are properly configured
+- **Release automation**: Tag pushes trigger automated publishing to both NPM and GitHub Packages
+- **Repository consistency**: Keep README, CHANGELOG, and package.json in sync
+
+## Release Best Practices
+
+### Pre-Release Checklist
+1. **Version consistency**: All version files updated (package.json, index.ts, CHANGELOG.md)
+2. **Documentation**: README.md reflects current tool names and features
+3. **Build verification**: `npm run build` succeeds without errors
+4. **Type checking**: `npx tsc --noEmit` passes
+5. **Tests**: `npm test` passes (if tests exist)
+6. **Changelog**: Detailed CHANGELOG.md entry with user-facing changes
+7. **Git status**: Clean working directory with all changes committed
+
+### Release Process Options
+
+#### Option 1: Manual Release (Recommended for testing)
+```bash
+# 1. Update versions and documentation
+# 2. Commit changes
+git add .
+git commit -m "Release vX.Y.Z"
+
+# 3. Create and push tag
+git tag vX.Y.Z
+git push origin main --tags
+
+# 4. Create GitHub release
+gh release create vX.Y.Z --title "Release vX.Y.Z" --notes "Detailed release notes"
+
+# 5. Publish to NPM manually
+npm publish --otp=XXXXXX
+```
+
+#### Option 2: Automated Release (Production)
+```bash
+# 1. Update versions and documentation
+# 2. Commit changes
+git add .
+git commit -m "Release vX.Y.Z"
+
+# 3. Create and push tag (triggers automated workflow)
+git tag vX.Y.Z
+git push origin main --tags
+
+# 4. Monitor GitHub Actions for successful publishing
+```
+
+### Release Troubleshooting
+
+#### Common Issues
+- **GitHub Actions failures**: Check secrets configuration and permissions
+- **NPM publish failures**: Verify 2FA, package name, and registry access
+- **Version conflicts**: Ensure all version files are synchronized
+- **Build failures**: Check TypeScript compilation and dependencies
+
+#### Recovery Steps
+1. **Failed automated release**: Delete the tag and retry after fixing issues
+2. **NPM rollback**: Use `npm deprecate` for problematic versions
+3. **GitHub release cleanup**: Delete and recreate release with correct notes
+
+### Post-Release Tasks
+1. **Verify installation**: Test `npm install @felores/kie-ai-mcp-server`
+2. **Check GitHub release**: Ensure notes and assets are correct
+3. **Update documentation**: Update any external references if needed
+4. **Monitor issues**: Watch for user feedback and bug reports
