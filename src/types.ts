@@ -103,6 +103,21 @@ export const ElevenLabsTTSTurboSchema = z.object({
   callBackUrl: z.string().url().optional()
 });
 
+export const ElevenLabsSoundEffectsSchema = z.object({
+  text: z.string().min(1).max(5000),
+  loop: z.boolean().default(false).optional(),
+  duration_seconds: z.number().min(0.5).max(22).multipleOf(0.1).optional(),
+  prompt_influence: z.number().min(0).max(1).multipleOf(0.01).default(0.3).optional(),
+  output_format: z.enum([
+    'mp3_22050_32', 'mp3_44100_32', 'mp3_44100_64', 'mp3_44100_96', 
+    'mp3_44100_128', 'mp3_44100_192', 'pcm_8000', 'pcm_16000', 
+    'pcm_22050', 'pcm_24000', 'pcm_44100', 'pcm_48000', 
+    'ulaw_8000', 'alaw_8000', 'opus_48000_32', 'opus_48000_64', 
+    'opus_48000_96', 'opus_48000_128', 'opus_48000_192'
+  ]).default('mp3_44100_128').optional(),
+  callBackUrl: z.string().url().optional()
+});
+
 // TypeScript types
 export type NanoBananaGenerateRequest = z.infer<typeof NanoBananaGenerateSchema>;
 export type NanaBananaEditRequest = z.infer<typeof NanoBananaEditSchema>;
@@ -111,6 +126,7 @@ export type Veo3GenerateRequest = z.infer<typeof Veo3GenerateSchema>;
 export type SunoGenerateRequest = z.infer<typeof SunoGenerateSchema>;
 export type ElevenLabsTTSRequest = z.infer<typeof ElevenLabsTTSSchema>;
 export type ElevenLabsTTSTurboRequest = z.infer<typeof ElevenLabsTTSTurboSchema>;
+export type ElevenLabsSoundEffectsRequest = z.infer<typeof ElevenLabsSoundEffectsSchema>;
 
 export interface KieAiResponse<T = any> {
   code: number;
@@ -130,7 +146,7 @@ export interface TaskResponse {
 export interface TaskRecord {
   id?: number;
   task_id: string;
-  api_type: 'nano-banana' | 'nano-banana-edit' | 'nano-banana-upscale' | 'veo3' | 'suno' | 'elevenlabs-tts' | 'elevenlabs-tts-turbo';
+  api_type: 'nano-banana' | 'nano-banana-edit' | 'nano-banana-upscale' | 'veo3' | 'suno' | 'elevenlabs-tts' | 'elevenlabs-tts-turbo' | 'elevenlabs-sound-effects';
   status: 'pending' | 'processing' | 'completed' | 'failed';
   created_at: string;
   updated_at: string;

@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2025-01-14
+
+### Added
+- **ElevenLabs Sound Effects**: New `elevenlabs_ttsfx` tool for sound effect generation
+- **Sound Effects v2 Model**: Integration with ElevenLabs Sound Effects v2 API
+- **Flexible Duration Control**: Customizable sound effect duration from 0.5 to 22 seconds
+- **Loop Support**: Create seamless looping sound effects
+- **Multiple Audio Formats**: Support for MP3, PCM, Opus, and telephony formats
+- **Prompt Influence Control**: Adjust how closely to follow text descriptions (0-1 range)
+- **High-Quality Audio**: Professional-grade sound effect generation
+- **Task Status Integration**: Full task tracking for sound effects generation
+
+### Technical
+- Added `ElevenLabsSoundEffectsSchema` and `ElevenLabsSoundEffectsRequest` types
+- Extended `TaskRecord` api_type with 'elevenlabs-sound-effects'
+- Updated API client with `generateElevenLabsSoundEffects()` method
+- Enhanced task status handling for sound effects responses
+- Comprehensive documentation with examples and use cases
+
 ## [1.3.0] - 2025-01-14
 
 ### Added

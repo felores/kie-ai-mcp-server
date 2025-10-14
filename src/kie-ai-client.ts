@@ -8,6 +8,7 @@ import {
   SunoGenerateRequest,
   ElevenLabsTTSRequest,
   ElevenLabsTTSTurboRequest,
+  ElevenLabsSoundEffectsRequest,
   ImageResponse,
   TaskResponse 
 } from './types.js';
@@ -107,7 +108,7 @@ export class KieAiClient {
       return this.makeRequest<any>(`/jobs/recordInfo?taskId=${taskId}`, 'GET');
     } else if (apiType === 'suno') {
       return this.makeRequest<any>(`/generate/record-info?taskId=${taskId}`, 'GET');
-    } else if (apiType === 'elevenlabs-tts' || apiType === 'elevenlabs-tts-turbo') {
+    } else if (apiType === 'elevenlabs-tts' || apiType === 'elevenlabs-tts-turbo' || apiType === 'elevenlabs-sound-effects') {
       return this.makeRequest<any>(`/jobs/recordInfo?taskId=${taskId}`, 'GET');
     }
     
@@ -166,6 +167,22 @@ export class KieAiClient {
         previous_text: request.previous_text || '',
         next_text: request.next_text || '',
         language_code: request.language_code || ''
+      },
+      callBackUrl: request.callBackUrl || process.env.KIE_AI_CALLBACK_URL
+    };
+
+    return this.makeRequest<TaskResponse>('/jobs/createTask', 'POST', jobRequest);
+  }
+
+  async generateElevenLabsSoundEffects(request: ElevenLabsSoundEffectsRequest): Promise<KieAiResponse<TaskResponse>> {
+    const jobRequest = {
+      model: 'elevenlabs/sound-effect-v2',
+      input: {
+        text: request.text,
+        loop: request.loop || false,
+        ...(request.duration_seconds !== undefined && { duration_seconds: request.duration_seconds }),
+        prompt_influence: request.prompt_influence || 0.3,
+        output_format: request.output_format || 'mp3_44100_128'
       },
       callBackUrl: request.callBackUrl || process.env.KIE_AI_CALLBACK_URL
     };

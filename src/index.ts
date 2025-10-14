@@ -20,6 +20,7 @@ import {
   SunoGenerateSchema,
   ElevenLabsTTSSchema,
   ElevenLabsTTSTurboSchema,
+  ElevenLabsSoundEffectsSchema,
   KieAiConfig 
 } from './types.js';
 
@@ -31,7 +32,7 @@ class KieAiMcpServer {
   constructor() {
     this.server = new Server({
       name: 'kie-ai-mcp-server',
-      version: '1.3.0',
+      version: '1.4.0',
     });
 
     // Initialize client with config from environment
@@ -538,6 +539,53 @@ class KieAiMcpServer {
               },
               required: ['text']
             }
+          },
+          {
+            name: 'elevenlabs_ttsfx',
+            description: 'Generate sound effects from text descriptions using ElevenLabs Sound Effects v2 model',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                text: {
+                  type: 'string',
+                  description: 'The text describing the sound effect to generate (max 5000 characters)',
+                  minLength: 1,
+                  maxLength: 5000
+                },
+                loop: {
+                  type: 'boolean',
+                  description: 'Whether to create a sound effect that loops smoothly',
+                  default: false
+                },
+                duration_seconds: {
+                  type: 'number',
+                  description: 'Duration in seconds (0.5-22). If not specified, optimal duration will be determined from prompt',
+                  minimum: 0.5,
+                  maximum: 22,
+                  multipleOf: 0.1
+                },
+                prompt_influence: {
+                  type: 'number',
+                  description: 'How closely to follow the prompt (0-1). Higher values mean less variation',
+                  minimum: 0,
+                  maximum: 1,
+                  multipleOf: 0.01,
+                  default: 0.3
+                },
+                output_format: {
+                  type: 'string',
+                  description: 'Output format of the generated audio',
+                  enum: ['mp3_22050_32', 'mp3_44100_32', 'mp3_44100_64', 'mp3_44100_96', 'mp3_44100_128', 'mp3_44100_192', 'pcm_8000', 'pcm_16000', 'pcm_22050', 'pcm_24000', 'pcm_44100', 'pcm_48000', 'ulaw_8000', 'alaw_8000', 'opus_48000_32', 'opus_48000_64', 'opus_48000_96', 'opus_48000_128', 'opus_48000_192'],
+                  default: 'mp3_44100_128'
+                },
+                callBackUrl: {
+                  type: 'string',
+                  description: 'Optional: URL for task completion notifications (uses KIE_AI_CALLBACK_URL env var if not provided)',
+                  format: 'uri'
+                }
+              },
+              required: ['text']
+            }
           }
         ]
       };
@@ -577,6 +625,9 @@ class KieAiMcpServer {
           
           case 'elevenlabs_tts_turbo':
             return await this.handleElevenLabsTTSTurbo(args);
+          
+          case 'elevenlabs_ttsfx':
+            return await this.handleElevenLabsSoundEffects(args);
           
           default:
             throw new McpError(
@@ -795,18 +846,18 @@ class KieAiMcpServer {
             if (apiData.errorMessage) {
               errorMessage = apiData.errorMessage;
             }
-          } else if (localTask?.api_type === 'elevenlabs-tts' || localTask?.api_type === 'elevenlabs-tts-turbo') {
-            // ElevenLabs TTS-specific status mapping
+          } else if (localTask?.api_type === 'elevenlabs-tts' || localTask?.api_type === 'elevenlabs-tts-turbo' || localTask?.api_type === 'elevenlabs-sound-effects') {
+            // ElevenLabs TTS/Sound Effects-specific status mapping
             const elevenlabsState = apiData.state;
             if (elevenlabsState === 'success') status = 'completed';
             else if (elevenlabsState === 'fail') status = 'failed';
             else if (elevenlabsState === 'waiting') status = 'processing';
             
-            // Parse resultJson for ElevenLabs TTS
+            // Parse resultJson for ElevenLabs TTS/Sound Effects
             if (apiData.resultJson) {
               try {
                 parsedResult = JSON.parse(apiData.resultJson);
-                // ElevenLabs TTS returns resultUrls array with audio file URLs
+                // ElevenLabs TTS/Sound Effects returns resultUrls array with audio file URLs
                 if (parsedResult.resultUrls && parsedResult.resultUrls.length > 0) {
                   resultUrl = parsedResult.resultUrls[0]; // Use first audio URL
                 }
@@ -815,7 +866,7 @@ class KieAiMcpServer {
               }
             }
             
-            // Extract error message for ElevenLabs TTS
+            // Extract error message for ElevenLabs TTS/Sound Effects
             if (apiData.failMsg) {
               errorMessage = apiData.failMsg;
             }
@@ -897,35 +948,35 @@ class KieAiMcpServer {
           error_code: sunoData.errorCode,
           error_message: sunoData.errorMessage
         };
-      } else if ((localTask?.api_type === 'elevenlabs-tts' || localTask?.api_type === 'elevenlabs-tts-turbo') && apiResponse?.data) {
-        const elevenlabsData = apiResponse.data;
-        responseData.status = elevenlabsData.state; // Use ElevenLabs state directly
-        
-        // Add detailed ElevenLabs TTS information
-        if (elevenlabsData.resultJson) {
-          try {
-            const resultData = JSON.parse(elevenlabsData.resultJson);
-            if (resultData.resultUrls) {
-              responseData.result_urls = resultData.resultUrls;
-              responseData.audio_url = resultData.resultUrls[0]; // Primary audio URL
+        } else if ((localTask?.api_type === 'elevenlabs-tts' || localTask?.api_type === 'elevenlabs-tts-turbo' || localTask?.api_type === 'elevenlabs-sound-effects') && apiResponse?.data) {
+          const elevenlabsData = apiResponse.data;
+          responseData.status = elevenlabsData.state; // Use ElevenLabs state directly
+          
+          // Add detailed ElevenLabs TTS/Sound Effects information
+          if (elevenlabsData.resultJson) {
+            try {
+              const resultData = JSON.parse(elevenlabsData.resultJson);
+              if (resultData.resultUrls) {
+                responseData.result_urls = resultData.resultUrls;
+                responseData.audio_url = resultData.resultUrls[0]; // Primary audio URL
+              }
+            } catch (e) {
+              // Invalid JSON in resultJson
             }
-          } catch (e) {
-            // Invalid JSON in resultJson
           }
-        }
-        
-        // Add ElevenLabs-specific metadata
-        responseData.elevenlabs_metadata = {
-          model: elevenlabsData.model,
-          state: elevenlabsData.state,
-          cost_time: elevenlabsData.costTime,
-          complete_time: elevenlabsData.completeTime,
-          create_time: elevenlabsData.createTime,
-          parameters: elevenlabsData.param ? JSON.parse(elevenlabsData.param) : null,
-          fail_code: elevenlabsData.failCode,
-          fail_message: elevenlabsData.failMsg
-        };
-      } else {
+          
+          // Add ElevenLabs-specific metadata
+          responseData.elevenlabs_metadata = {
+            model: elevenlabsData.model,
+            state: elevenlabsData.state,
+            cost_time: elevenlabsData.costTime,
+            complete_time: elevenlabsData.completeTime,
+            create_time: elevenlabsData.createTime,
+            parameters: elevenlabsData.param ? JSON.parse(elevenlabsData.param) : null,
+            fail_code: elevenlabsData.failCode,
+            fail_message: elevenlabsData.failMsg
+          };
+        } else {
         // Use original logic for other APIs
         responseData.status = apiResponse?.data?.state || updatedTask?.status;
         responseData.result_urls = parsedResult?.resultUrls || (updatedTask?.result_url ? [updatedTask.result_url] : []);
@@ -1214,6 +1265,73 @@ class KieAiMcpServer {
         text: 'Required: The text to convert to speech (max 5000 characters)',
         voice: 'Optional: Voice to use (default: Rachel)',
         language_code: 'Optional: ISO 639-1 language code for enforcement',
+        callBackUrl: 'Optional: URL for task completion notifications'
+      });
+    }
+  }
+
+  private async handleElevenLabsSoundEffects(args: any) {
+    try {
+      const request = ElevenLabsSoundEffectsSchema.parse(args);
+      
+      // Use environment variable as fallback if callBackUrl not provided
+      if (!request.callBackUrl && process.env.KIE_AI_CALLBACK_URL) {
+        request.callBackUrl = process.env.KIE_AI_CALLBACK_URL;
+      }
+      
+      const response = await this.client.generateElevenLabsSoundEffects(request);
+      
+      if (response.code === 200 && response.data?.taskId) {
+        // Store task in database
+        await this.db.createTask({
+          task_id: response.data.taskId,
+          api_type: 'elevenlabs-sound-effects',
+          status: 'pending'
+        });
+        
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify({
+                success: true,
+                task_id: response.data.taskId,
+                message: 'ElevenLabs Sound Effects generation task created successfully',
+                parameters: {
+                  text: request.text.substring(0, 100) + (request.text.length > 100 ? '...' : ''),
+                  duration_seconds: request.duration_seconds || 'Auto-determined',
+                  prompt_influence: request.prompt_influence || 0.3,
+                  output_format: request.output_format || 'mp3_44100_128',
+                  loop: request.loop || false
+                },
+                next_steps: [
+                  'Use get_task_status to check generation progress',
+                  'Task completion will be sent to the provided callback URL',
+                  'Sound effects generation typically takes 30-90 seconds depending on complexity'
+                ]
+              }, null, 2)
+            }
+          ]
+        };
+      } else {
+        throw new Error(response.msg || 'Failed to create Sound Effects generation task');
+      }
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return this.formatError('elevenlabs_ttsfx', error, {
+          text: 'Required: The text describing the sound effect to generate (max 5000 characters)',
+          loop: 'Optional: Whether to create a looping sound effect (default: false)',
+          duration_seconds: 'Optional: Duration in seconds (0.5-22, step 0.1)',
+          prompt_influence: 'Optional: How closely to follow the prompt (0-1, step 0.01, default: 0.3)',
+          output_format: 'Optional: Audio output format (default: mp3_44100_128)',
+          callBackUrl: 'Optional: URL for task completion notifications (uses KIE_AI_CALLBACK_URL env var if not provided)'
+        });
+      }
+      
+      return this.formatError('elevenlabs_ttsfx', error, {
+        text: 'Required: The text describing the sound effect to generate (max 5000 characters)',
+        duration_seconds: 'Optional: Duration in seconds (0.5-22)',
+        output_format: 'Optional: Audio output format',
         callBackUrl: 'Optional: URL for task completion notifications'
       });
     }

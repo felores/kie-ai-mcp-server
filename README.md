@@ -11,6 +11,7 @@ An MCP (Model Context Protocol) server that provides access to Kie.ai's AI APIs 
 - **1080p Video Upgrade**: Get high-definition versions of Veo3 videos
 - **Suno Music Generation**: AI-powered music creation with multiple models (V3_5, V4, V4_5, V4_5PLUS, V5)
 - **ElevenLabs Text-to-Speech**: Multilingual TTS with 21 voice options and advanced voice controls
+- **ElevenLabs Sound Effects**: High-quality sound effect generation with customizable duration and formats
 - **Task Management**: SQLite-based task tracking with status polling
 - **Smart Endpoint Routing**: Automatic detection of task types for status checking
 - **Error Handling**: Comprehensive error handling and validation
@@ -338,6 +339,58 @@ Advanced controls with continuity:
 
 **Note**: The `callBackUrl` is optional and will use the `KIE_AI_CALLBACK_URL` environment variable if not provided. Turbo 2.5 generation is faster and supports language enforcement.
 
+### 7. `elevenlabs_ttsfx`
+Generate sound effects from text descriptions using ElevenLabs Sound Effects v2 model.
+
+**Parameters:**
+- `text` (string, required): Description of the sound effect to generate (max 5000 chars)
+- `loop` (boolean, optional): Whether to create a sound effect that loops smoothly (default: false)
+- `duration_seconds` (number, optional): Duration in seconds (0.5-22, step 0.1). If not specified, optimal duration will be determined from prompt
+- `prompt_influence` (number, optional): How closely to follow the prompt (0-1, step 0.01, default: 0.3). Higher values mean less variation
+- `output_format` (string, optional): Audio output format (default: "mp3_44100_128")
+  - MP3 options: `mp3_22050_32`, `mp3_44100_32`, `mp3_44100_64`, `mp3_44100_96`, `mp3_44100_128`, `mp3_44100_192`
+  - PCM options: `pcm_8000`, `pcm_16000`, `pcm_22050`, `pcm_24000`, `pcm_44100`, `pcm_48000`
+  - Telephony: `ulaw_8000`, `alaw_8000`
+  - Opus: `opus_48000_32`, `opus_48000_64`, `opus_48000_96`, `opus_48000_128`, `opus_48000_192`
+- `callBackUrl` (string, optional): URL for task completion notifications
+
+**Examples:**
+
+Basic sound effect:
+```json
+{
+  "text": "Rain falling on a tin roof"
+}
+```
+
+Advanced sound effect with custom duration:
+```json
+{
+  "text": "Epic thunderstorm with heavy rain and distant thunder",
+  "duration_seconds": 15.0,
+  "prompt_influence": 0.8,
+  "output_format": "mp3_44100_192"
+}
+```
+
+Looping ambient sound:
+```json
+{
+  "text": "Gentle ocean waves lapping at the shore",
+  "loop": true,
+  "duration_seconds": 10.0
+}
+```
+
+**Key Features:**
+- **High-Quality Audio**: Professional-grade sound effect generation
+- **Flexible Duration**: Control exact length from 0.5 to 22 seconds
+- **Loop Support**: Create seamless looping sound effects
+- **Multiple Formats**: Support for MP3, PCM, Opus, and telephony formats
+- **Prompt Control**: Adjust how closely to follow your description
+
+**Note**: The `callBackUrl` is optional and will use the `KIE_AI_CALLBACK_URL` environment variable if not provided. Sound effects generation typically takes 30-90 seconds depending on complexity.
+
 ## API Endpoints
 
 The server interfaces with these Kie.ai API endpoints:
@@ -351,6 +404,9 @@ The server interfaces with these Kie.ai API endpoints:
 - **Nano Banana Status**: `GET /api/v1/jobs/recordInfo`
 - **Suno Music Generation**: `POST /api/v1/generate` ✅ **VALIDATED**
 - **Suno Music Status**: `GET /api/v1/generate?taskId=XXX` ✅ **VALIDATED**
+- **ElevenLabs TTS Generation**: `POST /api/v1/jobs/createTask` ✅ **VALIDATED**
+- **ElevenLabs TTS Status**: `GET /api/v1/jobs/recordInfo` ✅ **VALIDATED**
+- **ElevenLabs Sound Effects**: `POST /api/v1/jobs/createTask` ✅ **VALIDATED**
 
 All endpoints follow official Kie.ai API documentation.
 
@@ -362,7 +418,7 @@ The server uses SQLite to track tasks:
 CREATE TABLE tasks (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   task_id TEXT UNIQUE NOT NULL,
-  api_type TEXT NOT NULL,  -- 'nano-banana', 'nano-banana-edit', 'veo3', 'suno'
+  api_type TEXT NOT NULL,  -- 'nano-banana', 'nano-banana-edit', 'veo3', 'suno', 'elevenlabs-tts', 'elevenlabs-tts-turbo', 'elevenlabs-sound-effects'
   status TEXT DEFAULT 'pending',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
