@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1] - 2025-01-14
+
+### Fixed
+- **Suno Callback URL**: Made callBackUrl optional and added environment variable support
+- **Environment Variable**: Suno tool now uses KIE_AI_CALLBACK_URL as fallback like Veo3 tool
+- **Validation**: Updated schema validation to check both direct and environment variable callback URL
+- **Documentation**: Added examples showing both explicit and environment variable approaches
+- **Consistency**: Suno tool now behaves consistently with other tools in the package
+
+### Changed
+- Updated SunoGenerateSchema to make callBackUrl optional
+- Enhanced error messages to clarify environment variable usage
+- Improved tool schema descriptions for better user understanding
+
 ## [1.2.0] - 2025-01-14
 
 ### Added

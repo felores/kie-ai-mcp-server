@@ -28,7 +28,7 @@ class KieAiMcpServer {
   constructor() {
     this.server = new Server({
       name: 'kie-ai-mcp-server',
-      version: '1.2.0',
+      version: '1.2.1',
     });
 
     // Initialize client with config from environment
