@@ -3,6 +3,7 @@ import {
   KieAiResponse, 
   NanoBananaGenerateRequest, 
   NanaBananaEditRequest,
+  NanoBananaUpscaleRequest,
   Veo3GenerateRequest,
   ImageResponse,
   TaskResponse 
@@ -55,24 +56,40 @@ export class KieAiClient {
   }
 
   async generateNanoBanana(request: NanoBananaGenerateRequest): Promise<KieAiResponse<ImageResponse>> {
-    const playgroundRequest = {
+    const jobRequest = {
       model: 'google/nano-banana',
       input: {
-        prompt: request.prompt
+        prompt: request.prompt,
+        ...(request.output_format && { output_format: request.output_format }),
+        ...(request.image_size && { image_size: request.image_size })
       }
     };
-    return this.makeRequest<ImageResponse>('/playground/createTask', 'POST', playgroundRequest);
+    return this.makeRequest<ImageResponse>('/jobs/createTask', 'POST', jobRequest);
   }
 
   async editNanoBanana(request: NanaBananaEditRequest): Promise<KieAiResponse<ImageResponse>> {
-    const playgroundRequest = {
+    const jobRequest = {
       model: 'google/nano-banana-edit',
       input: {
         prompt: request.prompt,
-        image_urls: request.image_urls
+        image_urls: request.image_urls,
+        ...(request.output_format && { output_format: request.output_format }),
+        ...(request.image_size && { image_size: request.image_size })
       }
     };
-    return this.makeRequest<ImageResponse>('/playground/createTask', 'POST', playgroundRequest);
+    return this.makeRequest<ImageResponse>('/jobs/createTask', 'POST', jobRequest);
+  }
+
+  async upscaleNanaBanana(request: NanoBananaUpscaleRequest): Promise<KieAiResponse<ImageResponse>> {
+    const jobRequest = {
+      model: 'nano-banana-upscale',
+      input: {
+        image: request.image,
+        ...(request.scale !== undefined && { scale: request.scale }),
+        ...(request.face_enhance !== undefined && { face_enhance: request.face_enhance })
+      }
+    };
+    return this.makeRequest<ImageResponse>('/jobs/createTask', 'POST', jobRequest);
   }
 
   async generateVeo3Video(request: Veo3GenerateRequest): Promise<KieAiResponse<TaskResponse>> {
@@ -83,13 +100,13 @@ export class KieAiClient {
     // Use api_type to determine correct endpoint, with fallback strategy
     if (apiType === 'veo3') {
       return this.makeRequest<any>(`/veo/record-info?taskId=${taskId}`, 'GET');
-    } else if (apiType === 'nano-banana' || apiType === 'nano-banana-edit') {
-      return this.makeRequest<any>(`/playground/recordInfo?taskId=${taskId}`, 'GET');
+    } else if (apiType === 'nano-banana' || apiType === 'nano-banana-edit' || apiType === 'nano-banana-upscale') {
+      return this.makeRequest<any>(`/jobs/recordInfo?taskId=${taskId}`, 'GET');
     }
     
-    // Fallback: try playground first, then veo (for tasks not in database)
+    // Fallback: try jobs first, then veo (for tasks not in database)
     try {
-      return await this.makeRequest<any>(`/playground/recordInfo?taskId=${taskId}`, 'GET');
+      return await this.makeRequest<any>(`/jobs/recordInfo?taskId=${taskId}`, 'GET');
     } catch (error) {
       try {
         return await this.makeRequest<any>(`/veo/record-info?taskId=${taskId}`, 'GET');

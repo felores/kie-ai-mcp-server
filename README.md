@@ -5,7 +5,8 @@ An MCP (Model Context Protocol) server that provides access to Kie.ai's AI APIs 
 ## Features
 
 - **Nano Banana Image Generation**: Text-to-image generation using Google's Gemini 2.5 Flash Image Preview
-- **Nano Banana Image Editing**: Natural language image editing with up to 5 input images
+- **Nano Banana Image Editing**: Natural language image editing with up to 10 input images
+- **Nano Banana Image Upscaling**: Upscale images 1-4x with optional face enhancement
 - **Veo3 Video Generation**: Professional-quality video generation with text-to-video and image-to-video capabilities
 - **1080p Video Upgrade**: Get high-definition versions of Veo3 videos
 - **Task Management**: SQLite-based task tracking with status polling
@@ -51,6 +52,7 @@ export KIE_AI_API_KEY="your-api-key-here"
 export KIE_AI_BASE_URL="https://api.kie.ai/api/v1"  # Default
 export KIE_AI_TIMEOUT="60000"                      # Default: 60 seconds
 export KIE_AI_DB_PATH="./tasks.db"                 # Default: ./tasks.db
+export KIE_AI_CALLBACK_URL="https://your-domain.com/api/callback"  # Default callback URL for video generation
 ```
 
 ### MCP Configuration
@@ -89,12 +91,16 @@ Or if installed globally:
 Generate images using Nano Banana.
 
 **Parameters:**
-- `prompt` (string, required): Text description of the image to generate
+- `prompt` (string, required): Text description of the image to generate (max 5000 chars)
+- `output_format` (string, optional): "png" or "jpeg" (default: "png")
+- `image_size` (string, optional): Aspect ratio - "1:1", "9:16", "16:9", "3:4", "4:3", "3:2", "2:3", "5:4", "4:5", "21:9", "auto" (default: "1:1")
 
 **Example:**
 ```json
 {
-  "prompt": "A surreal painting of a giant banana floating in space"
+  "prompt": "A surreal painting of a giant banana floating in space",
+  "output_format": "png",
+  "image_size": "16:9"
 }
 ```
 
@@ -102,28 +108,51 @@ Generate images using Nano Banana.
 Edit images using natural language prompts.
 
 **Parameters:**
-- `prompt` (string, required): Description of edits to make
-- `image_urls` (array, required): URLs of images to edit (max 5)
+- `prompt` (string, required): Description of edits to make (max 5000 chars)
+- `image_urls` (array, required): URLs of images to edit (max 10)
+- `output_format` (string, optional): "png" or "jpeg" (default: "png")
+- `image_size` (string, optional): Aspect ratio (default: "1:1")
 
 **Example:**
 ```json
 {
   "prompt": "Add a rainbow arching over the mountains",
-  "image_urls": ["https://example.com/image.jpg"]
+  "image_urls": ["https://example.com/image.jpg"],
+  "output_format": "png",
+  "image_size": "16:9"
 }
 ```
 
-### 3. `generate_veo3_video`
+### 3. `upscale_nano_banana`
+Upscale images with optional face enhancement.
+
+**Parameters:**
+- `image` (string, required): URL of image to upscale (max 10MB, jpeg/png/webp)
+- `scale` (integer, optional): Upscale factor 1-4 (default: 2)
+- `face_enhance` (boolean, optional): Enable GFPGAN face enhancement (default: false)
+
+**Example:**
+```json
+{
+  "image": "https://example.com/image.jpg",
+  "scale": 4,
+  "face_enhance": true
+}
+```
+
+### 4. `generate_veo3_video`
 Generate videos using Veo3.
 
 **Parameters:**
 - `prompt` (string, required): Video description
 - `imageUrls` (array, optional): Image for image-to-video (max 1)
 - `model` (enum, optional): "veo3" or "veo3_fast" (default: "veo3")
-- `aspectRatio` (enum, optional): "16:9" or "9:16" (default: "16:9")
+- `aspectRatio` (enum, optional): "16:9", "9:16", or "Auto" (default: "16:9", only 16:9 supports 1080P)
 - `seeds` (integer, optional): Random seed 10000-99999
 - `watermark` (string, optional): Watermark text
-- `enableFallback` (boolean, optional): Enable fallback mechanism
+- `callBackUrl` (string, optional): Callback URL for completion notifications
+- `enableFallback` (boolean, optional): Enable fallback mechanism (default: false, fallback videos cannot use 1080P endpoint)
+- `enableTranslation` (boolean, optional): Auto-translate prompts to English (default: true)
 
 **Example:**
 ```json
@@ -131,24 +160,25 @@ Generate videos using Veo3.
   "prompt": "A dog playing in a park",
   "model": "veo3",
   "aspectRatio": "16:9",
-  "seeds": 12345
+  "seeds": 12345,
+  "enableTranslation": true
 }
 ```
 
-### 4. `get_task_status`
+### 5. `get_task_status`
 Check the status of a generation task.
 
 **Parameters:**
 - `task_id` (string, required): Task ID to check
 
-### 5. `list_tasks`
+### 6. `list_tasks`
 List recent tasks with their status.
 
 **Parameters:**
 - `limit` (integer, optional): Max tasks to return (default: 20, max: 100)
 - `status` (string, optional): Filter by status ("pending", "processing", "completed", "failed")
 
-### 6. `get_veo3_1080p_video`
+### 7. `get_veo3_1080p_video`
 Get 1080P high-definition version of a Veo3 video.
 
 **Parameters:**
@@ -164,10 +194,12 @@ The server interfaces with these Kie.ai API endpoints:
 - **Veo3 Video Generation**: `POST /api/v1/veo/generate` ✅ **VALIDATED**
 - **Veo3 Video Status**: `GET /api/v1/veo/record-info` ✅ **VALIDATED**  
 - **Veo3 1080p Upgrade**: `GET /api/v1/veo/get-1080p-video` ✅ **VALIDATED**
-- **Nano Banana Generation**: `POST /api/v1/playground/createTask` ✅ **VALIDATED**
-- **Nano Banana Status**: `GET /api/v1/playground/recordInfo` ✅ **VALIDATED**
+- **Nano Banana Generation**: `POST /api/v1/jobs/createTask` 
+- **Nano Banana Edit**: `POST /api/v1/jobs/createTask`
+- **Nano Banana Upscale**: `POST /api/v1/jobs/createTask`
+- **Nano Banana Status**: `GET /api/v1/jobs/recordInfo`
 
-All endpoints have been tested and validated with live API responses.
+All endpoints follow official Kie.ai API documentation.
 
 ## Database Schema
 
@@ -303,7 +335,40 @@ MIT License - see LICENSE file for details.
 
 ## Changelog
 
-### v1.0.0
+### v1.1.1 (2025-01-14)
+
+**Improvements:**
+- Added `KIE_AI_CALLBACK_URL` environment variable for default callback URL
+- Added `enableTranslation` parameter to Veo3 (auto-translate prompts to English)
+- Added `Auto` option to Veo3 `aspectRatio`
+- Exposed `callBackUrl` parameter in Veo3 tool schema
+- Veo3 tool now fully aligned with official Kie.ai API documentation
+
+### v1.1.0 (2025-01-14)
+
+**Breaking Changes:**
+- Migrated from `/playground/*` to official `/jobs/*` API endpoints for all Nano Banana operations
+- Updated status check endpoint from `/playground/recordInfo` to `/jobs/recordInfo`
+
+**New Features:**
+- Added `upscale_nano_banana` tool for image upscaling (1-4x) with optional GFPGAN face enhancement
+- Added `output_format` parameter (png/jpeg) to `generate_nano_banana` and `edit_nano_banana`
+- Added `image_size` parameter (11 aspect ratios) to `generate_nano_banana` and `edit_nano_banana`
+
+**Improvements:**
+- Increased prompt max length from 1,000 to 5,000 characters for Nano Banana tools
+- Increased max input images from 5 to 10 for `edit_nano_banana`
+- Enhanced `get_task_status` to properly parse `resultJson` and extract result URLs
+- Improved task status mapping: `waiting` → `processing`, `success` → `completed`, `fail` → `failed`
+- Task status now automatically updates local database with API responses
+- Better error message handling from API responses
+
+**Documentation:**
+- Updated README with all new parameters and tools
+- Corrected API endpoints to match official Kie.ai documentation
+- Added comprehensive examples for all tools
+
+### v1.0.0 (2024-12-XX)
 - Initial release
 - Nano Banana image generation and editing
 - Veo3 video generation

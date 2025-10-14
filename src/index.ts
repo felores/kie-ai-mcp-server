@@ -13,7 +13,8 @@ import { KieAiClient } from './kie-ai-client.js';
 import { TaskDatabase } from './database.js';
 import { 
   NanoBananaGenerateSchema,
-  NanoBananaEditSchema, 
+  NanoBananaEditSchema,
+  NanoBananaUpscaleSchema,
   Veo3GenerateSchema,
   KieAiConfig 
 } from './types.js';
@@ -26,7 +27,7 @@ class KieAiMcpServer {
   constructor() {
     this.server = new Server({
       name: 'kie-ai-mcp-server',
-      version: '1.0.0',
+      version: '1.1.2',
     });
 
     // Initialize client with config from environment
@@ -46,6 +47,48 @@ class KieAiMcpServer {
     this.setupHandlers();
   }
 
+  private formatError(toolName: string, error: unknown, paramDescriptions: Record<string, string>) {
+    let errorMessage = 'Unknown error';
+    let errorDetails = '';
+    
+    if (error instanceof Error) {
+      errorMessage = error.message;
+      
+      // Check for Zod validation errors
+      if (errorMessage.includes('ZodError')) {
+        const lines = errorMessage.split('\n');
+        const validationErrors = lines.filter(line => 
+          line.includes('Expected') || line.includes('Required') || line.includes('Invalid')
+        );
+        
+        if (validationErrors.length > 0) {
+          errorDetails = `Validation errors:\n${validationErrors.map(err => `- ${err.trim()}`).join('\n')}`;
+        }
+      }
+    }
+    
+    // Build parameter guidance
+    const paramGuidance = Object.entries(paramDescriptions)
+      .map(([param, desc]) => `- ${param}: ${desc}`)
+      .join('\n');
+    
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify({
+            success: false,
+            tool: toolName,
+            error: errorMessage,
+            details: errorDetails,
+            parameter_guidance: paramGuidance,
+            message: `Failed to execute ${toolName}. Check parameters and try again.`
+          }, null, 2)
+        }
+      ]
+    };
+  }
+
   private setupHandlers(): void {
     this.server.setRequestHandler(ListToolsRequestSchema, async () => {
       return {
@@ -60,7 +103,19 @@ class KieAiMcpServer {
                   type: 'string',
                   description: 'Text prompt for image generation',
                   minLength: 1,
-                  maxLength: 1000
+                  maxLength: 5000
+                },
+                output_format: {
+                  type: 'string',
+                  enum: ['png', 'jpeg'],
+                  description: 'Output format for the images',
+                  default: 'png'
+                },
+                image_size: {
+                  type: 'string',
+                  enum: ['1:1', '9:16', '16:9', '3:4', '4:3', '3:2', '2:3', '5:4', '4:5', '21:9', 'auto'],
+                  description: 'Aspect ratio for the output image',
+                  default: '1:1'
                 }
               },
               required: ['prompt']
@@ -76,17 +131,56 @@ class KieAiMcpServer {
                   type: 'string',
                   description: 'Text prompt for image editing',
                   minLength: 1,
-                  maxLength: 1000
+                  maxLength: 5000
                 },
                 image_urls: {
                   type: 'array',
-                  description: 'URLs of input images for editing (max 5)',
+                  description: 'URLs of input images for editing (max 10)',
                   items: { type: 'string', format: 'uri' },
                   minItems: 1,
-                  maxItems: 5
+                  maxItems: 10
+                },
+                output_format: {
+                  type: 'string',
+                  enum: ['png', 'jpeg'],
+                  description: 'Output format for the images',
+                  default: 'png'
+                },
+                image_size: {
+                  type: 'string',
+                  enum: ['1:1', '9:16', '16:9', '3:4', '4:3', '3:2', '2:3', '5:4', '4:5', '21:9', 'auto'],
+                  description: 'Aspect ratio for the output image',
+                  default: '1:1'
                 }
               },
               required: ['prompt', 'image_urls']
+            }
+          },
+          {
+            name: 'upscale_nano_banana',
+            description: 'Upscale images using Nano Banana Upscale with optional face enhancement',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                image: {
+                  type: 'string',
+                  format: 'uri',
+                  description: 'URL of the image to upscale (max 10MB, jpeg/png/webp)'
+                },
+                scale: {
+                  type: 'integer',
+                  description: 'Upscale factor (1-4)',
+                  minimum: 1,
+                  maximum: 4,
+                  default: 2
+                },
+                face_enhance: {
+                  type: 'boolean',
+                  description: 'Enable GFPGAN face enhancement',
+                  default: false
+                }
+              },
+              required: ['image']
             }
           },
           {
@@ -120,8 +214,8 @@ class KieAiMcpServer {
                 },
                 aspectRatio: {
                   type: 'string',
-                  enum: ['16:9', '9:16'],
-                  description: 'Video aspect ratio',
+                  enum: ['16:9', '9:16', 'Auto'],
+                  description: 'Video aspect ratio (16:9 supports 1080P)',
                   default: '16:9'
                 },
                 seeds: {
@@ -130,10 +224,20 @@ class KieAiMcpServer {
                   minimum: 10000,
                   maximum: 99999
                 },
+                callBackUrl: {
+                  type: 'string',
+                  format: 'uri',
+                  description: 'Callback URL for task completion notifications'
+                },
                 enableFallback: {
                   type: 'boolean',
-                  description: 'Enable fallback mechanism for content policy failures',
+                  description: 'Enable fallback mechanism for content policy failures (Note: fallback videos cannot use 1080P endpoint)',
                   default: false
+                },
+                enableTranslation: {
+                  type: 'boolean',
+                  description: 'Auto-translate prompts to English for better results',
+                  default: true
                 }
               },
               required: ['prompt']
@@ -207,6 +311,9 @@ class KieAiMcpServer {
           case 'edit_nano_banana':
             return await this.handleEditNanoBanana(args);
           
+          case 'upscale_nano_banana':
+            return await this.handleUpscaleNanoBanana(args);
+          
           case 'generate_veo3_video':
             return await this.handleGenerateVeo3Video(args);
           
@@ -237,9 +344,9 @@ class KieAiMcpServer {
   }
 
   private async handleGenerateNanoBanana(args: any) {
-    const request = NanoBananaGenerateSchema.parse(args);
-    
     try {
+      const request = NanoBananaGenerateSchema.parse(args);
+      
       const response = await this.client.generateNanoBanana(request);
       
       if (response.data?.taskId) {
@@ -264,25 +371,18 @@ class KieAiMcpServer {
         ]
       };
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Generation failed';
-      return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify({
-              success: false,
-              error: message
-            }, null, 2)
-          }
-        ]
-      };
+      return this.formatError('generate_nano_banana', error, {
+        prompt: 'Required: text description of image to generate (max 5000 chars)',
+        output_format: 'Optional: "png" or "jpeg"',
+        image_size: 'Optional: aspect ratio like "16:9", "1:1", etc.'
+      });
     }
   }
 
   private async handleEditNanoBanana(args: any) {
-    const request = NanoBananaEditSchema.parse(args);
-    
     try {
+      const request = NanoBananaEditSchema.parse(args);
+      
       const response = await this.client.editNanoBanana(request);
       
       if (response.data?.taskId) {
@@ -307,25 +407,60 @@ class KieAiMcpServer {
         ]
       };
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Editing failed';
+      return this.formatError('edit_nano_banana', error, {
+        prompt: 'Required: editing instructions (max 5000 chars)',
+        image_urls: 'Required: array of 1-10 image URLs to edit',
+        output_format: 'Optional: "png" or "jpeg"',
+        image_size: 'Optional: aspect ratio like "16:9", "1:1", etc.'
+      });
+    }
+  }
+
+  private async handleUpscaleNanoBanana(args: any) {
+    try {
+      const request = NanoBananaUpscaleSchema.parse(args);
+      
+      const response = await this.client.upscaleNanaBanana(request);
+      
+      if (response.data?.taskId) {
+        await this.db.createTask({
+          task_id: response.data.taskId,
+          api_type: 'nano-banana-upscale',
+          status: 'pending',
+          result_url: response.data.imageUrl
+        });
+      }
+      
       return {
         content: [
           {
             type: 'text',
             text: JSON.stringify({
-              success: false,
-              error: message
+              success: true,
+              response: response,
+              message: 'Nano Banana upscale initiated'
             }, null, 2)
           }
         ]
       };
+    } catch (error) {
+      return this.formatError('upscale_nano_banana', error, {
+        image: 'Required: URL of image to upscale (jpeg/png/webp, max 10MB)',
+        scale: 'Optional: upscale factor 1-4 (default: 2)',
+        face_enhance: 'Optional: enable face enhancement (default: false)'
+      });
     }
   }
 
   private async handleGenerateVeo3Video(args: any) {
-    const request = Veo3GenerateSchema.parse(args);
-    
     try {
+      const request = Veo3GenerateSchema.parse(args);
+      
+      // Use environment variable as fallback if callBackUrl not provided
+      if (!request.callBackUrl && process.env.KIE_AI_CALLBACK_URL) {
+        request.callBackUrl = process.env.KIE_AI_CALLBACK_URL;
+      }
+      
       const response = await this.client.generateVeo3Video(request);
       
       if (response.data?.taskId) {
@@ -350,38 +485,69 @@ class KieAiMcpServer {
         ]
       };
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Video generation failed';
-      return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify({
-              success: false,
-              error: message
-            }, null, 2)
-          }
-        ]
-      };
+      return this.formatError('generate_veo3_video', error, {
+        prompt: 'Required: video description (max 2000 chars)',
+        imageUrls: 'Optional: array with 1 image URL for image-to-video',
+        model: 'Optional: "veo3" (quality) or "veo3_fast" (cost-efficient)',
+        watermark: 'Optional: watermark text (max 100 chars)',
+        aspectRatio: 'Optional: "16:9", "9:16", or "Auto"',
+        seeds: 'Optional: random seed (10000-99999)',
+        callBackUrl: 'Optional: callback URL for notifications',
+        enableFallback: 'Optional: enable fallback for content policy failures',
+        enableTranslation: 'Optional: auto-translate prompts to English'
+      });
     }
   }
 
   private async handleGetTaskStatus(args: any) {
-    const { task_id } = args;
-    
-    if (!task_id || typeof task_id !== 'string') {
-      throw new McpError(ErrorCode.InvalidParams, 'task_id is required and must be a string');
-    }
-    
     try {
+      const { task_id } = args;
+      
+      if (!task_id || typeof task_id !== 'string') {
+        throw new McpError(ErrorCode.InvalidParams, 'task_id is required and must be a string');
+      }
+      
       const localTask = await this.db.getTask(task_id);
       
       // Always try to get updated status from API, passing api_type if available
       let apiResponse = null;
+      let parsedResult = null;
+      
       try {
         apiResponse = await this.client.getTaskStatus(task_id, localTask?.api_type);
+        
+        // Update local database with API response
+        if (apiResponse?.data) {
+          const { state, resultJson, failCode, failMsg } = apiResponse.data;
+          
+          // Map API state to our status
+          let status: 'pending' | 'processing' | 'completed' | 'failed' = 'pending';
+          if (state === 'success') status = 'completed';
+          else if (state === 'fail') status = 'failed';
+          else if (state === 'waiting') status = 'processing';
+          
+          // Parse resultJson if available
+          if (resultJson) {
+            try {
+              parsedResult = JSON.parse(resultJson);
+            } catch (e) {
+              // Invalid JSON in resultJson
+            }
+          }
+          
+          // Update database
+          await this.db.updateTask(task_id, {
+            status,
+            result_url: parsedResult?.resultUrls?.[0] || undefined,
+            error_message: failMsg || undefined
+          });
+        }
       } catch (error) {
         // API call failed, use local data if available
       }
+      
+      // Fetch updated local task
+      const updatedTask = await this.db.getTask(task_id);
       
       return {
         content: [
@@ -389,33 +555,27 @@ class KieAiMcpServer {
             type: 'text',
             text: JSON.stringify({
               success: true,
-              local_task: localTask,
+              task_id: task_id,
+              status: apiResponse?.data?.state || updatedTask?.status,
+              result_urls: parsedResult?.resultUrls || (updatedTask?.result_url ? [updatedTask.result_url] : []),
+              error: apiResponse?.data?.failMsg || updatedTask?.error_message,
               api_response: apiResponse,
-              message: localTask ? 'Task found' : 'Task not found in local database'
+              message: updatedTask ? 'Task found' : 'Task not found in local database'
             }, null, 2)
           }
         ]
       };
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to get task status';
-      return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify({
-              success: false,
-              error: message
-            }, null, 2)
-          }
-        ]
-      };
+      return this.formatError('get_task_status', error, {
+        task_id: 'Required: task ID to check status for'
+      });
     }
   }
 
   private async handleListTasks(args: any) {
-    const { limit = 20, status } = args;
-    
     try {
+      const { limit = 20, status } = args;
+      
       let tasks;
       if (status) {
         tasks = await this.db.getTasksByStatus(status, limit);
@@ -437,29 +597,21 @@ class KieAiMcpServer {
         ]
       };
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to list tasks';
-      return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify({
-              success: false,
-              error: message
-            }, null, 2)
-          }
-        ]
-      };
+      return this.formatError('list_tasks', error, {
+        limit: 'Optional: max tasks to return (1-100, default: 20)',
+        status: 'Optional: filter by status (pending, processing, completed, failed)'
+      });
     }
   }
 
   private async handleGetVeo1080pVideo(args: any) {
-    const { task_id, index } = args;
-    
-    if (!task_id || typeof task_id !== 'string') {
-      throw new McpError(ErrorCode.InvalidParams, 'task_id is required and must be a string');
-    }
-    
     try {
+      const { task_id, index } = args;
+      
+      if (!task_id || typeof task_id !== 'string') {
+        throw new McpError(ErrorCode.InvalidParams, 'task_id is required and must be a string');
+      }
+      
       const response = await this.client.getVeo1080pVideo(task_id, index);
       
       return {
@@ -477,18 +629,10 @@ class KieAiMcpServer {
         ]
       };
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to get 1080p video';
-      return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify({
-              success: false,
-              error: message
-            }, null, 2)
-          }
-        ]
-      };
+      return this.formatError('get_veo3_1080p_video', error, {
+        task_id: 'Required: Veo3 task ID to get 1080p video for',
+        index: 'Optional: video index (for multiple video results)'
+      });
     }
   }
 
