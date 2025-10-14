@@ -335,45 +335,4 @@ MIT License - see LICENSE file for details.
 
 ## Changelog
 
-### v1.1.1 (2025-01-14)
-
-**Improvements:**
-- Added `KIE_AI_CALLBACK_URL` environment variable for default callback URL
-- Added `enableTranslation` parameter to Veo3 (auto-translate prompts to English)
-- Added `Auto` option to Veo3 `aspectRatio`
-- Exposed `callBackUrl` parameter in Veo3 tool schema
-- Veo3 tool now fully aligned with official Kie.ai API documentation
-
-### v1.1.0 (2025-01-14)
-
-**Breaking Changes:**
-- Migrated from `/playground/*` to official `/jobs/*` API endpoints for all Nano Banana operations
-- Updated status check endpoint from `/playground/recordInfo` to `/jobs/recordInfo`
-
-**New Features:**
-- Added `upscale_nano_banana` tool for image upscaling (1-4x) with optional GFPGAN face enhancement
-- Added `upscale_nano_banana` tool for image upscaling (1-4x) with optional GFPGAN face enhancement
-- Added `output_format` parameter (png/jpeg) to `generate_nano_banana` and `edit_nano_banana`
-- Added `image_size` parameter (11 aspect ratios) to `generate_nano_banana` and `edit_nano_banana`
-
-**Improvements:**
-- Increased prompt max length from 1,000 to 5,000 characters for Nano Banana tools
-- Increased max input images from 5 to 10 for `edit_nano_banana`
-- Enhanced `get_task_status` to properly parse `resultJson` and extract result URLs
-- Improved task status mapping: `waiting` → `processing`, `success` → `completed`, `fail` → `failed`
-- Task status now automatically updates local database with API responses
-- Better error message handling from API responses
-
-**Documentation:**
-- Updated README with all new parameters and tools
-- Corrected API endpoints to match official Kie.ai documentation
-- Added comprehensive examples for all tools
-
-### v1.0.0 (2024-12-XX)
-- Initial release
-- Nano Banana image generation and editing
-- Veo3 video generation
-- 1080p video upgrade support
-- SQLite task tracking
-- Smart endpoint routing
-- Comprehensive error handling
+See [CHANGELOG.md](CHANGELOG.md) for detailed version history and release notes.
