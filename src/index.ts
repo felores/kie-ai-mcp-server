@@ -27,7 +27,7 @@ class KieAiMcpServer {
   constructor() {
     this.server = new Server({
       name: 'kie-ai-mcp-server',
-      version: '1.1.2',
+      version: '1.1.3',
     });
 
     // Initialize client with config from environment
@@ -94,7 +94,7 @@ class KieAiMcpServer {
       return {
         tools: [
           {
-            name: 'generate_nano_banana',
+            name: 'nano_banana_generate',
             description: 'Generate images using Google\'s Gemini 2.5 Flash Image Preview (Nano Banana)',
             inputSchema: {
               type: 'object',
@@ -122,7 +122,7 @@ class KieAiMcpServer {
             }
           },
           {
-            name: 'edit_nano_banana',
+            name: 'nano_banana_edit',
             description: 'Edit images using natural language prompts with Nano Banana Edit',
             inputSchema: {
               type: 'object',
@@ -157,7 +157,7 @@ class KieAiMcpServer {
             }
           },
           {
-            name: 'upscale_nano_banana',
+            name: 'nano_banana_upscale',
             description: 'Upscale images using Nano Banana Upscale with optional face enhancement',
             inputSchema: {
               type: 'object',
@@ -184,7 +184,7 @@ class KieAiMcpServer {
             }
           },
           {
-            name: 'generate_veo3_video',
+            name: 'veo3_generate_video',
             description: 'Generate professional-quality videos using Google\'s Veo3 API',
             inputSchema: {
               type: 'object',
@@ -278,7 +278,7 @@ class KieAiMcpServer {
             }
           },
           {
-            name: 'get_veo3_1080p_video',
+            name: 'veo3_get_1080p_video',
             description: 'Get 1080P high-definition version of a Veo3 video (not available for fallback mode videos)',
             inputSchema: {
               type: 'object',
@@ -305,17 +305,17 @@ class KieAiMcpServer {
         const { name, arguments: args } = request.params;
 
         switch (name) {
-          case 'generate_nano_banana':
-            return await this.handleGenerateNanoBanana(args);
+          case 'nano_banana_generate':
+            return await this.handleNanoBananaGenerate(args);
           
-          case 'edit_nano_banana':
-            return await this.handleEditNanoBanana(args);
+          case 'nano_banana_edit':
+            return await this.handleNanoBananaEdit(args);
           
-          case 'upscale_nano_banana':
-            return await this.handleUpscaleNanoBanana(args);
+          case 'nano_banana_upscale':
+            return await this.handleNanoBananaUpscale(args);
           
-          case 'generate_veo3_video':
-            return await this.handleGenerateVeo3Video(args);
+          case 'veo3_generate_video':
+            return await this.handleVeo3GenerateVideo(args);
           
           case 'get_task_status':
             return await this.handleGetTaskStatus(args);
@@ -323,8 +323,8 @@ class KieAiMcpServer {
           case 'list_tasks':
             return await this.handleListTasks(args);
           
-          case 'get_veo3_1080p_video':
-            return await this.handleGetVeo1080pVideo(args);
+          case 'veo3_get_1080p_video':
+            return await this.handleVeo3Get1080pVideo(args);
           
           default:
             throw new McpError(
@@ -343,7 +343,7 @@ class KieAiMcpServer {
     });
   }
 
-  private async handleGenerateNanoBanana(args: any) {
+  private async handleNanoBananaGenerate(args: any) {
     try {
       const request = NanoBananaGenerateSchema.parse(args);
       
@@ -371,7 +371,7 @@ class KieAiMcpServer {
         ]
       };
     } catch (error) {
-      return this.formatError('generate_nano_banana', error, {
+      return this.formatError('nano_banana_generate', error, {
         prompt: 'Required: text description of image to generate (max 5000 chars)',
         output_format: 'Optional: "png" or "jpeg"',
         image_size: 'Optional: aspect ratio like "16:9", "1:1", etc.'
@@ -379,7 +379,7 @@ class KieAiMcpServer {
     }
   }
 
-  private async handleEditNanoBanana(args: any) {
+  private async handleNanoBananaEdit(args: any) {
     try {
       const request = NanoBananaEditSchema.parse(args);
       
@@ -407,7 +407,7 @@ class KieAiMcpServer {
         ]
       };
     } catch (error) {
-      return this.formatError('edit_nano_banana', error, {
+      return this.formatError('nano_banana_edit', error, {
         prompt: 'Required: editing instructions (max 5000 chars)',
         image_urls: 'Required: array of 1-10 image URLs to edit',
         output_format: 'Optional: "png" or "jpeg"',
@@ -416,7 +416,7 @@ class KieAiMcpServer {
     }
   }
 
-  private async handleUpscaleNanoBanana(args: any) {
+  private async handleNanoBananaUpscale(args: any) {
     try {
       const request = NanoBananaUpscaleSchema.parse(args);
       
@@ -444,7 +444,7 @@ class KieAiMcpServer {
         ]
       };
     } catch (error) {
-      return this.formatError('upscale_nano_banana', error, {
+      return this.formatError('nano_banana_upscale', error, {
         image: 'Required: URL of image to upscale (jpeg/png/webp, max 10MB)',
         scale: 'Optional: upscale factor 1-4 (default: 2)',
         face_enhance: 'Optional: enable face enhancement (default: false)'
@@ -452,7 +452,7 @@ class KieAiMcpServer {
     }
   }
 
-  private async handleGenerateVeo3Video(args: any) {
+  private async handleVeo3GenerateVideo(args: any) {
     try {
       const request = Veo3GenerateSchema.parse(args);
       
@@ -485,7 +485,7 @@ class KieAiMcpServer {
         ]
       };
     } catch (error) {
-      return this.formatError('generate_veo3_video', error, {
+      return this.formatError('veo3_generate_video', error, {
         prompt: 'Required: video description (max 2000 chars)',
         imageUrls: 'Optional: array with 1 image URL for image-to-video',
         model: 'Optional: "veo3" (quality) or "veo3_fast" (cost-efficient)',
@@ -604,7 +604,7 @@ class KieAiMcpServer {
     }
   }
 
-  private async handleGetVeo1080pVideo(args: any) {
+  private async handleVeo3Get1080pVideo(args: any) {
     try {
       const { task_id, index } = args;
       
@@ -629,7 +629,7 @@ class KieAiMcpServer {
         ]
       };
     } catch (error) {
-      return this.formatError('get_veo3_1080p_video', error, {
+      return this.formatError('veo3_get_1080p_video', error, {
         task_id: 'Required: Veo3 task ID to get 1080p video for',
         index: 'Optional: video index (for multiple video results)'
       });
