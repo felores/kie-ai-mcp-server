@@ -324,7 +324,7 @@ class KieAiMcpServer {
                 },
                 callBackUrl: {
                   type: 'string',
-                  description: 'URL to receive task completion updates (required for all requests)',
+                  description: 'URL to receive task completion updates (optional, will use KIE_AI_CALLBACK_URL env var if not provided)',
                   format: 'uri'
                 },
                 style: {
@@ -369,7 +369,7 @@ class KieAiMcpServer {
                   multipleOf: 0.01
                 }
               },
-              required: ['prompt', 'customMode', 'instrumental', 'model', 'callBackUrl']
+              required: ['prompt', 'customMode', 'instrumental', 'model']
             }
           }
         ]
@@ -719,6 +719,11 @@ class KieAiMcpServer {
     try {
       const request = SunoGenerateSchema.parse(args);
       
+      // Use environment variable as fallback if callBackUrl not provided
+      if (!request.callBackUrl && process.env.KIE_AI_CALLBACK_URL) {
+        request.callBackUrl = process.env.KIE_AI_CALLBACK_URL;
+      }
+      
       const response = await this.client.generateSunoMusic(request);
       
       if (response.code === 200 && response.data?.taskId) {
@@ -761,7 +766,7 @@ class KieAiMcpServer {
         customMode: 'Required: Enable advanced customization (true/false)',
         instrumental: 'Required: Generate instrumental music (true/false)',
         model: 'Required: AI model version (V3_5, V4, V4_5, V4_5PLUS, V5)',
-        callBackUrl: 'Required: URL for task completion notifications',
+        callBackUrl: 'Optional: URL for task completion notifications (uses KIE_AI_CALLBACK_URL env var if not provided)',
         style: 'Optional: Music style/genre (required in custom mode)',
         title: 'Optional: Track title (required in custom mode, max 80 chars)',
         negativeTags: 'Optional: Styles to exclude (max 200 chars)',

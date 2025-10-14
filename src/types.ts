@@ -37,7 +37,7 @@ export const SunoGenerateSchema = z.object({
   customMode: z.boolean(),
   instrumental: z.boolean(),
   model: z.enum(['V3_5', 'V4', 'V4_5', 'V4_5PLUS', 'V5']),
-  callBackUrl: z.string().url(),
+  callBackUrl: z.string().url().optional(),
   style: z.string().max(1000).optional(),
   title: z.string().max(80).optional(),
   negativeTags: z.string().max(200).optional(),
@@ -46,6 +46,12 @@ export const SunoGenerateSchema = z.object({
   weirdnessConstraint: z.number().min(0).max(1).multipleOf(0.01).optional(),
   audioWeight: z.number().min(0).max(1).multipleOf(0.01).optional()
 }).refine((data) => {
+  // Check if callBackUrl is provided directly or via environment variable
+  const hasCallBackUrl = data.callBackUrl || process.env.KIE_AI_CALLBACK_URL;
+  if (!hasCallBackUrl) {
+    return false;
+  }
+  
   if (data.customMode) {
     if (data.instrumental) {
       return data.style && data.title;
@@ -55,8 +61,8 @@ export const SunoGenerateSchema = z.object({
   }
   return true;
 }, {
-  message: "In customMode: style and title are always required, prompt is required when instrumental is false",
-  path: ["customMode"]
+  message: "callBackUrl is required (either directly or via KIE_AI_CALLBACK_URL environment variable). In customMode: style and title are always required, prompt is required when instrumental is false",
+  path: ["callBackUrl"]
 });
 
 // TypeScript types

@@ -196,7 +196,7 @@ Generate music with AI using Suno models.
 - `customMode` (boolean, required): Enable advanced parameter customization
 - `instrumental` (boolean, required): Generate instrumental music (no lyrics)
 - `model` (enum, required): AI model version - "V3_5", "V4", "V4_5", "V4_5PLUS", or "V5"
-- `callBackUrl` (string, required): URL to receive task completion updates
+- `callBackUrl` (string, optional): URL to receive task completion updates (uses KIE_AI_CALLBACK_URL environment variable if not provided)
 - `style` (string, optional): Music style/genre (required in custom mode, max 1000 chars for V4_5+, V5; 200 for V3_5, V4)
 - `title` (string, optional): Track title (required in custom mode, max 80 chars)
 - `negativeTags` (string, optional): Music styles to exclude (max 200 chars)
@@ -205,7 +205,9 @@ Generate music with AI using Suno models.
 - `weirdnessConstraint` (number, optional): Creative deviation control (0-1, up to 2 decimal places)
 - `audioWeight` (number, optional): Audio feature balance (0-1, up to 2 decimal places)
 
-**Example:**
+**Examples:**
+
+With explicit callback URL:
 ```json
 {
   "prompt": "A calm and relaxing piano track with soft melodies",
@@ -218,7 +220,17 @@ Generate music with AI using Suno models.
 }
 ```
 
-**Note**: In custom mode, `style` and `title` are required. If `instrumental` is false, `prompt` is used as exact lyrics.
+Using environment variable (KIE_AI_CALLBACK_URL):
+```json
+{
+  "prompt": "A relaxing electronic music track",
+  "customMode": false,
+  "instrumental": false,
+  "model": "V4_5PLUS"
+}
+```
+
+**Note**: In custom mode, `style` and `title` are required. If `instrumental` is false, `prompt` is used as exact lyrics. The `callBackUrl` is optional and will use the `KIE_AI_CALLBACK_URL` environment variable if not provided.
 
 ## API Endpoints
 
