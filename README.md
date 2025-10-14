@@ -90,7 +90,35 @@ Or if installed globally:
 
 ## Available Tools
 
-### 1. `nano_banana_generate`
+### 1. `list_tasks`
+List recent tasks with their status.
+
+**Parameters:**
+- `limit` (integer, optional): Max tasks to return (default: 20, max: 100)
+- `status` (string, optional): Filter by status ("pending", "processing", "completed", "failed")
+
+**Example:**
+```json
+{
+  "limit": 10,
+  "status": "completed"
+}
+```
+
+### 2. `get_task_status`
+Check the status of a generation task.
+
+**Parameters:**
+- `task_id` (string, required): Task ID to check
+
+**Example:**
+```json
+{
+  "task_id": "281e5b0*********************f39b9"
+}
+```
+
+### 3. `nano_banana_generate`
 Generate images using Nano Banana.
 
 **Parameters:**
@@ -107,7 +135,7 @@ Generate images using Nano Banana.
 }
 ```
 
-### 2. `nano_banana_edit`
+### 4. `nano_banana_edit`
 Edit images using natural language prompts.
 
 **Parameters:**
@@ -126,7 +154,7 @@ Edit images using natural language prompts.
 }
 ```
 
-### 3. `nano_banana_upscale`
+### 5. `nano_banana_upscale`
 Upscale images with optional face enhancement.
 
 **Parameters:**
@@ -143,7 +171,7 @@ Upscale images with optional face enhancement.
 }
 ```
 
-### 4. `veo3_generate_video`
+### 6. `veo3_generate_video`
 Generate videos using Veo3.
 
 **Parameters:**
@@ -167,19 +195,6 @@ Generate videos using Veo3.
   "enableTranslation": true
 }
 ```
-
-### 5. `get_task_status`
-Check the status of a generation task.
-
-**Parameters:**
-- `task_id` (string, required): Task ID to check
-
-### 6. `list_tasks`
-List recent tasks with their status.
-
-**Parameters:**
-- `limit` (integer, optional): Max tasks to return (default: 20, max: 100)
-- `status` (string, optional): Filter by status ("pending", "processing", "completed", "failed")
 
 ### 7. `veo3_get_1080p_video`
 Get 1080P high-definition version of a Veo3 video.
@@ -339,7 +354,7 @@ Advanced controls with continuity:
 
 **Note**: The `callBackUrl` is optional and will use the `KIE_AI_CALLBACK_URL` environment variable if not provided. Turbo 2.5 generation is faster and supports language enforcement.
 
-### 7. `elevenlabs_ttsfx`
+### 11. `elevenlabs_ttsfx`
 Generate sound effects from text descriptions using ElevenLabs Sound Effects v2 model.
 
 **Parameters:**
