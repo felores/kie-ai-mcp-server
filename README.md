@@ -9,6 +9,7 @@ An MCP (Model Context Protocol) server that provides access to Kie.ai's AI APIs 
 - **Nano Banana Image Upscaling**: Upscale images 1-4x with optional face enhancement
 - **Veo3 Video Generation**: Professional-quality video generation with text-to-video and image-to-video capabilities
 - **1080p Video Upgrade**: Get high-definition versions of Veo3 videos
+- **Suno Music Generation**: AI-powered music creation with multiple models (V3_5, V4, V4_5, V4_5PLUS, V5)
 - **Task Management**: SQLite-based task tracking with status polling
 - **Smart Endpoint Routing**: Automatic detection of task types for status checking
 - **Error Handling**: Comprehensive error handling and validation
@@ -187,6 +188,38 @@ Get 1080P high-definition version of a Veo3 video.
 
 **Note**: Not available for videos generated with fallback mode.
 
+### 8. `suno_generate_music`
+Generate music with AI using Suno models.
+
+**Parameters:**
+- `prompt` (string, required): Description of desired audio content (max 5000 chars for V4_5+, V5; 3000 for V3_5, V4; 500 chars for non-custom mode)
+- `customMode` (boolean, required): Enable advanced parameter customization
+- `instrumental` (boolean, required): Generate instrumental music (no lyrics)
+- `model` (enum, required): AI model version - "V3_5", "V4", "V4_5", "V4_5PLUS", or "V5"
+- `callBackUrl` (string, required): URL to receive task completion updates
+- `style` (string, optional): Music style/genre (required in custom mode, max 1000 chars for V4_5+, V5; 200 for V3_5, V4)
+- `title` (string, optional): Track title (required in custom mode, max 80 chars)
+- `negativeTags` (string, optional): Music styles to exclude (max 200 chars)
+- `vocalGender` (enum, optional): Vocal gender preference - "m" or "f" (custom mode only)
+- `styleWeight` (number, optional): Style adherence strength (0-1, up to 2 decimal places)
+- `weirdnessConstraint` (number, optional): Creative deviation control (0-1, up to 2 decimal places)
+- `audioWeight` (number, optional): Audio feature balance (0-1, up to 2 decimal places)
+
+**Example:**
+```json
+{
+  "prompt": "A calm and relaxing piano track with soft melodies",
+  "customMode": true,
+  "instrumental": true,
+  "model": "V5",
+  "callBackUrl": "https://api.example.com/callback",
+  "style": "Classical",
+  "title": "Peaceful Piano Meditation"
+}
+```
+
+**Note**: In custom mode, `style` and `title` are required. If `instrumental` is false, `prompt` is used as exact lyrics.
+
 ## API Endpoints
 
 The server interfaces with these Kie.ai API endpoints:
@@ -198,6 +231,8 @@ The server interfaces with these Kie.ai API endpoints:
 - **Nano Banana Edit**: `POST /api/v1/jobs/createTask`
 - **Nano Banana Upscale**: `POST /api/v1/jobs/createTask`
 - **Nano Banana Status**: `GET /api/v1/jobs/recordInfo`
+- **Suno Music Generation**: `POST /api/v1/generate` ✅ **VALIDATED**
+- **Suno Music Status**: `GET /api/v1/generate?taskId=XXX` ✅ **VALIDATED**
 
 All endpoints follow official Kie.ai API documentation.
 
@@ -209,7 +244,7 @@ The server uses SQLite to track tasks:
 CREATE TABLE tasks (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   task_id TEXT UNIQUE NOT NULL,
-  api_type TEXT NOT NULL,  -- 'nano-banana', 'nano-banana-edit', 'veo3'
+  api_type TEXT NOT NULL,  -- 'nano-banana', 'nano-banana-edit', 'veo3', 'suno'
   status TEXT DEFAULT 'pending',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

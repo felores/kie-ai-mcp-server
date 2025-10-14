@@ -5,6 +5,7 @@ import {
   NanaBananaEditRequest,
   NanoBananaUpscaleRequest,
   Veo3GenerateRequest,
+  SunoGenerateRequest,
   ImageResponse,
   TaskResponse 
 } from './types.js';
@@ -102,18 +103,28 @@ export class KieAiClient {
       return this.makeRequest<any>(`/veo/record-info?taskId=${taskId}`, 'GET');
     } else if (apiType === 'nano-banana' || apiType === 'nano-banana-edit' || apiType === 'nano-banana-upscale') {
       return this.makeRequest<any>(`/jobs/recordInfo?taskId=${taskId}`, 'GET');
+    } else if (apiType === 'suno') {
+      return this.makeRequest<any>(`/generate?taskId=${taskId}`, 'GET');
     }
     
-    // Fallback: try jobs first, then veo (for tasks not in database)
+    // Fallback: try jobs first, then veo, then generate (for tasks not in database)
     try {
       return await this.makeRequest<any>(`/jobs/recordInfo?taskId=${taskId}`, 'GET');
     } catch (error) {
       try {
         return await this.makeRequest<any>(`/veo/record-info?taskId=${taskId}`, 'GET');
       } catch (veoError) {
-        throw error;
+        try {
+          return await this.makeRequest<any>(`/generate?taskId=${taskId}`, 'GET');
+        } catch (sunoError) {
+          throw error;
+        }
       }
     }
+  }
+
+  async generateSunoMusic(request: SunoGenerateRequest): Promise<KieAiResponse<TaskResponse>> {
+    return this.makeRequest<TaskResponse>('/generate', 'POST', request);
   }
 
   async getVeo1080pVideo(taskId: string, index?: number): Promise<KieAiResponse<any>> {

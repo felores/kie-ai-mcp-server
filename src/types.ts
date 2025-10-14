@@ -32,11 +32,39 @@ export const Veo3GenerateSchema = z.object({
   enableTranslation: z.boolean().default(true).optional()
 });
 
+export const SunoGenerateSchema = z.object({
+  prompt: z.string().min(1).max(5000),
+  customMode: z.boolean(),
+  instrumental: z.boolean(),
+  model: z.enum(['V3_5', 'V4', 'V4_5', 'V4_5PLUS', 'V5']),
+  callBackUrl: z.string().url(),
+  style: z.string().max(1000).optional(),
+  title: z.string().max(80).optional(),
+  negativeTags: z.string().max(200).optional(),
+  vocalGender: z.enum(['m', 'f']).optional(),
+  styleWeight: z.number().min(0).max(1).multipleOf(0.01).optional(),
+  weirdnessConstraint: z.number().min(0).max(1).multipleOf(0.01).optional(),
+  audioWeight: z.number().min(0).max(1).multipleOf(0.01).optional()
+}).refine((data) => {
+  if (data.customMode) {
+    if (data.instrumental) {
+      return data.style && data.title;
+    } else {
+      return data.style && data.title && data.prompt;
+    }
+  }
+  return true;
+}, {
+  message: "In customMode: style and title are always required, prompt is required when instrumental is false",
+  path: ["customMode"]
+});
+
 // TypeScript types
 export type NanoBananaGenerateRequest = z.infer<typeof NanoBananaGenerateSchema>;
 export type NanaBananaEditRequest = z.infer<typeof NanoBananaEditSchema>;
 export type NanoBananaUpscaleRequest = z.infer<typeof NanoBananaUpscaleSchema>;
 export type Veo3GenerateRequest = z.infer<typeof Veo3GenerateSchema>;
+export type SunoGenerateRequest = z.infer<typeof SunoGenerateSchema>;
 
 export interface KieAiResponse<T = any> {
   code: number;
@@ -56,7 +84,7 @@ export interface TaskResponse {
 export interface TaskRecord {
   id?: number;
   task_id: string;
-  api_type: 'nano-banana' | 'nano-banana-edit' | 'nano-banana-upscale' | 'veo3';
+  api_type: 'nano-banana' | 'nano-banana-edit' | 'nano-banana-upscale' | 'veo3' | 'suno';
   status: 'pending' | 'processing' | 'completed' | 'failed';
   created_at: string;
   updated_at: string;

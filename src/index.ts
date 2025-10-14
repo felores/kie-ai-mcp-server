@@ -16,6 +16,7 @@ import {
   NanoBananaEditSchema,
   NanoBananaUpscaleSchema,
   Veo3GenerateSchema,
+  SunoGenerateSchema,
   KieAiConfig 
 } from './types.js';
 
@@ -27,7 +28,7 @@ class KieAiMcpServer {
   constructor() {
     this.server = new Server({
       name: 'kie-ai-mcp-server',
-      version: '1.1.3',
+      version: '1.2.0',
     });
 
     // Initialize client with config from environment
@@ -295,6 +296,81 @@ class KieAiMcpServer {
               },
               required: ['task_id']
             }
+          },
+          {
+            name: 'suno_generate_music',
+            description: 'Generate music with AI using Suno models (V3_5, V4, V4_5, V4_5PLUS, V5)',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                prompt: {
+                  type: 'string',
+                  description: 'Description of the desired audio content. In custom mode: used as exact lyrics (max 5000 chars for V4_5+, V5; 3000 for V3_5, V4). In non-custom mode: core idea for auto-generated lyrics (max 500 chars)',
+                  minLength: 1,
+                  maxLength: 5000
+                },
+                customMode: {
+                  type: 'boolean',
+                  description: 'Enable advanced parameter customization. If true: requires style and title. If false: simplified mode with only prompt required'
+                },
+                instrumental: {
+                  type: 'boolean',
+                  description: 'Generate instrumental music (no lyrics). In custom mode: if true, only style and title required; if false, prompt used as exact lyrics'
+                },
+                model: {
+                  type: 'string',
+                  description: 'AI model version for generation',
+                  enum: ['V3_5', 'V4', 'V4_5', 'V4_5PLUS', 'V5']
+                },
+                callBackUrl: {
+                  type: 'string',
+                  description: 'URL to receive task completion updates (required for all requests)',
+                  format: 'uri'
+                },
+                style: {
+                  type: 'string',
+                  description: 'Music style/genre (required in custom mode, max 1000 chars for V4_5+, V5; 200 for V3_5, V4)',
+                  maxLength: 1000
+                },
+                title: {
+                  type: 'string',
+                  description: 'Track title (required in custom mode, max 80 chars)',
+                  maxLength: 80
+                },
+                negativeTags: {
+                  type: 'string',
+                  description: 'Music styles to exclude (optional, max 200 chars)',
+                  maxLength: 200
+                },
+                vocalGender: {
+                  type: 'string',
+                  description: 'Vocal gender preference (optional, only effective in custom mode)',
+                  enum: ['m', 'f']
+                },
+                styleWeight: {
+                  type: 'number',
+                  description: 'Strength of style adherence (optional, range 0-1, up to 2 decimal places)',
+                  minimum: 0,
+                  maximum: 1,
+                  multipleOf: 0.01
+                },
+                weirdnessConstraint: {
+                  type: 'number',
+                  description: 'Controls experimental/creative deviation (optional, range 0-1, up to 2 decimal places)',
+                  minimum: 0,
+                  maximum: 1,
+                  multipleOf: 0.01
+                },
+                audioWeight: {
+                  type: 'number',
+                  description: 'Balance weight for audio features (optional, range 0-1, up to 2 decimal places)',
+                  minimum: 0,
+                  maximum: 1,
+                  multipleOf: 0.01
+                }
+              },
+              required: ['prompt', 'customMode', 'instrumental', 'model', 'callBackUrl']
+            }
           }
         ]
       };
@@ -325,6 +401,9 @@ class KieAiMcpServer {
           
           case 'veo3_get_1080p_video':
             return await this.handleVeo3Get1080pVideo(args);
+          
+          case 'suno_generate_music':
+            return await this.handleSunoGenerateMusic(args);
           
           default:
             throw new McpError(
@@ -632,6 +711,64 @@ class KieAiMcpServer {
       return this.formatError('veo3_get_1080p_video', error, {
         task_id: 'Required: Veo3 task ID to get 1080p video for',
         index: 'Optional: video index (for multiple video results)'
+      });
+    }
+  }
+
+  private async handleSunoGenerateMusic(args: any) {
+    try {
+      const request = SunoGenerateSchema.parse(args);
+      
+      const response = await this.client.generateSunoMusic(request);
+      
+      if (response.code === 200 && response.data?.taskId) {
+        // Store task in database
+        await this.db.createTask({
+          task_id: response.data.taskId,
+          api_type: 'suno',
+          status: 'pending'
+        });
+        
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify({
+                success: true,
+                task_id: response.data.taskId,
+                message: 'Music generation task created successfully',
+                parameters: {
+                  model: request.model,
+                  customMode: request.customMode,
+                  instrumental: request.instrumental,
+                  callBackUrl: request.callBackUrl
+                },
+                next_steps: [
+                  'Use get_task_status to check generation progress',
+                  'Task completion will be sent to the provided callback URL',
+                  'Generation typically takes 1-3 minutes depending on model and length'
+                ]
+              }, null, 2)
+            }
+          ]
+        };
+      } else {
+        throw new Error(response.msg || 'Failed to create music generation task');
+      }
+    } catch (error) {
+      return this.formatError('suno_generate_music', error, {
+        prompt: 'Required: Description of desired audio content',
+        customMode: 'Required: Enable advanced customization (true/false)',
+        instrumental: 'Required: Generate instrumental music (true/false)',
+        model: 'Required: AI model version (V3_5, V4, V4_5, V4_5PLUS, V5)',
+        callBackUrl: 'Required: URL for task completion notifications',
+        style: 'Optional: Music style/genre (required in custom mode)',
+        title: 'Optional: Track title (required in custom mode, max 80 chars)',
+        negativeTags: 'Optional: Styles to exclude (max 200 chars)',
+        vocalGender: 'Optional: Vocal gender preference (m/f, custom mode only)',
+        styleWeight: 'Optional: Style adherence strength (0-1, 2 decimal places)',
+        weirdnessConstraint: 'Optional: Creative deviation control (0-1, 2 decimal places)',
+        audioWeight: 'Optional: Audio feature balance (0-1, 2 decimal places)'
       });
     }
   }

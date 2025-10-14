@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2025-01-14
+
+### Added
+- **Suno Music Generation**: New `suno_generate_music` tool for AI-powered music creation
+  - Support for all Suno models: V3_5, V4, V4_5, V4_5PLUS, V5
+  - Custom mode with advanced parameters (style, title, vocal gender, etc.)
+  - Instrumental and vocal music generation
+  - Comprehensive parameter validation and error handling
+  - Task tracking and status monitoring integration
+
+### Changed
+- Updated database schema to support 'suno' api_type
+- Enhanced task status routing to handle Suno music generation endpoints
+- Updated API endpoints documentation with Suno integration
+
+### Documentation
+- Added comprehensive Suno tool documentation with examples
+- Updated feature list and API endpoints sections
+- Enhanced parameter descriptions and usage guidelines
+
 ## [1.1.3] - 2025-01-14
 
 ### Breaking Changes
