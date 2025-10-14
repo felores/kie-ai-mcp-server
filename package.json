@@ -1,6 +1,6 @@
 {
-  "name": "@andrewlwn77/kie-ai-mcp-server",
-  "version": "1.0.2",
+  "name": "@felores/kie-ai-mcp-server",
+  "version": "1.0.3",
   "description": "MCP server for Kie.ai APIs (Nano Banana image generation/editing and Veo3 video generation)",
   "main": "dist/index.js",
   "bin": {
@@ -24,15 +24,15 @@
     "veo3",
     "model-context-protocol"
   ],
-  "author": "andrewlwn77",
+  "author": "felores",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/andrewlwn77/kie-ai-mcp-server.git"
+    "url": "git+https://github.com/felores/kie-ai-mcp-server.git"
   },
-  "homepage": "https://github.com/andrewlwn77/kie-ai-mcp-server#readme",
+  "homepage": "https://github.com/felores/kie-ai-mcp-server#readme",
   "bugs": {
-    "url": "https://github.com/andrewlwn77/kie-ai-mcp-server/issues"
+    "url": "https://github.com/felores/kie-ai-mcp-server/issues"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^0.4.0",
@@ -49,5 +49,10 @@
   },
   "engines": {
     "node": ">=18.0.0"
-  }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ]
 }

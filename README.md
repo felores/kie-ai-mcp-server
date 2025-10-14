@@ -22,14 +22,14 @@ An MCP (Model Context Protocol) server that provides access to Kie.ai's AI APIs 
 ### From NPM
 
 ```bash
-npm install -g @andrewlwn77/kie-ai-mcp-server
+npm install -g @felores/kie-ai-mcp-server
 ```
 
 ### From Source
 
 ```bash
 # Clone the repository
-git clone https://github.com/andrewlwn77/kie-ai-mcp-server.git
+git clone https://github.com/felores/kie-ai-mcp-server.git
 cd kie-ai-mcp-server
 
 # Install dependencies
@@ -75,7 +75,7 @@ Or if installed globally:
 {
   "kie-ai-mcp-server": {
     "command": "npx",
-    "args": ["-y", "@andrewlwn77/kie-ai-mcp-server"],
+    "args": ["-y", "@felores/kie-ai-mcp-server"],
     "env": {
       "KIE_AI_API_KEY": "your-api-key-here"
     }
@@ -285,7 +285,7 @@ See https://kie.ai/billing for detailed pricing.
 ## Support
 
 For issues related to:
-- **MCP Server**: Open an issue at https://github.com/andrewlwn77/kie-ai-mcp-server/issues
+- **MCP Server**: Open an issue at https://github.com/felores/kie-ai-mcp-server/issues
 - **Kie.ai API**: Contact support@kie.ai or check https://docs.kie.ai/
 - **API Keys**: Visit https://kie.ai/api-key
 
