@@ -23,6 +23,7 @@ import {
   ElevenLabsSoundEffectsSchema,
   ByteDanceSeedanceVideoSchema,
   RunwayAlephVideoSchema,
+  WanVideoSchema,
   KieAiConfig 
 } from './types.js';
 
@@ -34,7 +35,7 @@ class KieAiMcpServer {
   constructor() {
     this.server = new Server({
       name: 'kie-ai-mcp-server',
-      version: '1.6.0',
+      version: '1.7.0',
     });
 
     // Initialize client with config from environment
@@ -714,6 +715,65 @@ class KieAiMcpServer {
               },
               required: ['prompt', 'videoUrl']
             }
+          },
+          {
+            name: 'wan_video',
+            description: 'Generate videos using Alibaba Wan 2.5 models (unified tool for both text-to-video and image-to-video)',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                prompt: {
+                  type: 'string',
+                  description: 'Text prompt for video generation (max 800 characters)',
+                  minLength: 1,
+                  maxLength: 800
+                },
+                image_url: {
+                  type: 'string',
+                  description: 'URL of input image for image-to-video generation (optional - if not provided, uses text-to-video)',
+                  format: 'uri'
+                },
+                aspect_ratio: {
+                  type: 'string',
+                  description: 'Aspect ratio of the generated video (text-to-video only)',
+                  enum: ['16:9', '9:16', '1:1'],
+                  default: '16:9'
+                },
+                resolution: {
+                  type: 'string',
+                  description: 'Video resolution - 720p for faster generation, 1080p for higher quality',
+                  enum: ['720p', '1080p'],
+                  default: '1080p'
+                },
+                duration: {
+                  type: 'string',
+                  description: 'Duration of video in seconds (image-to-video only)',
+                  enum: ['5', '10'],
+                  default: '5'
+                },
+                negative_prompt: {
+                  type: 'string',
+                  description: 'Negative prompt to describe content to avoid (max 500 characters)',
+                  maxLength: 500,
+                  default: ''
+                },
+                enable_prompt_expansion: {
+                  type: 'boolean',
+                  description: 'Whether to enable prompt rewriting using LLM (improves short prompts but increases processing time)',
+                  default: true
+                },
+                seed: {
+                  type: 'integer',
+                  description: 'Random seed for reproducible results'
+                },
+                callBackUrl: {
+                  type: 'string',
+                  description: 'Optional: URL for task completion notifications (uses KIE_AI_CALLBACK_URL env var if not provided)',
+                  format: 'uri'
+                }
+              },
+              required: ['prompt']
+            }
           }
         ]
       };
@@ -762,6 +822,9 @@ class KieAiMcpServer {
           
           case 'runway_aleph_video':
             return await this.handleRunwayAlephVideo(args);
+          
+          case 'wan_video':
+            return await this.handleWanVideo(args);
           
           default:
             throw new McpError(
@@ -1620,6 +1683,90 @@ class KieAiMcpServer {
         prompt: 'Required: Text prompt for video transformation',
         videoUrl: 'Required: URL of input video',
         aspectRatio: 'Optional: Output video aspect ratio',
+        callBackUrl: 'Optional: URL for task completion notifications'
+      });
+    }
+  }
+
+  private async handleWanVideo(args: any) {
+    try {
+      const request = WanVideoSchema.parse(args);
+      
+      // Use environment variable as fallback if callBackUrl not provided
+      if (!request.callBackUrl && process.env.KIE_AI_CALLBACK_URL) {
+        request.callBackUrl = process.env.KIE_AI_CALLBACK_URL;
+      }
+      
+      const response = await this.client.generateWanVideo(request);
+      
+      if (response.code === 200 && response.data?.taskId) {
+        // Determine mode for user feedback
+        const isImageToVideo = !!request.image_url;
+        const mode = isImageToVideo ? 'Image-to-Video' : 'Text-to-Video';
+        const resolution = request.resolution || '1080p';
+        
+        // Store task in database
+        await this.db.createTask({
+          task_id: response.data.taskId,
+          api_type: 'wan-video',
+          status: 'pending'
+        });
+        
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify({
+                success: true,
+                task_id: response.data.taskId,
+                message: `Alibaba Wan 2.5 ${mode} generation task created successfully`,
+                parameters: {
+                  mode: mode,
+                  prompt: request.prompt.substring(0, 100) + (request.prompt.length > 100 ? '...' : ''),
+                  resolution: resolution,
+                  negative_prompt: request.negative_prompt || '',
+                  enable_prompt_expansion: request.enable_prompt_expansion !== false,
+                  ...(request.seed !== undefined && { seed: request.seed }),
+                  ...(isImageToVideo && { 
+                    image_url: request.image_url,
+                    duration: request.duration || '5'
+                  }),
+                  ...(!isImageToVideo && { 
+                    aspect_ratio: request.aspect_ratio || '16:9'
+                  })
+                },
+                next_steps: [
+                  'Use get_task_status to check generation progress',
+                  'Task completion will be sent to the provided callback URL',
+                  `${mode} generation typically takes 2-6 minutes depending on resolution and complexity`
+                ]
+              }, null, 2)
+            }
+          ]
+        };
+      } else {
+        throw new Error(response.msg || 'Failed to create Wan 2.5 video generation task');
+      }
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return this.formatError('wan_video', error, {
+          prompt: 'Required: Text prompt for video generation (max 800 characters)',
+          image_url: 'Optional: URL of input image for image-to-video mode',
+          aspect_ratio: 'Optional: Video aspect ratio for text-to-video (16:9, 9:16, 1:1, default: 16:9)',
+          resolution: 'Optional: Video resolution - 720p or 1080p (default: 1080p)',
+          duration: 'Optional: Video duration for image-to-video - 5 or 10 seconds (default: 5)',
+          negative_prompt: 'Optional: Negative prompt to describe content to avoid (max 500 characters)',
+          enable_prompt_expansion: 'Optional: Enable prompt rewriting using LLM (default: true)',
+          seed: 'Optional: Random seed for reproducible results',
+          callBackUrl: 'Optional: URL for task completion notifications (uses KIE_AI_CALLBACK_URL env var if not provided)'
+        });
+      }
+      
+      return this.formatError('wan_video', error, {
+        prompt: 'Required: Text prompt for video generation',
+        image_url: 'Optional: URL of input image',
+        aspect_ratio: 'Optional: Video aspect ratio',
+        resolution: 'Optional: Video resolution',
         callBackUrl: 'Optional: URL for task completion notifications'
       });
     }

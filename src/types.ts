@@ -178,6 +178,37 @@ export const RunwayAlephVideoSchema = z.object({
   path: ["callBackUrl"]
 });
 
+export const WanVideoSchema = z.object({
+  prompt: z.string().min(1).max(800),
+  image_url: z.string().url().optional(),
+  aspect_ratio: z.enum(['16:9', '9:16', '1:1']).default('16:9').optional(),
+  resolution: z.enum(['720p', '1080p']).default('1080p').optional(),
+  duration: z.enum(['5', '10']).default('5').optional(),
+  negative_prompt: z.string().max(500).default('').optional(),
+  enable_prompt_expansion: z.boolean().default(true).optional(),
+  seed: z.number().optional(),
+  callBackUrl: z.string().url().optional()
+}).refine((data) => {
+  // Check if callBackUrl is provided directly or via environment variable
+  const hasCallBackUrl = data.callBackUrl || process.env.KIE_AI_CALLBACK_URL;
+  if (!hasCallBackUrl) {
+    return false;
+  }
+  return true;
+}, {
+  message: "callBackUrl is required (either directly or via KIE_AI_CALLBACK_URL environment variable)",
+  path: ["callBackUrl"]
+}).refine((data) => {
+  // If image_url is provided, duration should be limited to options supported by image-to-video model
+  if (data.image_url) {
+    return !data.aspect_ratio || ['16:9', '9:16', '1:1'].includes(data.aspect_ratio);
+  }
+  return true;
+}, {
+  message: "Invalid aspect_ratio for image-to-video mode. Valid options: 16:9, 9:16, 1:1",
+  path: ["aspect_ratio"]
+});
+
 // TypeScript types
 export type NanoBananaGenerateRequest = z.infer<typeof NanoBananaGenerateSchema>;
 export type NanaBananaEditRequest = z.infer<typeof NanoBananaEditSchema>;
@@ -189,6 +220,7 @@ export type ElevenLabsTTSTurboRequest = z.infer<typeof ElevenLabsTTSTurboSchema>
 export type ElevenLabsSoundEffectsRequest = z.infer<typeof ElevenLabsSoundEffectsSchema>;
 export type ByteDanceSeedanceVideoRequest = z.infer<typeof ByteDanceSeedanceVideoSchema>;
 export type RunwayAlephVideoRequest = z.infer<typeof RunwayAlephVideoSchema>;
+export type WanVideoRequest = z.infer<typeof WanVideoSchema>;
 
 export interface KieAiResponse<T = any> {
   code: number;
@@ -208,7 +240,7 @@ export interface TaskResponse {
 export interface TaskRecord {
   id?: number;
   task_id: string;
-  api_type: 'nano-banana' | 'nano-banana-edit' | 'nano-banana-upscale' | 'veo3' | 'suno' | 'elevenlabs-tts' | 'elevenlabs-tts-turbo' | 'elevenlabs-sound-effects' | 'bytedance-seedance-video' | 'runway-aleph-video';
+  api_type: 'nano-banana' | 'nano-banana-edit' | 'nano-banana-upscale' | 'veo3' | 'suno' | 'elevenlabs-tts' | 'elevenlabs-tts-turbo' | 'elevenlabs-sound-effects' | 'bytedance-seedance-video' | 'runway-aleph-video' | 'wan-video';
   status: 'pending' | 'processing' | 'completed' | 'failed';
   created_at: string;
   updated_at: string;

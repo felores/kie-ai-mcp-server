@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.0] - 2025-01-14
+
+### Added
+- **Alibaba Wan 2.5 Video**: New `wan_video` tool for video generation (unified text-to-video and image-to-video)
+- **Text-to-Video Support**: Generate videos from text prompts using Alibaba's advanced Wan 2.5 model
+- **Image-to-Video Support**: Animate static images with natural language descriptions
+- **Smart Mode Detection**: Automatically detects text-to-video vs image-to-video based on parameters
+- **Prompt Expansion**: LLM-powered prompt rewriting for improved results with short prompts
+- **Flexible Resolutions**: 720p for faster generation, 1080p for higher quality
+- **Aspect Ratio Control**: Support for 16:9, 9:16, and 1:1 formats (text-to-video)
+- **Duration Control**: 5 or 10 second options for image-to-video generation
+- **Negative Prompts**: Fine-tune results by specifying content to avoid
+- **Seed Control**: Reproducible video generation with random seed support
+- **Task Integration**: Full database tracking and status monitoring for video generation
+
+### Technical
+- Added `WanVideoSchema` and `WanVideoRequest` types
+- Extended `TaskRecord` api_type with 'wan-video'
+- Updated API client with `generateWanVideo()` method
+- Enhanced task status routing for `/jobs/recordInfo` endpoint
+- Comprehensive parameter validation with callback URL fallback support
+- Smart endpoint selection based on mode (text-to-video vs image-to-video)
+- Model selection logic: `wan/2-5-text-to-video` vs `wan/2-5-image-to-video`
+
 ## [1.6.0] - 2025-01-14
 
 ### Added

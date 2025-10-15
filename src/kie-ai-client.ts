@@ -11,6 +11,7 @@ import {
   ElevenLabsSoundEffectsRequest,
   ByteDanceSeedanceVideoRequest,
   RunwayAlephVideoRequest,
+  WanVideoRequest,
   ImageResponse,
   TaskResponse 
 } from './types.js';
@@ -110,7 +111,9 @@ export class KieAiClient {
       return this.makeRequest<any>(`/jobs/recordInfo?taskId=${taskId}`, 'GET');
     } else if (apiType === 'suno') {
       return this.makeRequest<any>(`/generate/record-info?taskId=${taskId}`, 'GET');
-    } else if (apiType === 'elevenlabs-tts' || apiType === 'elevenlabs-tts-turbo' || apiType === 'elevenlabs-sound-effects' || apiType === 'bytedance-seedance-video' || apiType === 'runway-aleph-video') {
+    } else if (apiType === 'elevenlabs-tts' || apiType === 'elevenlabs-tts-turbo' || apiType === 'elevenlabs-sound-effects' || apiType === 'bytedance-seedance-video' || apiType === 'wan-video') {
+      return this.makeRequest<any>(`/jobs/recordInfo?taskId=${taskId}`, 'GET');
+    } else if (apiType === 'runway-aleph-video') {
       return this.makeRequest<any>(`/api/v1/aleph/record-info?taskId=${taskId}`, 'GET');
     }
     
@@ -248,6 +251,43 @@ export class KieAiClient {
     };
 
     return this.makeRequest<TaskResponse>('/api/v1/aleph/generate', 'POST', jobRequest);
+  }
+
+  async generateWanVideo(request: WanVideoRequest): Promise<KieAiResponse<TaskResponse>> {
+    // Determine model based on mode (text-to-video vs image-to-video)
+    const isImageToVideo = !!request.image_url;
+    const model = isImageToVideo ? 'wan/2-5-image-to-video' : 'wan/2-5-text-to-video';
+
+    const input: any = {
+      prompt: request.prompt,
+      resolution: request.resolution || '1080p',
+      negative_prompt: request.negative_prompt || '',
+      enable_prompt_expansion: request.enable_prompt_expansion !== false
+    };
+
+    // Add text-to-video specific parameters
+    if (!isImageToVideo) {
+      input.aspect_ratio = request.aspect_ratio || '16:9';
+    }
+
+    // Add image-to-video specific parameters
+    if (isImageToVideo) {
+      input.image_url = request.image_url;
+      input.duration = request.duration || '5';
+    }
+
+    // Add optional seed
+    if (request.seed !== undefined) {
+      input.seed = request.seed;
+    }
+
+    const jobRequest = {
+      model,
+      input,
+      callBackUrl: request.callBackUrl || process.env.KIE_AI_CALLBACK_URL
+    };
+
+    return this.makeRequest<TaskResponse>('/jobs/createTask', 'POST', jobRequest);
   }
 
   async getVeo1080pVideo(taskId: string, index?: number): Promise<KieAiResponse<any>> {

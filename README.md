@@ -620,6 +620,61 @@ Vertical video for social media:
 
 **Note**: The `callBackUrl` is optional and will use the `KIE_AI_CALLBACK_URL` environment variable if not provided. Video-to-video transformation typically takes 3-8 minutes depending on complexity and length.
 
+### 14. `wan_video`
+Generate videos using Alibaba Wan 2.5 models (unified tool for both text-to-video and image-to-video).
+
+**Parameters:**
+- `prompt` (string, required): Text prompt for video generation (max 800 chars)
+- `image_url` (string, optional): URL of input image for image-to-video generation (if not provided, uses text-to-video)
+- `aspect_ratio` (string, optional): Video aspect ratio for text-to-video (default: "16:9")
+  - Options: `16:9`, `9:16`, `1:1`
+- `resolution` (string, optional): Video resolution (default: "1080p")
+  - `720p`: Faster generation
+  - `1080p`: Higher quality
+- `duration` (string, optional): Video duration for image-to-video (default: "5")
+  - Options: `5`, `10` seconds
+- `negative_prompt` (string, optional): Negative prompt to describe content to avoid (max 500 chars, default: "")
+- `enable_prompt_expansion` (boolean, optional): Enable prompt rewriting using LLM (default: true)
+- `seed` (integer, optional): Random seed for reproducible results
+- `callBackUrl` (string, optional): URL for task completion notifications
+
+**Examples:**
+
+Text-to-video generation:
+```json
+{
+  "prompt": "A dimly lit jazz bar at night, wooden tables glowing under warm pendant lights. Patrons sip drinks and chat quietly while a three-piece band performs on stage. The saxophone player stands under a spotlight, gleaming instrument reflecting the light. No dialogue. Ambient audio: smooth live jazz music with saxophone and piano, clinking glasses, low murmur of audience conversations.",
+  "aspect_ratio": "16:9",
+  "resolution": "1080p",
+  "enable_prompt_expansion": true,
+  "seed": 42
+}
+```
+
+Image-to-video generation:
+```json
+{
+  "prompt": "The same woman from the reference image looks directly into the camera, takes a breath, then smiles brightly and speaks with enthusiasm: 'Have you heard? Alibaba Wan 2.5 API is now available on Kie.ai!'",
+  "image_url": "https://example.com/portrait.jpg",
+  "duration": "5",
+  "resolution": "1080p",
+  "negative_prompt": "blurry, low quality",
+  "seed": 123
+}
+```
+
+**Key Features:**
+- **Unified Interface**: Single tool for both text-to-video and image-to-video
+- **Smart Mode Detection**: Automatically detects mode based on presence of `image_url`
+- **Prompt Expansion**: LLM-powered prompt rewriting for better results with short prompts
+- **Flexible Resolutions**: 720p for speed, 1080p for quality
+- **Aspect Ratio Control**: Support for horizontal, vertical, and square formats (text-to-video)
+- **Duration Control**: 5 or 10 second options for image-to-video
+- **Negative Prompts**: Fine-tune results by specifying what to avoid
+- **Reproducible Results**: Seed control for consistent output
+
+**Note**: The `callBackUrl` is optional and will use the `KIE_AI_CALLBACK_URL` environment variable if not provided. Video generation typically takes 2-6 minutes depending on resolution and complexity.
+
 ## Why Developers Choose Kie.ai Over Alternatives
 
 ### 💸 **Better Value Than Fal.ai**
