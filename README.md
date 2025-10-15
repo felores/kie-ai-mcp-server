@@ -564,6 +564,62 @@ Video with specific ending frame:
 
 **Note**: The `callBackUrl` is optional and will use the `KIE_AI_CALLBACK_URL` environment variable if not provided. Video generation typically takes 2-5 minutes depending on quality and complexity.
 
+### 13. `runway_aleph_video`
+Transform videos using Runway Aleph video-to-video generation with AI-powered editing.
+
+**Parameters:**
+- `prompt` (string, required): Text prompt describing desired video transformation (max 1000 chars)
+- `videoUrl` (string, required): URL of the input video to transform
+- `waterMark` (string, optional): Watermark text to add to the video (max 100 chars, default: "")
+- `uploadCn` (boolean, optional): Whether to upload to China servers (default: false)
+- `aspectRatio` (enum, optional): Output video aspect ratio (default: "16:9")
+  - Options: `16:9`, `9:16`, `4:3`, `3:4`, `1:1`, `21:9`
+- `seed` (integer, optional): Random seed for reproducible results (1-999999)
+- `referenceImage` (string, optional): URL of reference image for style guidance
+- `callBackUrl` (string, optional): URL for task completion notifications
+
+**Examples:**
+
+Basic video transformation:
+```json
+{
+  "prompt": "Transform this video into a cinematic anime style with vibrant colors",
+  "videoUrl": "https://example.com/input-video.mp4",
+  "aspectRatio": "16:9"
+}
+```
+
+Advanced transformation with reference image:
+```json
+{
+  "prompt": "Apply the artistic style of the reference image to this video",
+  "videoUrl": "https://example.com/cooking-video.mp4",
+  "referenceImage": "https://example.com/van-gogh-painting.jpg",
+  "seed": 123456,
+  "waterMark": "My Channel"
+}
+```
+
+Vertical video for social media:
+```json
+{
+  "prompt": "Convert to a dreamy, ethereal style with soft lighting",
+  "videoUrl": "https://example.com/landscape-video.mp4",
+  "aspectRatio": "9:16",
+  "uploadCn": false
+}
+```
+
+**Key Features:**
+- **Video-to-Video Transformation**: Transform existing videos with AI-powered editing
+- **Style Transfer**: Apply artistic styles from text prompts or reference images
+- **Aspect Ratio Control**: Convert between horizontal, vertical, and square formats
+- **Reproducible Results**: Seed control for consistent transformations
+- **Watermark Support**: Add custom watermarks to transformed videos
+- **Reference Guidance**: Use reference images to guide the transformation style
+
+**Note**: The `callBackUrl` is optional and will use the `KIE_AI_CALLBACK_URL` environment variable if not provided. Video-to-video transformation typically takes 3-8 minutes depending on complexity and length.
+
 ## Why Developers Choose Kie.ai Over Alternatives
 
 ### 💸 **Better Value Than Fal.ai**

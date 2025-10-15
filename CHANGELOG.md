@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2025-01-14
+
+### Added
+- **Runway Aleph Video**: New `runway_aleph_video` tool for video-to-video transformation
+- **AI-Powered Video Editing**: Transform existing videos using text prompts and AI
+- **Style Transfer**: Apply artistic styles to videos with natural language descriptions
+- **Reference Image Guidance**: Use reference images to guide video transformation style
+- **Aspect Ratio Conversion**: Convert between horizontal, vertical, and square video formats
+- **Watermark Support**: Add custom watermarks to transformed videos
+- **Reproducible Transformations**: Seed control for consistent video editing results
+- **China Server Support**: Option to upload to China servers for global accessibility
+- **Task Integration**: Full database tracking and status monitoring for video transformations
+
+### Technical
+- Added `RunwayAlephVideoSchema` and `RunwayAlephVideoRequest` types
+- Extended `TaskRecord` api_type with 'runway-aleph-video'
+- Updated API client with `generateRunwayAlephVideo()` method
+- Enhanced task status routing for `/api/v1/aleph/record-info` endpoint
+- Comprehensive parameter validation with callback URL fallback support
+- Smart endpoint selection for Runway Aleph API integration
+
 ## [1.5.0] - 2025-01-14
 
 ### Added

@@ -10,6 +10,7 @@ import {
   ElevenLabsTTSTurboRequest,
   ElevenLabsSoundEffectsRequest,
   ByteDanceSeedanceVideoRequest,
+  RunwayAlephVideoRequest,
   ImageResponse,
   TaskResponse 
 } from './types.js';
@@ -109,8 +110,8 @@ export class KieAiClient {
       return this.makeRequest<any>(`/jobs/recordInfo?taskId=${taskId}`, 'GET');
     } else if (apiType === 'suno') {
       return this.makeRequest<any>(`/generate/record-info?taskId=${taskId}`, 'GET');
-    } else if (apiType === 'elevenlabs-tts' || apiType === 'elevenlabs-tts-turbo' || apiType === 'elevenlabs-sound-effects' || apiType === 'bytedance-seedance-video') {
-      return this.makeRequest<any>(`/jobs/recordInfo?taskId=${taskId}`, 'GET');
+    } else if (apiType === 'elevenlabs-tts' || apiType === 'elevenlabs-tts-turbo' || apiType === 'elevenlabs-sound-effects' || apiType === 'bytedance-seedance-video' || apiType === 'runway-aleph-video') {
+      return this.makeRequest<any>(`/api/v1/aleph/record-info?taskId=${taskId}`, 'GET');
     }
     
     // Fallback: try jobs first, then veo, then generate (for tasks not in database)
@@ -232,6 +233,21 @@ export class KieAiClient {
     };
 
     return this.makeRequest<TaskResponse>('/jobs/createTask', 'POST', jobRequest);
+  }
+
+  async generateRunwayAlephVideo(request: RunwayAlephVideoRequest): Promise<KieAiResponse<TaskResponse>> {
+    const jobRequest = {
+      prompt: request.prompt,
+      videoUrl: request.videoUrl,
+      waterMark: request.waterMark || '',
+      uploadCn: request.uploadCn || false,
+      aspectRatio: request.aspectRatio || '16:9',
+      ...(request.seed !== undefined && { seed: request.seed }),
+      ...(request.referenceImage && { referenceImage: request.referenceImage }),
+      callBackUrl: request.callBackUrl || process.env.KIE_AI_CALLBACK_URL
+    };
+
+    return this.makeRequest<TaskResponse>('/api/v1/aleph/generate', 'POST', jobRequest);
   }
 
   async getVeo1080pVideo(taskId: string, index?: number): Promise<KieAiResponse<any>> {

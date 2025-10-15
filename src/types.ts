@@ -157,6 +157,27 @@ export const ByteDanceSeedanceVideoSchema = z.object({
   path: ["aspect_ratio"]
 });
 
+export const RunwayAlephVideoSchema = z.object({
+  prompt: z.string().min(1).max(1000),
+  videoUrl: z.string().url(),
+  waterMark: z.string().max(100).default('').optional(),
+  uploadCn: z.boolean().default(false).optional(),
+  aspectRatio: z.enum(['16:9', '9:16', '4:3', '3:4', '1:1', '21:9']).default('16:9').optional(),
+  seed: z.number().int().min(1).max(999999).optional(),
+  referenceImage: z.string().url().optional(),
+  callBackUrl: z.string().url().optional()
+}).refine((data) => {
+  // Check if callBackUrl is provided directly or via environment variable
+  const hasCallBackUrl = data.callBackUrl || process.env.KIE_AI_CALLBACK_URL;
+  if (!hasCallBackUrl) {
+    return false;
+  }
+  return true;
+}, {
+  message: "callBackUrl is required (either directly or via KIE_AI_CALLBACK_URL environment variable)",
+  path: ["callBackUrl"]
+});
+
 // TypeScript types
 export type NanoBananaGenerateRequest = z.infer<typeof NanoBananaGenerateSchema>;
 export type NanaBananaEditRequest = z.infer<typeof NanoBananaEditSchema>;
@@ -167,6 +188,7 @@ export type ElevenLabsTTSRequest = z.infer<typeof ElevenLabsTTSSchema>;
 export type ElevenLabsTTSTurboRequest = z.infer<typeof ElevenLabsTTSTurboSchema>;
 export type ElevenLabsSoundEffectsRequest = z.infer<typeof ElevenLabsSoundEffectsSchema>;
 export type ByteDanceSeedanceVideoRequest = z.infer<typeof ByteDanceSeedanceVideoSchema>;
+export type RunwayAlephVideoRequest = z.infer<typeof RunwayAlephVideoSchema>;
 
 export interface KieAiResponse<T = any> {
   code: number;
@@ -186,7 +208,7 @@ export interface TaskResponse {
 export interface TaskRecord {
   id?: number;
   task_id: string;
-  api_type: 'nano-banana' | 'nano-banana-edit' | 'nano-banana-upscale' | 'veo3' | 'suno' | 'elevenlabs-tts' | 'elevenlabs-tts-turbo' | 'elevenlabs-sound-effects' | 'bytedance-seedance-video';
+  api_type: 'nano-banana' | 'nano-banana-edit' | 'nano-banana-upscale' | 'veo3' | 'suno' | 'elevenlabs-tts' | 'elevenlabs-tts-turbo' | 'elevenlabs-sound-effects' | 'bytedance-seedance-video' | 'runway-aleph-video';
   status: 'pending' | 'processing' | 'completed' | 'failed';
   created_at: string;
   updated_at: string;

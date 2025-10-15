@@ -22,6 +22,7 @@ import {
   ElevenLabsTTSTurboSchema,
   ElevenLabsSoundEffectsSchema,
   ByteDanceSeedanceVideoSchema,
+  RunwayAlephVideoSchema,
   KieAiConfig 
 } from './types.js';
 
@@ -33,7 +34,7 @@ class KieAiMcpServer {
   constructor() {
     this.server = new Server({
       name: 'kie-ai-mcp-server',
-      version: '1.5.0',
+      version: '1.6.0',
     });
 
     // Initialize client with config from environment
@@ -659,6 +660,60 @@ class KieAiMcpServer {
               },
               required: ['prompt']
             }
+          },
+          {
+            name: 'runway_aleph_video',
+            description: 'Transform videos using Runway Aleph video-to-video generation with AI-powered editing',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                prompt: {
+                  type: 'string',
+                  description: 'Text prompt describing the desired video transformation (max 1000 characters)',
+                  minLength: 1,
+                  maxLength: 1000
+                },
+                videoUrl: {
+                  type: 'string',
+                  description: 'URL of the input video to transform',
+                  format: 'uri'
+                },
+                waterMark: {
+                  type: 'string',
+                  description: 'Watermark text to add to the video',
+                  maxLength: 100,
+                  default: ''
+                },
+                uploadCn: {
+                  type: 'boolean',
+                  description: 'Whether to upload to China servers',
+                  default: false
+                },
+                aspectRatio: {
+                  type: 'string',
+                  description: 'Aspect ratio of the output video',
+                  enum: ['16:9', '9:16', '4:3', '3:4', '1:1', '21:9'],
+                  default: '16:9'
+                },
+                seed: {
+                  type: 'integer',
+                  description: 'Random seed for reproducible results (1-999999)',
+                  minimum: 1,
+                  maximum: 999999
+                },
+                referenceImage: {
+                  type: 'string',
+                  description: 'URL of reference image for style guidance',
+                  format: 'uri'
+                },
+                callBackUrl: {
+                  type: 'string',
+                  description: 'Optional: URL for task completion notifications (uses KIE_AI_CALLBACK_URL env var if not provided)',
+                  format: 'uri'
+                }
+              },
+              required: ['prompt', 'videoUrl']
+            }
           }
         ]
       };
@@ -704,6 +759,9 @@ class KieAiMcpServer {
           
           case 'bytedance_seedance_video':
             return await this.handleByteDanceSeedanceVideo(args);
+          
+          case 'runway_aleph_video':
+            return await this.handleRunwayAlephVideo(args);
           
           default:
             throw new McpError(
@@ -1491,6 +1549,77 @@ class KieAiMcpServer {
         aspect_ratio: 'Optional: Video aspect ratio',
         resolution: 'Optional: Video resolution',
         duration: 'Optional: Video duration in seconds 2-12',
+        callBackUrl: 'Optional: URL for task completion notifications'
+      });
+    }
+  }
+
+  private async handleRunwayAlephVideo(args: any) {
+    try {
+      const request = RunwayAlephVideoSchema.parse(args);
+      
+      // Use environment variable as fallback if callBackUrl not provided
+      if (!request.callBackUrl && process.env.KIE_AI_CALLBACK_URL) {
+        request.callBackUrl = process.env.KIE_AI_CALLBACK_URL;
+      }
+      
+      const response = await this.client.generateRunwayAlephVideo(request);
+      
+      if (response.code === 200 && response.data?.taskId) {
+        // Store task in database
+        await this.db.createTask({
+          task_id: response.data.taskId,
+          api_type: 'runway-aleph-video',
+          status: 'pending'
+        });
+        
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify({
+                success: true,
+                task_id: response.data.taskId,
+                message: 'Runway Aleph video-to-video transformation task created successfully',
+                parameters: {
+                  prompt: request.prompt.substring(0, 100) + (request.prompt.length > 100 ? '...' : ''),
+                  video_url: request.videoUrl,
+                  aspect_ratio: request.aspectRatio || '16:9',
+                  water_mark: request.waterMark || '',
+                  upload_cn: request.uploadCn || false,
+                  ...(request.seed !== undefined && { seed: request.seed }),
+                  ...(request.referenceImage && { reference_image: request.referenceImage })
+                },
+                next_steps: [
+                  'Use get_task_status to check transformation progress',
+                  'Task completion will be sent to the provided callback URL',
+                  'Video-to-video transformation typically takes 3-8 minutes depending on complexity and length'
+                ]
+              }, null, 2)
+            }
+          ]
+        };
+      } else {
+        throw new Error(response.msg || 'Failed to create Runway Aleph video transformation task');
+      }
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return this.formatError('runway_aleph_video', error, {
+          prompt: 'Required: Text prompt describing desired video transformation (max 1000 characters)',
+          videoUrl: 'Required: URL of the input video to transform',
+          waterMark: 'Optional: Watermark text to add to the video (max 100 characters)',
+          uploadCn: 'Optional: Whether to upload to China servers (default: false)',
+          aspectRatio: 'Optional: Output video aspect ratio (default: 16:9)',
+          seed: 'Optional: Random seed for reproducible results (1-999999)',
+          referenceImage: 'Optional: URL of reference image for style guidance',
+          callBackUrl: 'Optional: URL for task completion notifications (uses KIE_AI_CALLBACK_URL env var if not provided)'
+        });
+      }
+      
+      return this.formatError('runway_aleph_video', error, {
+        prompt: 'Required: Text prompt for video transformation',
+        videoUrl: 'Required: URL of input video',
+        aspectRatio: 'Optional: Output video aspect ratio',
         callBackUrl: 'Optional: URL for task completion notifications'
       });
     }
