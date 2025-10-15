@@ -1,27 +1,33 @@
 # Kie.ai MCP Server
 
-**Access multiple AI models with one API. Generate videos, images, music, and audio.**
+**Access State of the Art AI models at half the pricewith one MCP Server. Generate videos, images, music, and audio with the latest generative AI technologies using a developer-friendly API.**
 
-Access the world's best AI models through a single, developer-friendly API. Generate stunning videos, images, music, and audio at **lower cost than Fal.ai** with 99.9% uptime and 24/7 support.
+ Generate stunning videos, images, music, and audio at **30-50% lower cost** than competitors with 99.9% uptime and 24/7 human support.
 
 ## Why Choose Kie.ai MCP Server?
 
 | Feature | Kie.ai | Fal.ai | Replicate.com |
 |---------|--------|--------|---------------|
-| **Pricing** | Lower | Higher | Higher |
-| **Models** | All-in-one API | Limited | Separate APIs |
-| **Uptime** | 99.9% | Lower | 99.5% |
-| **Support** | 24/7 | Limited | Business hours |
-| **API Keys** | One key | Multiple keys | Multiple keys |
+| **Pricing** | 30-50% Lower | Higher | Higher |
+| **Uptime** | 99.9% | Not disclosed | Not disclosed |
+| **Support** | 24/7 Human | Email + Discord | 24/7 AI |
 | **Free Trial** | Yes | Limited | Limited |
 
 ### 🚀 **All AI Models in One API**
 - **Google Veo 3**: Cinematic video generation with synchronized audio and 1080p output
 - **Runway Aleph**: Advanced video editing with object removal and style transfer
 - **Suno V5**: Professional music generation with realistic vocals up to 8 minutes
-- **Nano Banana**: Lightning-fast image generation and editing
+- **Nano Banana**: Lightning-fast image generation, editing, and upscaling (unified tool)
 - **ElevenLabs**: Studio-quality text-to-speech and sound effects
-- **ByteDance Seedance**: High-quality video with text-to-video and image-to-video
+- **ByteDance Seedance**: High-quality video with text-to-video and image-to-video (unified)
+- **ByteDance Seedream V4**: Advanced image generation and editing with unified interface
+- **Qwen**: Powerful image generation and editing with acceleration options (unified)
+- **OpenAI 4o Image**: Advanced image generation, editing, and variant creation with GPT-4o (unified)
+- **Flux Kontext**: Professional image generation and editing with advanced features (unified)
+- **Alibaba Wan 2.5**: High-quality video generation with text-to-video and image-to-video (unified)
+- **Midjourney AI**: Industry-leading image and video generation with multiple modes (unified)
+- **Recraft Remove Background**: Professional AI-powered background removal with clean edge detection
+- **Ideogram V3 Reframe**: Intelligent image reframing and aspect ratio conversion with content-aware adaptation
 
 ### 💰 **Affordable Pricing**
 Pay-as-you-go credit system means you only pay for what you use. Good for startups and enterprises looking to reduce AI costs.
@@ -199,15 +205,26 @@ Check the status of a generation task.
 }
 ```
 
-### 3. `nano_banana_generate`
-Generate images using Nano Banana.
+### 3. `nano_banana_image`
+Generate, edit, and upscale images using Google's Gemini 2.5 Flash Image Preview (Nano Banana). This unified tool automatically detects the operation mode based on parameters.
+
+**Smart Mode Detection:**
+- **Generate mode**: Provide `prompt` only
+- **Edit mode**: Provide `prompt` + `image_urls`
+- **Upscale mode**: Provide `image` (+ optional `scale`)
 
 **Parameters:**
-- `prompt` (string, required): Text description of the image to generate (max 5000 chars)
-- `output_format` (string, optional): "png" or "jpeg" (default: "png")
-- `image_size` (string, optional): Aspect ratio - "1:1", "9:16", "16:9", "3:4", "4:3", "3:2", "2:3", "5:4", "4:5", "21:9", "auto" (default: "1:1")
+- `prompt` (string, optional): Text description for generate/edit modes (max 5000 chars)
+- `image_urls` (array, optional): URLs of images for edit mode (1-10 URLs)
+- `image` (string, optional): URL of image for upscale mode (max 10MB, jpeg/png/webp)
+- `scale` (integer, optional): Upscale factor for upscale mode, 1-4 (default: 2)
+- `face_enhance` (boolean, optional): Enable face enhancement for upscale mode (default: false)
+- `output_format` (string, optional): "png" or "jpeg" for generate/edit modes (default: "png")
+- `image_size` (string, optional): Aspect ratio for generate/edit modes - "1:1", "9:16", "16:9", "3:4", "4:3", "3:2", "2:3", "5:4", "4:5", "21:9", "auto" (default: "1:1")
 
-**Example:**
+**Examples:**
+
+*Generate mode:*
 ```json
 {
   "prompt": "A surreal painting of a giant banana floating in space",
@@ -216,16 +233,7 @@ Generate images using Nano Banana.
 }
 ```
 
-### 4. `nano_banana_edit`
-Edit images using natural language prompts.
-
-**Parameters:**
-- `prompt` (string, required): Description of edits to make (max 5000 chars)
-- `image_urls` (array, required): URLs of images to edit (max 10)
-- `output_format` (string, optional): "png" or "jpeg" (default: "png")
-- `image_size` (string, optional): Aspect ratio (default: "1:1")
-
-**Example:**
+*Edit mode:*
 ```json
 {
   "prompt": "Add a rainbow arching over the mountains",
@@ -235,15 +243,7 @@ Edit images using natural language prompts.
 }
 ```
 
-### 5. `nano_banana_upscale`
-Upscale images with optional face enhancement.
-
-**Parameters:**
-- `image` (string, required): URL of image to upscale (max 10MB, jpeg/png/webp)
-- `scale` (integer, optional): Upscale factor 1-4 (default: 2)
-- `face_enhance` (boolean, optional): Enable GFPGAN face enhancement (default: false)
-
-**Example:**
+*Upscale mode:*
 ```json
 {
   "image": "https://example.com/image.jpg",
@@ -252,7 +252,7 @@ Upscale images with optional face enhancement.
 }
 ```
 
-### 6. `veo3_generate_video`
+### 4. `veo3_generate_video`
 Generate videos using Veo3.
 
 **Parameters:**
@@ -277,7 +277,7 @@ Generate videos using Veo3.
 }
 ```
 
-### 7. `veo3_get_1080p_video`
+### 5. `veo3_get_1080p_video`
 Get 1080P high-definition version of a Veo3 video.
 
 **Parameters:**
@@ -286,7 +286,7 @@ Get 1080P high-definition version of a Veo3 video.
 
 **Note**: Not available for videos generated with fallback mode.
 
-### 8. `suno_generate_music`
+### 6. `suno_generate_music`
 Generate music with AI using Suno models.
 
 **Parameters:**
@@ -339,7 +339,7 @@ Using explicit model (overrides default V5):
 
 **Note**: In custom mode, `style` and `title` are required. If `instrumental` is false, `prompt` is used as exact lyrics. The `callBackUrl` is optional and will use the `KIE_AI_CALLBACK_URL` environment variable if not provided. The `model` parameter defaults to "V5" but can be explicitly set to any available version.
 
-### 9. `elevenlabs_tts`
+### 7. `elevenlabs_tts`
 Generate speech from text using ElevenLabs TTS models (Turbo 2.5 by default, with optional Multilingual v2 support).
 
 **Parameters:**
@@ -395,7 +395,7 @@ Advanced voice controls with context (Multilingual model):
 
 **Note**: The `callBackUrl` is optional and will use the `KIE_AI_CALLBACK_URL` environment variable if not provided. Choose Turbo model for speed and language enforcement, or Multilingual model for context-aware speech generation.
 
-### 10. `elevenlabs_ttsfx`
+### 8. `elevenlabs_ttsfx`
 Generate sound effects from text descriptions using ElevenLabs Sound Effects v2 model.
 
 **Parameters:**
@@ -447,7 +447,7 @@ Looping ambient sound:
 
 **Note**: The `callBackUrl` is optional and will use the `KIE_AI_CALLBACK_URL` environment variable if not provided. Sound effects generation typically takes 30-90 seconds depending on complexity.
 
-### 12. `bytedance_seedance_video`
+### 9. `bytedance_seedance_video`
 Generate videos using ByteDance Seedance models (unified tool for both text-to-video and image-to-video).
 
 **Parameters:**
@@ -515,7 +515,143 @@ Video with specific ending frame:
 
 **Note**: The `callBackUrl` is optional and will use the `KIE_AI_CALLBACK_URL` environment variable if not provided. Video generation typically takes 2-5 minutes depending on quality and complexity.
 
-### 13. `runway_aleph_video`
+### 10. `bytedance_seedream_image`
+Generate and edit images using ByteDance Seedream V4 models (unified tool for both text-to-image and image editing).
+
+**Parameters:**
+- `prompt` (string, required): Text prompt for image generation or editing (max 10000 chars)
+- `image_urls` (array, optional): Array of image URLs for editing mode (1-10 images, if not provided, uses text-to-image)
+- `image_size` (string, optional): Image aspect ratio (default: "1:1")
+  - Options: `1:1`, `4:3`, `3:4`, `16:9`, `9:16`, `21:9`, `9:21`, `3:2`, `2:3`
+- `image_resolution` (string, optional): Image resolution (default: "1K")
+  - `1K`: Standard resolution (1024px on shortest side)
+  - `2K`: High resolution (2048px on shortest side)
+  - `4K`: Ultra high resolution (4096px on shortest side)
+- `max_images` (integer, optional): Number of images to generate (1-6, default: 1)
+- `seed` (integer, optional): Random seed for reproducible results (default: -1 for random)
+- `callBackUrl` (string, optional): URL for task completion notifications
+
+**Examples:**
+
+Text-to-image generation:
+```json
+{
+  "prompt": "A majestic dragon perched atop a crystal mountain at sunset, digital art style",
+  "image_size": "16:9",
+  "image_resolution": "2K",
+  "max_images": 2,
+  "seed": 42
+}
+```
+
+Image editing:
+```json
+{
+  "prompt": "Transform the day scene into a magical night with glowing stars and moonlight",
+  "image_urls": ["https://example.com/day-landscape.jpg"],
+  "image_size": "16:9",
+  "image_resolution": "2K",
+  "max_images": 1
+}
+```
+
+Multiple image editing:
+```json
+{
+  "prompt": "Apply a consistent cyberpunk aesthetic to all images with neon lights and futuristic elements",
+  "image_urls": [
+    "https://example.com/character1.jpg",
+    "https://example.com/character2.jpg",
+    "https://example.com/background.jpg"
+  ],
+  "image_resolution": "4K",
+  "max_images": 3
+}
+```
+
+**Key Features:**
+- **Unified Interface**: Single tool for both text-to-image and image editing
+- **Smart Mode Detection**: Automatically detects mode based on presence of `image_urls`
+- **High Resolution**: Support for 1K, 2K, and 4K output
+- **Multiple Images**: Generate up to 6 images in a single request
+- **Batch Editing**: Edit up to 10 images simultaneously with consistent style
+- **Reproducible Results**: Seed control for consistent output
+
+**Note**: The `callBackUrl` is optional and will use the `KIE_AI_CALLBACK_URL` environment variable if not provided. Image generation typically takes 30-120 seconds depending on resolution and complexity.
+
+### 11. `qwen_image`
+Generate and edit images using Qwen models (unified tool for both text-to-image and image editing).
+
+**Parameters:**
+- `prompt` (string, required): Text prompt for image generation or editing
+- `image_url` (string, optional): URL of image to edit (if not provided, uses text-to-image)
+- `image_size` (string, optional): Image size (default: "square_hd")
+  - Options: `square`, `square_hd`, `portrait_4_3`, `portrait_16_9`, `landscape_4_3`, `landscape_16_9`
+- `num_inference_steps` (integer, optional): Number of inference steps (default: 30 for text-to-image, 25 for edit)
+  - Text-to-image: 2-250, Edit: 2-49
+- `guidance_scale` (number, optional): CFG scale (default: 2.5 for text-to-image, 4 for edit)
+  - Range: 0-20
+- `enable_safety_checker` (boolean, optional): Enable safety checker (default: true)
+- `output_format` (string, optional): Output format (default: "png")
+  - Options: `png`, `jpeg`
+- `negative_prompt` (string, optional): Negative prompt (max 500 chars, default: " ")
+- `acceleration` (string, optional): Acceleration level (default: "none")
+  - Options: `none`, `regular`, `high`
+- `num_images` (string, optional): Number of images (edit mode only)
+  - Options: `1`, `2`, `3`, `4`
+- `sync_mode` (boolean, optional): Sync mode (edit mode only, default: false)
+- `seed` (number, optional): Random seed for reproducible results
+- `callBackUrl` (string, optional): URL for task completion notifications
+
+**Examples:**
+
+Text-to-image generation:
+```json
+{
+  "prompt": "A beautiful landscape with mountains and a lake at sunset",
+  "image_size": "landscape_16_9",
+  "num_inference_steps": 30,
+  "guidance_scale": 2.5,
+  "output_format": "png",
+  "seed": 42
+}
+```
+
+Image editing:
+```json
+{
+  "prompt": "Change the day scene to night with stars and moonlight",
+  "image_url": "https://example.com/day-landscape.jpg",
+  "image_size": "landscape_16_9",
+  "num_inference_steps": 25,
+  "guidance_scale": 4,
+  "num_images": "2",
+  "output_format": "png"
+}
+```
+
+High-acceleration generation:
+```json
+{
+  "prompt": "A futuristic city with flying cars",
+  "image_size": "square_hd",
+  "acceleration": "high",
+  "enable_safety_checker": true,
+  "negative_prompt": "blurry, low quality"
+}
+```
+
+**Key Features:**
+- **Unified Interface**: Single tool for both text-to-image and image editing
+- **Smart Mode Detection**: Automatically detects mode based on presence of `image_url`
+- **Flexible Sizing**: Support for multiple aspect ratios and resolutions
+- **Acceleration Options**: Speed up generation with acceleration levels
+- **Batch Generation**: Generate multiple images in edit mode
+- **Reproducible Results**: Seed control for consistent output
+
+**Note**: The `callBackUrl` is optional and will use the `KIE_AI_CALLBACK_URL` environment variable if not provided. Image generation typically takes 10-60 seconds depending on settings and acceleration level.
+
+### 12. `runway_aleph_video`
 Transform videos using Runway Aleph video-to-video generation with AI-powered editing.
 
 **Parameters:**
@@ -570,6 +706,124 @@ Vertical video for social media:
 - **Reference Guidance**: Use reference images to guide the transformation style
 
 **Note**: The `callBackUrl` is optional and will use the `KIE_AI_CALLBACK_URL` environment variable if not provided. Video-to-video transformation typically takes 3-8 minutes depending on complexity and length.
+
+### 13. `midjourney_generate`
+Generate images and videos using Midjourney AI models (unified tool for text-to-image, image-to-image, style reference, omni reference, and video generation).
+
+**Parameters:**
+- `prompt` (string, required): Text prompt describing the desired image or video (max 2000 chars)
+- `taskType` (string, optional): Task type for generation mode (auto-detected if not provided)
+  - Options: `mj_txt2img`, `mj_img2img`, `mj_style_reference`, `mj_omni_reference`, `mj_video`, `mj_video_hd`
+- `fileUrl` (string, optional): Single image URL for image-to-image or video generation (legacy - use fileUrls instead)
+- `fileUrls` (array, optional): Array of image URLs for image-to-image or video generation (recommended, max 10)
+- `speed` (string, optional): Generation speed (not required for video/omni tasks)
+  - Options: `relaxed`, `fast`, `turbo`
+- `aspectRatio` (string, optional): Output aspect ratio (default: "16:9")
+  - Options: `1:2`, `9:16`, `2:3`, `3:4`, `5:6`, `6:5`, `4:3`, `3:2`, `1:1`, `16:9`, `2:1`
+- `version` (string, optional): Midjourney model version (default: "7")
+  - Options: `7`, `6.1`, `6`, `5.2`, `5.1`, `niji6`
+- `variety` (integer, optional): Controls diversity of generated results (0-100, increment by 5)
+- `stylization` (integer, optional): Artistic style intensity (0-1000, suggested multiple of 50)
+- `weirdness` (integer, optional): Creativity and uniqueness level (0-3000, suggested multiple of 100)
+- `ow` (integer, optional): Omni intensity parameter for omni reference tasks (1-1000)
+- `waterMark` (string, optional): Watermark identifier (max 100 chars)
+- `enableTranslation` (boolean, optional): Auto-translate non-English prompts to English (default: false)
+- `videoBatchSize` (string, optional): Number of videos to generate (video mode only, default: "1")
+  - Options: `1`, `2`, `4`
+- `motion` (string, optional): Motion level for video generation (required for video mode, default: "high")
+  - Options: `high`, `low`
+- `high_definition_video` (boolean, optional): Use HD video generation instead of standard definition (default: false)
+- `callBackUrl` (string, optional): URL for task completion notifications
+
+**Examples:**
+
+Text-to-image generation:
+```json
+{
+  "prompt": "A majestic dragon perched atop a crystal mountain at sunset, digital art style",
+  "aspectRatio": "16:9",
+  "version": "7",
+  "speed": "fast",
+  "stylization": 500
+}
+```
+
+Image-to-image generation:
+```json
+{
+  "prompt": "Transform this portrait into a cyberpunk style with neon lights",
+  "fileUrls": ["https://example.com/portrait.jpg"],
+  "aspectRatio": "1:1",
+  "version": "7",
+  "variety": 10
+}
+```
+
+Standard definition video generation (default):
+```json
+{
+  "prompt": "Add gentle movement and atmospheric effects",
+  "fileUrls": ["https://example.com/landscape.jpg"],
+  "motion": "high",
+  "videoBatchSize": "1",
+  "aspectRatio": "16:9"
+}
+```
+
+High definition video generation (explicit):
+```json
+{
+  "prompt": "Create cinematic video with dramatic motion",
+  "fileUrls": ["https://example.com/cityscape.jpg"],
+  "motion": "high",
+  "high_definition_video": true,
+  "videoBatchSize": "2",
+  "aspectRatio": "16:9"
+}
+```
+
+Omni reference generation:
+```json
+{
+  "prompt": "Place this character in a fantasy forest setting",
+  "fileUrls": ["https://example.com/character.jpg"],
+  "ow": 500,
+  "aspectRatio": "16:9",
+  "version": "7"
+}
+```
+
+Style reference generation:
+```json
+{
+  "prompt": "Apply this artistic style to a new landscape",
+  "fileUrls": ["https://example.com/artistic-style.jpg"],
+  "taskType": "mj_style_reference",
+  "aspectRatio": "16:9",
+  "stylization": 700
+}
+```
+
+**Key Features:**
+- **Unified Interface**: Single tool for all Midjourney generation modes
+- **Smart Mode Detection**: Automatically detects task type based on parameters
+- **Video Default**: Uses standard definition video by default, HD only when explicitly requested
+- **Multiple Aspect Ratios**: Support for vertical, horizontal, square, and ultra-wide formats
+- **Style Control**: Fine-tune artistic style with stylization, variety, and weirdness parameters
+- **Speed Options**: Choose generation speed based on urgency (relaxed/fast/turbo)
+- **Model Versions**: Access different Midjourney models including niji for anime/illustration
+- **Reference Modes**: Advanced omni and style reference for character and style transfer
+- **Batch Generation**: Generate multiple videos in a single request
+
+**Smart Detection Logic:**
+- If `high_definition_video` is true → `mj_video_hd`
+- If `motion` or `videoBatchSize` present → `mj_video` (standard) or `mj_video_hd` (explicit)
+- If `ow` present → `mj_omni_reference`
+- If `taskType` is `mj_style_reference` → `mj_style_reference`
+- If `fileUrl`/`fileUrls` present → `mj_img2img`
+- Otherwise → `mj_txt2img`
+
+**Note**: The `callBackUrl` is optional and will use the `KIE_AI_CALLBACK_URL` environment variable if not provided. Generation times vary: text-to-image (1-3 minutes), image-to-image (2-4 minutes), video generation (3-8 minutes), reference modes (2-5 minutes).
 
 ### 14. `wan_video`
 Generate videos using Alibaba Wan 2.5 models (unified tool for both text-to-video and image-to-video).
@@ -626,6 +880,304 @@ Image-to-video generation:
 
 **Note**: The `callBackUrl` is optional and will use the `KIE_AI_CALLBACK_URL` environment variable if not provided. Video generation typically takes 2-6 minutes depending on resolution and complexity.
 
+### 15. `openai_4o_image`
+Generate, edit, and create image variants using OpenAI's GPT-4o image models (unified tool for text-to-image, image editing, and image variants).
+
+**Parameters:**
+- `prompt` (string, required): Text prompt for image generation or editing (max 4000 chars)
+- `filesUrl` (string, optional): URL of input image for editing/variants mode (if not provided, uses text-to-image)
+- `maskUrl` (string, optional): URL of mask image for editing mode (required for editing, must be same dimensions as filesUrl)
+- `nVariants` (integer, optional): Number of image variants to generate (1-4, default: 4)
+- `size` (string, optional): Output image size (default: "1024x1024")
+  - Options: `256x256`, `512x512`, `1024x1024`, `1792x1024`, `1024x1792`
+- `model` (string, optional): Model to use (default: "gpt-4o-image")
+  - Options: `gpt-4o-image`, `gpt-4o-image-mini`
+- `style` (string, optional): Image style (default: "vivid")
+  - Options: `vivid`, `natural`
+- `quality` (string, optional): Image quality (default: "standard")
+  - Options: `standard`, `hd`
+- `responseFormat` (string, optional): Response format (default: "url")
+  - Options: `url`, `b64_json`
+- `user` (string, optional): User identifier for tracking (max 100 chars)
+- `enableFallback` (boolean, optional): Enable fallback mechanism (default: true)
+- `callBackUrl` (string, optional): URL for task completion notifications
+
+**Examples:**
+
+Text-to-image generation:
+```json
+{
+  "prompt": "A futuristic city skyline at sunset with flying cars and neon lights, cyberpunk style",
+  "nVariants": 4,
+  "size": "1024x1024",
+  "quality": "hd",
+  "style": "vivid"
+}
+```
+
+Image editing with mask:
+```json
+{
+  "prompt": "Replace the cloudy sky with a clear starry night and add a full moon",
+  "filesUrl": "https://example.com/landscape.jpg",
+  "maskUrl": "https://example.com/landscape-mask.png",
+  "nVariants": 2,
+  "size": "1024x1024",
+  "quality": "hd"
+}
+```
+
+Image variants:
+```json
+{
+  "filesUrl": "https://example.com/portrait.jpg",
+  "nVariants": 4,
+  "style": "natural",
+  "quality": "standard"
+}
+```
+
+High-quality generation with fallback:
+```json
+{
+  "prompt": "A detailed oil painting of a serene mountain lake at dawn",
+  "nVariants": 2,
+  "size": "1792x1024",
+  "quality": "hd",
+  "model": "gpt-4o-image",
+  "enableFallback": true
+}
+```
+
+**Key Features:**
+- **Unified Interface**: Single tool for text-to-image, image editing, and image variants
+- **Smart Mode Detection**: Automatically detects mode based on provided parameters
+  - Text-to-Image: `prompt` provided, no `filesUrl`
+  - Image Editing: `filesUrl` + `maskUrl` provided
+  - Image Variants: `filesUrl` provided, no `maskUrl`
+- **Multiple Variants**: Generate up to 4 image variations in a single request
+- **Flexible Sizing**: Support for square, portrait, and landscape formats
+- **Quality Options**: Standard or HD quality for different use cases
+- **Style Control**: Choose between vivid (creative) or natural (realistic) styles
+- **Fallback Support**: Automatic fallback to FLUX_MAX model if GPT-4o fails
+- **Model Options**: Use full GPT-4o or mini model based on requirements
+
+**Smart Detection Logic:**
+- If `filesUrl` and `maskUrl` provided → Image Editing mode
+- If `filesUrl` provided but no `maskUrl` → Image Variants mode
+- If no `filesUrl` provided → Text-to-Image mode
+
+**Note**: The `callBackUrl` is optional and will use the `KIE_AI_CALLBACK_URL` environment variable if not provided. Image generation typically takes 30-120 seconds depending on complexity and quality settings. The fallback mechanism uses FLUX_MAX model when GPT-4o fails, ensuring reliable generation.
+
+### 16. `flux_kontext_image`
+Generate or edit images using Flux Kontext AI models (unified tool for text-to-image generation and image editing with advanced features).
+
+**Parameters:**
+- `prompt` (string, required): Text prompt describing the desired image or edit (max 5000 chars, English recommended)
+- `inputImage` (string, optional): Input image URL for editing mode (omit for text-to-image generation)
+- `aspectRatio` (string, optional): Output aspect ratio (default: "16:9")
+  - Options: `21:9` (ultra-wide), `16:9` (widescreen), `4:3` (standard), `1:1` (square), `3:4` (portrait), `9:16` (mobile portrait)
+- `outputFormat` (string, optional): Output image format (default: "jpeg")
+  - Options: `jpeg`, `png`
+- `model` (string, optional): Model version (default: "flux-kontext-pro")
+  - Options: `flux-kontext-pro` (standard), `flux-kontext-max` (enhanced)
+- `enableTranslation` (boolean, optional): Auto-translate non-English prompts (default: true)
+- `promptUpsampling` (boolean, optional): Enable prompt enhancement (default: false)
+- `safetyTolerance` (integer, optional): Content moderation level (default: 2)
+  - Generation mode: 0-6 (0=strict, 6=permissive)
+  - Editing mode: 0-2 (0=strict, 2=balanced)
+- `uploadCn` (boolean, optional): Route uploads via China servers (default: false)
+- `watermark` (string, optional): Watermark identifier to add to generated image
+- `callBackUrl` (string, optional): URL for task completion notifications
+
+**Examples:**
+
+Text-to-image generation:
+```json
+{
+  "prompt": "A serene mountain landscape at sunset with a lake reflecting the orange sky, photorealistic style",
+  "aspectRatio": "16:9",
+  "model": "flux-kontext-max",
+  "outputFormat": "png"
+}
+```
+
+Image editing:
+```json
+{
+  "prompt": "Replace the sky with a starry night and add glowing lanterns",
+  "inputImage": "https://example.com/original-image.jpg",
+  "aspectRatio": "16:9",
+  "safetyTolerance": 2,
+  "enableTranslation": false
+}
+```
+
+Mobile portrait generation:
+```json
+{
+  "prompt": "A futuristic cityscape with flying cars and neon lights, cyberpunk style",
+  "aspectRatio": "9:16",
+  "model": "flux-kontext-max",
+  "promptUpsampling": true
+}
+```
+
+**Key Features:**
+- **Unified Interface**: Single tool for both text-to-image generation and image editing
+- **Smart Mode Detection**: Automatically detects mode based on `inputImage` parameter
+  - Text-to-Image: No `inputImage` provided
+  - Image Editing: `inputImage` provided
+- **Advanced Translation**: Automatic translation of non-English prompts to English
+- **Multiple Aspect Ratios**: Support for ultra-wide, standard, square, and mobile formats
+- **Model Selection**: Choose between standard (pro) and enhanced (max) quality models
+- **Safety Controls**: Configurable content moderation with different levels for generation vs editing
+- **Prompt Enhancement**: Optional upsampling for improved generation quality
+- **Watermark Support**: Add custom watermarks to generated images
+- **Regional Optimization**: Choose optimal server region for uploads
+
+**Smart Detection Logic:**
+- If `inputImage` provided → Image Editing mode
+- If no `inputImage` provided → Text-to-Image mode
+
+**Performance:**
+- Text-to-image generation: 30-60 seconds
+- Image editing: 1-3 minutes
+- Enhanced model (flux-kontext-max): May take longer but provides higher quality
+
+**Note**: The `callBackUrl` is optional and will use the `KIE_AI_CALLBACK_URL` environment variable if not provided. Safety tolerance levels are automatically validated based on the generation mode (0-2 for editing, 0-6 for generation).
+
+### 17. `ideogram_reframe`
+Reframe images to different aspect ratios and sizes using Ideogram V3 Reframe model with intelligent content adaptation.
+
+**Parameters:**
+- `image_url` (string, required): URL of image to reframe (JPEG, PNG, WEBP, max 10MB)
+- `image_size` (string, optional): Output size for the reframed image (default: "square_hd")
+  - Options: `square`, `square_hd`, `portrait_4_3`, `portrait_16_9`, `landscape_4_3`, `landscape_16_9`
+- `rendering_speed` (string, optional): Rendering speed for generation (default: "BALANCED")
+  - Options: `TURBO` (fast), `BALANCED` (default), `QUALITY` (best)
+- `style` (string, optional): Style type for generation (default: "AUTO")
+  - Options: `AUTO`, `GENERAL`, `REALISTIC`, `DESIGN`
+- `num_images` (string, optional): Number of images to generate (default: "1")
+  - Options: `1`, `2`, `3`, `4`
+- `seed` (number, optional): Seed for reproducible results (default: 0)
+- `callBackUrl` (string, optional): URL for task completion notifications
+
+**Examples:**
+
+Basic reframing to square HD:
+```json
+{
+  "image_url": "https://example.com/landscape-photo.jpg",
+  "image_size": "square_hd"
+}
+```
+
+High-quality portrait reframing:
+```json
+{
+  "image_url": "https://example.com/group-photo.jpg",
+  "image_size": "portrait_9_16",
+  "rendering_speed": "QUALITY",
+  "style": "REALISTIC",
+  "num_images": "2"
+}
+```
+
+Fast generation with custom style:
+```json
+{
+  "image_url": "https://example.com/artwork.jpg",
+  "image_size": "landscape_16_9",
+  "rendering_speed": "TURBO",
+  "style": "DESIGN",
+  "seed": 42
+}
+```
+
+Multiple variants for social media:
+```json
+{
+  "image_url": "https://example.com/product-photo.jpg",
+  "image_size": "square",
+  "num_images": "4",
+  "style": "AUTO"
+}
+```
+
+**Key Features:**
+- **Intelligent Content Adaptation**: Smart content-aware reframing that preserves important elements
+- **Multiple Aspect Ratios**: Support for square, portrait, and landscape formats
+- **Rendering Speed Control**: Choose between speed (TURBO), balance (BALANCED), or quality (QUALITY)
+- **Style Options**: Auto-detection or specific style types (GENERAL, REALISTIC, DESIGN)
+- **Batch Generation**: Create multiple variants in a single request
+- **Reproducible Results**: Seed control for consistent output across sessions
+- **Professional Quality**: High-quality reframing with minimal artifacts
+
+**Output Sizes:**
+- **Square**: 1:1 aspect ratio for social media and avatars
+- **Square HD**: High-definition square format with better quality
+- **Portrait 4:3**: Standard portrait orientation
+- **Portrait 16:9**: Wide portrait for mobile and stories
+- **Landscape 4:3**: Traditional landscape orientation
+- **Landscape 16:9**: Widescreen format for displays and video
+
+**Use Cases:**
+- **Social Media**: Convert images to optimal formats for different platforms
+- **Content Adaptation**: Repurpose content for multiple aspect ratios
+- **Design Workflows**: Generate variations for different layout requirements
+- **Mobile Optimization**: Create mobile-friendly versions of desktop content
+- **Batch Processing**: Generate multiple format variants efficiently
+
+**Note**: The `callBackUrl` is optional and will use the `KIE_AI_CALLBACK_URL` environment variable if not provided. Image reframing typically takes 30-120 seconds depending on complexity, rendering speed, and output settings.
+
+### 18. `recraft_remove_background`
+Remove backgrounds from images using Recraft AI background removal model with professional-quality edge detection.
+
+**Parameters:**
+- `image` (string, required): URL of image to remove background from (PNG, JPG, WEBP, max 5MB, 16MP, 4096px max, 256px min)
+- `callBackUrl` (string, optional): URL for task completion notifications
+
+**Examples:**
+
+Basic background removal:
+```json
+{
+  "image": "https://example.com/portrait.jpg"
+}
+```
+
+With callback URL:
+```json
+{
+  "image": "https://example.com/product-photo.jpg",
+  "callBackUrl": "https://api.example.com/callback"
+}
+```
+
+**Key Features:**
+- **Professional Quality**: Clean edge detection with precise background separation
+- **Format Support**: Works with PNG, JPG, and WEBP images
+- **Size Optimization**: Handles images up to 16MP with optimal processing
+- **Fast Processing**: Quick background removal for most image types
+- **Automatic Enhancement**: Smart edge refinement for natural results
+
+**Use Cases:**
+- **Product Photography**: Create clean product images with transparent backgrounds
+- **Portrait Processing**: Remove backgrounds for professional headshots
+- **Design Workflows**: Isolate subjects for composite images
+- **E-commerce**: Prepare product images for catalogs
+- **Content Creation**: Create assets for social media and marketing
+
+**Technical Specifications:**
+- **Supported Formats**: PNG, JPG, WEBP
+- **Maximum File Size**: 5MB
+- **Maximum Resolution**: 16MP (4096px max dimension)
+- **Minimum Resolution**: 256px min dimension
+- **Output Format**: PNG with transparent background
+
+**Note**: The `callBackUrl` is optional and will use the `KIE_AI_CALLBACK_URL` environment variable if not provided. Background removal typically takes 10-30 seconds depending on image complexity and size.
+
 ## Why Developers Choose Kie.ai Over Alternatives
 
 ### 💸 **Better Value Than Fal.ai**
@@ -661,20 +1213,39 @@ Image-to-video generation:
 
 The server interfaces with these Kie.ai API endpoints:
 
-- **Veo3 Video Generation**: `POST /api/v1/veo/generate` ✅ **VALIDATED**
-- **Veo3 Video Status**: `GET /api/v1/veo/record-info` ✅ **VALIDATED**  
-- **Veo3 1080p Upgrade**: `GET /api/v1/veo/get-1080p-video` ✅ **VALIDATED**
+- **Veo3 Video Generation**: `POST /api/v1/veo/generate`
+- **Veo3 Video Status**: `GET /api/v1/veo/record-info`  
+- **Veo3 1080p Upgrade**: `GET /api/v1/veo/get-1080p-video`
 - **Nano Banana Generation**: `POST /api/v1/jobs/createTask` 
 - **Nano Banana Edit**: `POST /api/v1/jobs/createTask`
 - **Nano Banana Upscale**: `POST /api/v1/jobs/createTask`
 - **Nano Banana Status**: `GET /api/v1/jobs/recordInfo`
-- **Suno Music Generation**: `POST /api/v1/generate` ✅ **VALIDATED**
-- **Suno Music Status**: `GET /api/v1/generate?taskId=XXX` ✅ **VALIDATED**
-- **ElevenLabs TTS Generation**: `POST /api/v1/jobs/createTask` ✅ **VALIDATED**
-- **ElevenLabs TTS Status**: `GET /api/v1/jobs/recordInfo` ✅ **VALIDATED**
-- **ElevenLabs Sound Effects**: `POST /api/v1/jobs/createTask` ✅ **VALIDATED**
-- **ByteDance Seedance Video**: `POST /api/v1/jobs/createTask` ✅ **VALIDATED**
-- **ByteDance Seedance Status**: `GET /api/v1/jobs/recordInfo` ✅ **VALIDATED**
+- **Suno Music Generation**: `POST /api/v1/generate`
+- **Suno Music Status**: `GET /api/v1/generate?taskId=XXX`
+- **ElevenLabs TTS Generation**: `POST /api/v1/jobs/createTask`
+- **ElevenLabs TTS Status**: `GET /api/v1/jobs/recordInfo`
+- **ElevenLabs Sound Effects**: `POST /api/v1/jobs/createTask`
+- **ElevenLabs Sound Effects Status**: `GET /api/v1/jobs/recordInfo`
+- **ByteDance Seedance Video**: `POST /api/v1/jobs/createTask`
+- **ByteDance Seedance Status**: `GET /api/v1/jobs/recordInfo`
+- **ByteDance Seedream Image**: `POST /api/v1/jobs/createTask`
+- **ByteDance Seedream Status**: `GET /api/v1/jobs/recordInfo`
+- **Qwen Image Generation**: `POST /api/v1/jobs/createTask`
+- **Qwen Image Status**: `GET /api/v1/jobs/recordInfo`
+- **Runway Aleph Video**: `POST /api/v1/jobs/createTask`
+- **Runway Aleph Status**: `GET /api/v1/jobs/recordInfo`
+- **Midjourney Generation**: `POST /api/v1/jobs/createTask`
+- **Midjourney Status**: `GET /api/v1/jobs/recordInfo`
+- **Wan Video Generation**: `POST /api/v1/jobs/createTask`
+- **Wan Video Status**: `GET /api/v1/jobs/recordInfo`
+- **OpenAI 4o Image Generation**: `POST /api/v1/jobs/createTask`
+- **OpenAI 4o Image Status**: `GET /api/v1/jobs/recordInfo`
+- **Flux Kontext Image**: `POST /api/v1/jobs/createTask`
+- **Flux Kontext Status**: `GET /api/v1/jobs/recordInfo`
+- **Recraft Remove Background**: `POST /api/v1/jobs/createTask`
+- **Recraft Remove Background Status**: `GET /api/v1/jobs/recordInfo`
+- **Ideogram V3 Reframe**: `POST /api/v1/jobs/createTask`
+- **Ideogram V3 Reframe Status**: `GET /api/v1/jobs/recordInfo`
 
 All endpoints follow official Kie.ai API documentation.
 
@@ -686,7 +1257,7 @@ The server uses SQLite to track tasks:
 CREATE TABLE tasks (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   task_id TEXT UNIQUE NOT NULL,
-  api_type TEXT NOT NULL,  -- 'nano-banana', 'nano-banana-edit', 'veo3', 'suno', 'elevenlabs-tts', 'elevenlabs-tts-turbo', 'elevenlabs-sound-effects', 'bytedance-seedance-video'
+  api_type TEXT NOT NULL,  -- 'nano-banana', 'nano-banana-edit', 'nano-banana-upscale', 'veo3', 'suno', 'elevenlabs-tts', 'elevenlabs-sound-effects', 'bytedance-seedance-video', 'bytedance-seedream-image', 'qwen-image', 'runway-aleph-video', 'midjourney-generate', 'wan-video', 'openai-4o-image', 'flux-kontext-image', 'recraft-remove-background', 'ideogram-reframe'
   status TEXT DEFAULT 'pending',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -812,9 +1383,17 @@ The database `api_type` field determines which Kie.ai endpoint to query:
 | `nano-banana-upscale` | `/jobs/recordInfo` | Image upscaling |
 | `suno` | `/generate/record-info` | Music generation |
 | `elevenlabs-tts` | `/jobs/recordInfo` | Text-to-speech |
-| `elevenlabs-tts-turbo` | `/jobs/recordInfo` | Turbo TTS |
 | `elevenlabs-sound-effects` | `/jobs/recordInfo` | Sound effects |
 | `bytedance-seedance-video` | `/jobs/recordInfo` | Video generation |
+| `bytedance-seedream-image` | `/jobs/recordInfo` | Image generation/editing |
+| `qwen-image` | `/jobs/recordInfo` | Image generation/editing |
+| `runway-aleph-video` | `/jobs/recordInfo` | Video-to-video transformation |
+| `midjourney-generate` | `/jobs/recordInfo` | Image/video generation |
+| `wan-video` | `/jobs/recordInfo` | Video generation |
+| `openai-4o-image` | `/jobs/recordInfo` | Image generation/editing/variants |
+| `flux-kontext-image` | `/jobs/recordInfo` | Image generation/editing |
+| `recraft-remove-background` | `/jobs/recordInfo` | Background removal |
+| `ideogram-reframe` | `/jobs/recordInfo` | Image reframing |
 
 ### **Task Status Values**
 
@@ -869,7 +1448,7 @@ curl -X POST http://localhost:3000/tools/call \
 veo3_generate_video: "A trendy coffee shop with latte art, cinematic lighting"
 
 # Create product photography
-nano_banana_generate: "Luxury watch on marble surface, professional product shot"
+nano_banana_image: "Luxury watch on marble surface, professional product shot"
 
 # Add background music
 suno_generate_music: "Upbeat corporate background music, 2 minutes"
@@ -890,7 +1469,7 @@ elevenlabs_ttsfx: "Magical spell casting with sparkles and energy"
 ### 📱 **Mobile App Developers**
 ```bash
 # Generate app icons and illustrations
-nano_banana_generate: "Modern minimalist app icon for fitness tracker"
+nano_banana_image: "Modern minimalist app icon for fitness tracker"
 
 # Create tutorial videos
 bytedance_seedance_video: "Screen recording showing app features, clean interface"
@@ -905,7 +1484,10 @@ elevenlabs_tts: "Tap here to get started with your new profile"
 veo3_generate_video: "Professional office environment, employee training scenario"
 
 # Create corporate presentations
-nano_banana_edit: "Add company logo to presentation slide, maintain professional style"
+nano_banana_image: {
+  "prompt": "Add company logo to presentation slide, maintain professional style",
+  "image_urls": ["https://example.com/slide.jpg"]
+}
 
 # Produce marketing content
 suno_generate_music: "Corporate background music for promotional video"
@@ -917,7 +1499,11 @@ suno_generate_music: "Corporate background music for promotional video"
 bytedance_seedance_video: "Abstract art coming to life, vibrant colors flowing"
 
 # Photography enhancement
-nano_banana_upscale: "Portrait photo, 4x enhancement with face restoration"
+nano_banana_image: {
+  "image": "https://example.com/portrait.jpg",
+  "scale": 4,
+  "face_enhance": true
+}
 
 # Audio production
 elevenlabs_sound_effects: "Nature soundscape with birds and gentle wind"
@@ -1018,9 +1604,9 @@ Developers are using Kie.ai for their AI media generation:
 
 ### 💡 **Benefits**
 - ✅ **Free trial** - Test models before paying
-- ✅ **Lower pricing** than Fal.ai and Replicate.com
-- ✅ **99.9% uptime**
-- ✅ **24/7 support**
+- ✅ **30-50% lower pricing** than competitors
+- ✅ **99.9% uptime** guarantee
+- ✅ **24/7 human support**
 - ✅ **Simple integration**
 
 ### 🌟 **AI Content Generation**

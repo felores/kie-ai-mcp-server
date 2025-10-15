@@ -13,16 +13,21 @@ import { KieAiClient } from './kie-ai-client.js';
 import { TaskDatabase } from './database.js';
 import { z } from 'zod';
 import { 
-  NanoBananaGenerateSchema,
-  NanoBananaEditSchema,
-  NanoBananaUpscaleSchema,
+  NanoBananaImageSchema,
   Veo3GenerateSchema,
   SunoGenerateSchema,
   ElevenLabsTTSSchema,
   ElevenLabsSoundEffectsSchema,
   ByteDanceSeedanceVideoSchema,
+  ByteDanceSeedreamImageSchema,
+  QwenImageSchema,
   RunwayAlephVideoSchema,
   WanVideoSchema,
+  MidjourneyGenerateSchema,
+  OpenAI4oImageSchema,
+  FluxKontextImageSchema,
+  RecraftRemoveBackgroundSchema,
+  IdeogramReframeSchema,
   KieAiConfig 
 } from './types.js';
 
@@ -34,7 +39,7 @@ class KieAiMcpServer {
   constructor() {
     this.server = new Server({
       name: 'kie-ai-mcp-server',
-      version: '1.7.1',
+      version: '1.9.2',
     });
 
     // Initialize client with config from environment
@@ -101,93 +106,58 @@ class KieAiMcpServer {
       return {
         tools: [
           {
-            name: 'nano_banana_generate',
-            description: 'Generate images using Google\'s Gemini 2.5 Flash Image Preview (Nano Banana)',
+            name: 'nano_banana_image',
+            description: 'Generate, edit, and upscale images using Google\'s Gemini 2.5 Flash Image Preview (Nano Banana) - unified tool for all image operations',
             inputSchema: {
               type: 'object',
               properties: {
+                // Generate/Edit mode parameters
                 prompt: {
                   type: 'string',
-                  description: 'Text prompt for image generation',
-                  minLength: 1,
-                  maxLength: 5000
-                },
-                output_format: {
-                  type: 'string',
-                  enum: ['png', 'jpeg'],
-                  description: 'Output format for the images',
-                  default: 'png'
-                },
-                image_size: {
-                  type: 'string',
-                  enum: ['1:1', '9:16', '16:9', '3:4', '4:3', '3:2', '2:3', '5:4', '4:5', '21:9', 'auto'],
-                  description: 'Aspect ratio for the output image',
-                  default: '1:1'
-                }
-              },
-              required: ['prompt']
-            }
-          },
-          {
-            name: 'nano_banana_edit',
-            description: 'Edit images using natural language prompts with Nano Banana Edit',
-            inputSchema: {
-              type: 'object',
-              properties: {
-                prompt: {
-                  type: 'string',
-                  description: 'Text prompt for image editing',
+                  description: 'Text prompt for image generation or editing (max 5000 chars)',
                   minLength: 1,
                   maxLength: 5000
                 },
                 image_urls: {
                   type: 'array',
-                  description: 'URLs of input images for editing (max 10)',
+                  description: 'Array of image URLs for editing mode (1-10 URLs)',
                   items: { type: 'string', format: 'uri' },
                   minItems: 1,
                   maxItems: 10
                 },
-                output_format: {
-                  type: 'string',
-                  enum: ['png', 'jpeg'],
-                  description: 'Output format for the images',
-                  default: 'png'
-                },
-                image_size: {
-                  type: 'string',
-                  enum: ['1:1', '9:16', '16:9', '3:4', '4:3', '3:2', '2:3', '5:4', '4:5', '21:9', 'auto'],
-                  description: 'Aspect ratio for the output image',
-                  default: '1:1'
-                }
-              },
-              required: ['prompt', 'image_urls']
-            }
-          },
-          {
-            name: 'nano_banana_upscale',
-            description: 'Upscale images using Nano Banana Upscale with optional face enhancement',
-            inputSchema: {
-              type: 'object',
-              properties: {
+                // Upscale mode parameters
                 image: {
                   type: 'string',
                   format: 'uri',
-                  description: 'URL of the image to upscale (max 10MB, jpeg/png/webp)'
+                  description: 'URL of image to upscale (jpeg/png/webp, max 10MB)'
                 },
                 scale: {
                   type: 'integer',
-                  description: 'Upscale factor (1-4)',
+                  description: 'Upscale factor for upscale mode (1-4)',
                   minimum: 1,
                   maximum: 4,
                   default: 2
                 },
                 face_enhance: {
                   type: 'boolean',
-                  description: 'Enable GFPGAN face enhancement',
+                  description: 'Enable face enhancement for upscale mode',
                   default: false
+                },
+                // Common parameters for generate/edit modes
+                output_format: {
+                  type: 'string',
+                  enum: ['png', 'jpeg'],
+                  description: 'Output format for generate/edit modes',
+                  default: 'png'
+                },
+                image_size: {
+                  type: 'string',
+                  enum: ['1:1', '9:16', '16:9', '3:4', '4:3', '3:2', '2:3', '5:4', '4:5', '21:9', 'auto'],
+                  description: 'Aspect ratio for generate/edit modes',
+                  default: '1:1'
                 }
               },
-              required: ['image']
+              required: []
             }
           },
           {
@@ -586,6 +556,251 @@ class KieAiMcpServer {
             }
           },
           {
+            name: 'bytedance_seedream_image',
+            description: 'Generate and edit images using ByteDance Seedream V4 models (unified tool for both text-to-image and image editing)',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                prompt: {
+                  type: 'string',
+                  description: 'Text prompt for image generation or editing (max 10000 characters)',
+                  minLength: 1,
+                  maxLength: 10000
+                },
+                image_urls: {
+                  type: 'array',
+                  description: 'Array of image URLs for editing mode (optional - if not provided, uses text-to-image)',
+                  items: {
+                    type: 'string',
+                    format: 'uri'
+                  },
+                  minItems: 1,
+                  maxItems: 10
+                },
+                image_size: {
+                  type: 'string',
+                  description: 'Image aspect ratio',
+                  enum: ['1:1', '4:3', '3:4', '16:9', '9:16', '21:9', '9:21', '3:2', '2:3'],
+                  default: '1:1'
+                },
+                image_resolution: {
+                  type: 'string',
+                  description: 'Image resolution',
+                  enum: ['1K', '2K', '4K'],
+                  default: '1K'
+                },
+                max_images: {
+                  type: 'integer',
+                  description: 'Number of images to generate',
+                  minimum: 1,
+                  maximum: 6,
+                  default: 1
+                },
+                seed: {
+                  type: 'integer',
+                  description: 'Random seed for reproducible results (use -1 for random)',
+                  default: -1
+                },
+                callBackUrl: {
+                  type: 'string',
+                  description: 'Optional: URL for task completion notifications (uses KIE_AI_CALLBACK_URL env var if not provided)',
+                  format: 'uri'
+                }
+              },
+              required: ['prompt']
+            }
+          },
+          {
+            name: 'qwen_image',
+            description: 'Generate and edit images using Qwen models (unified tool for both text-to-image and image editing)',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                prompt: {
+                  type: 'string',
+                  description: 'Text prompt for image generation or editing',
+                  minLength: 1
+                },
+                image_url: {
+                  type: 'string',
+                  description: 'URL of image to edit (optional - if not provided, uses text-to-image)',
+                  format: 'uri'
+                },
+                image_size: {
+                  type: 'string',
+                  description: 'Image size',
+                  enum: ['square', 'square_hd', 'portrait_4_3', 'portrait_16_9', 'landscape_4_3', 'landscape_16_9'],
+                  default: 'square_hd'
+                },
+                num_inference_steps: {
+                  type: 'integer',
+                  description: 'Number of inference steps (2-250 for text-to-image, 2-49 for edit)',
+                  minimum: 2,
+                  maximum: 250,
+                  default: 30
+                },
+                guidance_scale: {
+                  type: 'number',
+                  description: 'CFG scale (0-20, default: 2.5 for text-to-image, 4 for edit)',
+                  minimum: 0,
+                  maximum: 20,
+                  default: 2.5
+                },
+                enable_safety_checker: {
+                  type: 'boolean',
+                  description: 'Enable safety checker',
+                  default: true
+                },
+                output_format: {
+                  type: 'string',
+                  description: 'Output format',
+                  enum: ['png', 'jpeg'],
+                  default: 'png'
+                },
+                negative_prompt: {
+                  type: 'string',
+                  description: 'Negative prompt (max 500 characters)',
+                  maxLength: 500,
+                  default: ' '
+                },
+                acceleration: {
+                  type: 'string',
+                  description: 'Acceleration level',
+                  enum: ['none', 'regular', 'high'],
+                  default: 'none'
+                },
+                num_images: {
+                  type: 'string',
+                  description: 'Number of images (1-4, edit mode only)',
+                  enum: ['1', '2', '3', '4']
+                },
+                sync_mode: {
+                  type: 'boolean',
+                  description: 'Sync mode (edit mode only)',
+                  default: false
+                },
+                seed: {
+                  type: 'number',
+                  description: 'Random seed for reproducible results'
+                },
+                callBackUrl: {
+                  type: 'string',
+                  description: 'Optional: URL for task completion notifications (uses KIE_AI_CALLBACK_URL env var if not provided)',
+                  format: 'uri'
+                }
+              },
+              required: ['prompt']
+            }
+          },
+          {
+            name: 'midjourney_generate',
+            description: 'Generate images and videos using Midjourney AI models (unified tool for text-to-image, image-to-image, style reference, omni reference, and video generation)',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                prompt: {
+                  type: 'string',
+                  description: 'Text prompt describing the desired image or video (max 2000 characters)',
+                  minLength: 1,
+                  maxLength: 2000
+                },
+                taskType: {
+                  type: 'string',
+                  description: 'Task type for generation mode (auto-detected if not provided)',
+                  enum: ['mj_txt2img', 'mj_img2img', 'mj_style_reference', 'mj_omni_reference', 'mj_video', 'mj_video_hd']
+                },
+                fileUrl: {
+                  type: 'string',
+                  description: 'Single image URL for image-to-image or video generation (legacy - use fileUrls instead)',
+                  format: 'uri'
+                },
+                fileUrls: {
+                  type: 'array',
+                  description: 'Array of image URLs for image-to-image or video generation (recommended)',
+                  items: {
+                    type: 'string',
+                    format: 'uri'
+                  },
+                  maxItems: 10
+                },
+                speed: {
+                  type: 'string',
+                  description: 'Generation speed (not required for video/omni tasks)',
+                  enum: ['relaxed', 'fast', 'turbo']
+                },
+                aspectRatio: {
+                  type: 'string',
+                  description: 'Output aspect ratio',
+                  enum: ['1:2', '9:16', '2:3', '3:4', '5:6', '6:5', '4:3', '3:2', '1:1', '16:9', '2:1'],
+                  default: '16:9'
+                },
+                version: {
+                  type: 'string',
+                  description: 'Midjourney model version',
+                  enum: ['7', '6.1', '6', '5.2', '5.1', 'niji6'],
+                  default: '7'
+                },
+                variety: {
+                  type: 'integer',
+                  description: 'Controls diversity of generated results (0-100, increment by 5)',
+                  minimum: 0,
+                  maximum: 100
+                },
+                stylization: {
+                  type: 'integer',
+                  description: 'Artistic style intensity (0-1000, suggested multiple of 50)',
+                  minimum: 0,
+                  maximum: 1000
+                },
+                weirdness: {
+                  type: 'integer',
+                  description: 'Creativity and uniqueness level (0-3000, suggested multiple of 100)',
+                  minimum: 0,
+                  maximum: 3000
+                },
+                ow: {
+                  type: 'integer',
+                  description: 'Omni intensity parameter for omni reference tasks (1-1000)',
+                  minimum: 1,
+                  maximum: 1000
+                },
+                waterMark: {
+                  type: 'string',
+                  description: 'Watermark identifier',
+                  maxLength: 100
+                },
+                enableTranslation: {
+                  type: 'boolean',
+                  description: 'Auto-translate non-English prompts to English',
+                  default: false
+                },
+                videoBatchSize: {
+                  type: 'string',
+                  description: 'Number of videos to generate (video mode only)',
+                  enum: ['1', '2', '4'],
+                  default: '1'
+                },
+                motion: {
+                  type: 'string',
+                  description: 'Motion level for video generation (required for video mode)',
+                  enum: ['high', 'low'],
+                  default: 'high'
+                },
+                high_definition_video: {
+                  type: 'boolean',
+                  description: 'Use high definition video generation instead of standard definition',
+                  default: false
+                },
+                callBackUrl: {
+                  type: 'string',
+                  description: 'Optional: URL for task completion notifications (uses KIE_AI_CALLBACK_URL env var if not provided)',
+                  format: 'uri'
+                }
+              },
+              required: ['prompt']
+            }
+          },
+          {
             name: 'runway_aleph_video',
             description: 'Transform videos using Runway Aleph video-to-video generation with AI-powered editing',
             inputSchema: {
@@ -637,6 +852,143 @@ class KieAiMcpServer {
                 }
               },
               required: ['prompt', 'videoUrl']
+            }
+          },
+          {
+            name: 'openai_4o_image',
+            description: 'Generate images using OpenAI GPT-4o models (unified tool for text-to-image, image editing, and image variants)',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                prompt: {
+                  type: 'string',
+                  description: 'Text prompt describing the desired image (max 5000 characters)',
+                  maxLength: 5000
+                },
+                filesUrl: {
+                  type: 'array',
+                  description: 'Array of up to 5 image URLs for editing or variants',
+                  items: {
+                    type: 'string',
+                    format: 'uri'
+                  },
+                  maxItems: 5
+                },
+                size: {
+                  type: 'string',
+                  description: 'Image aspect ratio',
+                  enum: ['1:1', '3:2', '2:3'],
+                  default: '1:1'
+                },
+                nVariants: {
+                  type: 'string',
+                  description: 'Number of image variations to generate',
+                  enum: ['1', '2', '4'],
+                  default: '4'
+                },
+                maskUrl: {
+                  type: 'string',
+                  description: 'Mask image URL for precise editing (black areas will be modified, white areas preserved)',
+                  format: 'uri'
+                },
+                callBackUrl: {
+                  type: 'string',
+                  description: 'Optional: URL for task completion notifications (uses KIE_AI_CALLBACK_URL env var if not provided)',
+                  format: 'uri'
+                },
+                isEnhance: {
+                  type: 'boolean',
+                  description: 'Enable prompt enhancement for specialized scenarios like 3D renders',
+                  default: false
+                },
+                uploadCn: {
+                  type: 'boolean',
+                  description: 'Route uploads via China servers',
+                  default: false
+                },
+                enableFallback: {
+                  type: 'boolean',
+                  description: 'Enable automatic fallback to backup models if GPT-4o is unavailable',
+                  default: true
+                },
+                fallbackModel: {
+                  type: 'string',
+                  description: 'Backup model to use when fallback is enabled',
+                  enum: ['GPT_IMAGE_1', 'FLUX_MAX'],
+                  default: 'FLUX_MAX'
+                }
+              },
+              required: []
+            }
+          },
+          {
+            name: 'flux_kontext_image',
+            description: 'Generate or edit images using Flux Kontext AI models (unified tool for text-to-image generation and image editing)',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                prompt: {
+                  type: 'string',
+                  description: 'Text prompt describing the desired image or edit (max 5000 characters, English recommended)',
+                  minLength: 1,
+                  maxLength: 5000
+                },
+                inputImage: {
+                  type: 'string',
+                  description: 'Input image URL for editing mode (required for image editing, omit for text-to-image generation)',
+                  format: 'uri'
+                },
+                aspectRatio: {
+                  type: 'string',
+                  description: 'Output image aspect ratio (default: 16:9)',
+                  enum: ['21:9', '16:9', '4:3', '1:1', '3:4', '9:16'],
+                  default: '16:9'
+                },
+                outputFormat: {
+                  type: 'string',
+                  description: 'Output image format',
+                  enum: ['jpeg', 'png'],
+                  default: 'jpeg'
+                },
+                model: {
+                  type: 'string',
+                  description: 'Model version to use for generation',
+                  enum: ['flux-kontext-pro', 'flux-kontext-max'],
+                  default: 'flux-kontext-pro'
+                },
+                enableTranslation: {
+                  type: 'boolean',
+                  description: 'Automatically translate non-English prompts to English',
+                  default: true
+                },
+                promptUpsampling: {
+                  type: 'boolean',
+                  description: 'Enable prompt enhancement for better results (may increase processing time)',
+                  default: false
+                },
+                safetyTolerance: {
+                  type: 'integer',
+                  description: 'Content moderation level (0-6 for generation, 0-2 for editing)',
+                  minimum: 0,
+                  maximum: 6,
+                  default: 2
+                },
+                uploadCn: {
+                  type: 'boolean',
+                  description: 'Route uploads via China servers for better performance in Asia',
+                  default: false
+                },
+                watermark: {
+                  type: 'string',
+                  description: 'Watermark identifier to add to the generated image'
+                },
+                callBackUrl: {
+                  type: 'string',
+                  description: 'Optional: URL for task completion notifications (uses KIE_AI_CALLBACK_URL env var if not provided)',
+                  format: 'uri'
+                }
+              },
+              required: ['prompt']
             }
           },
           {
@@ -697,6 +1049,75 @@ class KieAiMcpServer {
               },
               required: ['prompt']
             }
+          },
+          {
+            name: 'recraft_remove_background',
+            description: 'Remove backgrounds from images using Recraft AI background removal model',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                image: {
+                  type: 'string',
+                  description: 'URL of image to remove background from (PNG, JPG, WEBP, max 5MB, 16MP, 4096px max, 256px min)',
+                  format: 'uri'
+                },
+                callBackUrl: {
+                  type: 'string',
+                  description: 'Optional: URL for task completion notifications (uses KIE_AI_CALLBACK_URL env var if not provided)',
+                  format: 'uri'
+                }
+              },
+              required: ['image']
+            }
+          },
+          {
+            name: 'ideogram_reframe',
+            description: 'Reframe images to different aspect ratios and sizes using Ideogram V3 Reframe model',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                image_url: {
+                  type: 'string',
+                  description: 'URL of image to reframe (JPEG, PNG, WEBP, max 10MB)',
+                  format: 'uri'
+                },
+                image_size: {
+                  type: 'string',
+                  description: 'Output size for the reframed image',
+                  enum: ['square', 'square_hd', 'portrait_4_3', 'portrait_16_9', 'landscape_4_3', 'landscape_16_9'],
+                  default: 'square_hd'
+                },
+                rendering_speed: {
+                  type: 'string',
+                  description: 'Rendering speed for generation',
+                  enum: ['TURBO', 'BALANCED', 'QUALITY'],
+                  default: 'BALANCED'
+                },
+                style: {
+                  type: 'string',
+                  description: 'Style type for generation',
+                  enum: ['AUTO', 'GENERAL', 'REALISTIC', 'DESIGN'],
+                  default: 'AUTO'
+                },
+                num_images: {
+                  type: 'string',
+                  description: 'Number of images to generate',
+                  enum: ['1', '2', '3', '4'],
+                  default: '1'
+                },
+                seed: {
+                  type: 'number',
+                  description: 'Seed for reproducible results',
+                  default: 0
+                },
+                callBackUrl: {
+                  type: 'string',
+                  description: 'Optional: URL for task completion notifications (uses KIE_AI_CALLBACK_URL env var if not provided)',
+                  format: 'uri'
+                }
+              },
+              required: ['image_url']
+            }
           }
         ]
       };
@@ -707,14 +1128,8 @@ class KieAiMcpServer {
         const { name, arguments: args } = request.params;
 
         switch (name) {
-          case 'nano_banana_generate':
-            return await this.handleNanoBananaGenerate(args);
-          
-          case 'nano_banana_edit':
-            return await this.handleNanoBananaEdit(args);
-          
-          case 'nano_banana_upscale':
-            return await this.handleNanoBananaUpscale(args);
+          case 'nano_banana_image':
+            return await this.handleNanoBananaImage(args);
           
           case 'veo3_generate_video':
             return await this.handleVeo3GenerateVideo(args);
@@ -740,11 +1155,32 @@ class KieAiMcpServer {
           case 'bytedance_seedance_video':
             return await this.handleByteDanceSeedanceVideo(args);
           
+          case 'bytedance_seedream_image':
+            return await this.handleByteDanceSeedreamImage(args);
+          
+          case 'qwen_image':
+            return await this.handleQwenImage(args);
+          
+          case 'midjourney_generate':
+            return await this.handleMidjourneyGenerate(args);
+          
+          case 'openai_4o_image':
+            return await this.handleOpenAI4oImage(args);
+          
+          case 'flux_kontext_image':
+            return await this.handleFluxKontextImage(args);
+          
           case 'runway_aleph_video':
             return await this.handleRunwayAlephVideo(args);
           
           case 'wan_video':
             return await this.handleWanVideo(args);
+          
+          case 'recraft_remove_background':
+            return await this.handleRecraftRemoveBackground(args);
+          
+          case 'ideogram_reframe':
+            return await this.handleIdeogramReframe(args);
           
           default:
             throw new McpError(
@@ -763,16 +1199,31 @@ class KieAiMcpServer {
     });
   }
 
-  private async handleNanoBananaGenerate(args: any) {
+  private async handleNanoBananaImage(args: any) {
     try {
-      const request = NanoBananaGenerateSchema.parse(args);
+      const request = NanoBananaImageSchema.parse(args);
       
-      const response = await this.client.generateNanoBanana(request);
+      const response = await this.client.generateNanoBananaImage(request);
+      
+      // Determine mode and api_type based on parameters
+      let apiType: string;
+      let modeDescription: string;
+      
+      if (request.image) {
+        apiType = 'nano-banana-upscale';
+        modeDescription = 'upscale';
+      } else if (request.image_urls && request.image_urls.length > 0) {
+        apiType = 'nano-banana-edit';
+        modeDescription = 'edit';
+      } else {
+        apiType = 'nano-banana';
+        modeDescription = 'generate';
+      }
       
       if (response.data?.taskId) {
         await this.db.createTask({
           task_id: response.data.taskId,
-          api_type: 'nano-banana',
+          api_type: apiType as any,
           status: 'pending',
           result_url: response.data.imageUrl
         });
@@ -785,89 +1236,21 @@ class KieAiMcpServer {
             text: JSON.stringify({
               success: true,
               response: response,
-              message: 'Nano Banana image generation initiated'
+              mode: modeDescription,
+              message: `Nano Banana image ${modeDescription} initiated`
             }, null, 2)
           }
         ]
       };
     } catch (error) {
-      return this.formatError('nano_banana_generate', error, {
-        prompt: 'Required: text description of image to generate (max 5000 chars)',
-        output_format: 'Optional: "png" or "jpeg"',
-        image_size: 'Optional: aspect ratio like "16:9", "1:1", etc.'
-      });
-    }
-  }
-
-  private async handleNanoBananaEdit(args: any) {
-    try {
-      const request = NanoBananaEditSchema.parse(args);
-      
-      const response = await this.client.editNanoBanana(request);
-      
-      if (response.data?.taskId) {
-        await this.db.createTask({
-          task_id: response.data.taskId,
-          api_type: 'nano-banana-edit',
-          status: 'pending',
-          result_url: response.data.imageUrl
-        });
-      }
-      
-      return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify({
-              success: true,
-              response: response,
-              message: 'Nano Banana image editing initiated'
-            }, null, 2)
-          }
-        ]
-      };
-    } catch (error) {
-      return this.formatError('nano_banana_edit', error, {
-        prompt: 'Required: editing instructions (max 5000 chars)',
-        image_urls: 'Required: array of 1-10 image URLs to edit',
-        output_format: 'Optional: "png" or "jpeg"',
-        image_size: 'Optional: aspect ratio like "16:9", "1:1", etc.'
-      });
-    }
-  }
-
-  private async handleNanoBananaUpscale(args: any) {
-    try {
-      const request = NanoBananaUpscaleSchema.parse(args);
-      
-      const response = await this.client.upscaleNanaBanana(request);
-      
-      if (response.data?.taskId) {
-        await this.db.createTask({
-          task_id: response.data.taskId,
-          api_type: 'nano-banana-upscale',
-          status: 'pending',
-          result_url: response.data.imageUrl
-        });
-      }
-      
-      return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify({
-              success: true,
-              response: response,
-              message: 'Nano Banana upscale initiated'
-            }, null, 2)
-          }
-        ]
-      };
-    } catch (error) {
-      return this.formatError('nano_banana_upscale', error, {
-        image: 'Required: URL of image to upscale (jpeg/png/webp, max 10MB)',
-        scale: 'Optional: upscale factor 1-4 (default: 2)',
-        face_enhance: 'Optional: enable face enhancement (default: false)'
+      return this.formatError('nano_banana_image', error, {
+        prompt: 'Required for generate/edit modes: text description (max 5000 chars)',
+        image_urls: 'Required for edit mode: array of 1-10 image URLs to edit',
+        image: 'Required for upscale mode: URL of image to upscale (jpeg/png/webp, max 10MB)',
+        scale: 'Optional for upscale mode: upscale factor 1-4 (default: 2)',
+        face_enhance: 'Optional for upscale mode: enable face enhancement (default: false)',
+        output_format: 'Optional for generate/edit modes: "png" or "jpeg"',
+        image_size: 'Optional for generate/edit modes: aspect ratio like "16:9", "1:1", etc.'
       });
     }
   }
@@ -984,6 +1367,86 @@ class KieAiMcpServer {
             }
             
             // Extract error message for ElevenLabs TTS/Sound Effects
+            if (apiData.failMsg) {
+              errorMessage = apiData.failMsg;
+            }
+          } else if (localTask?.api_type === 'openai-4o-image') {
+            // OpenAI 4o Image-specific status mapping
+            const successFlag = apiData.successFlag;
+            if (successFlag === 1) status = 'completed';
+            else if (successFlag === 2) status = 'failed';
+            else if (successFlag === 0) status = 'processing';
+            
+            // Extract result URLs from OpenAI 4o response
+            if (apiData.response?.result_urls && apiData.response.result_urls.length > 0) {
+              resultUrl = apiData.response.result_urls[0]; // Use first image URL
+            }
+            
+            // Extract error message for OpenAI 4o
+            if (apiData.errorMessage) {
+              errorMessage = apiData.errorMessage;
+            }
+          } else if (localTask?.api_type === 'flux-kontext-image') {
+            // Flux Kontext Image-specific status mapping
+            const successFlag = apiData.successFlag;
+            if (successFlag === 1) status = 'completed';
+            else if (successFlag === 2 || successFlag === 3) status = 'failed';
+            else if (successFlag === 0) status = 'processing';
+            
+            // Extract result URL from Flux Kontext response
+            if (apiData.response?.resultImageUrl) {
+              resultUrl = apiData.response.resultImageUrl;
+            }
+            
+            // Extract error message for Flux Kontext
+            if (apiData.errorMessage) {
+              errorMessage = apiData.errorMessage;
+            }
+          } else if (localTask?.api_type === 'recraft-remove-background') {
+            // Recraft Remove Background-specific status mapping
+            const state = apiData.state;
+            if (state === 'success') status = 'completed';
+            else if (state === 'fail') status = 'failed';
+            else if (state === 'waiting') status = 'processing';
+            
+            // Parse resultJson for Recraft Remove Background
+            if (apiData.resultJson) {
+              try {
+                parsedResult = JSON.parse(apiData.resultJson);
+                // Recraft Remove Background returns resultUrls array with image URLs
+                if (parsedResult.resultUrls && parsedResult.resultUrls.length > 0) {
+                  resultUrl = parsedResult.resultUrls[0]; // Use first image URL
+                }
+              } catch (e) {
+                // Invalid JSON in resultJson
+              }
+            }
+            
+            // Extract error message for Recraft Remove Background
+            if (apiData.failMsg) {
+              errorMessage = apiData.failMsg;
+            }
+          } else if (localTask?.api_type === 'ideogram-reframe') {
+            // Ideogram V3 Reframe-specific status mapping
+            const state = apiData.state;
+            if (state === 'success') status = 'completed';
+            else if (state === 'fail') status = 'failed';
+            else if (state === 'waiting') status = 'processing';
+            
+            // Parse resultJson for Ideogram V3 Reframe
+            if (apiData.resultJson) {
+              try {
+                parsedResult = JSON.parse(apiData.resultJson);
+                // Ideogram V3 Reframe returns resultUrls array with image URLs
+                if (parsedResult.resultUrls && parsedResult.resultUrls.length > 0) {
+                  resultUrl = parsedResult.resultUrls[0]; // Use first image URL
+                }
+              } catch (e) {
+                // Invalid JSON in resultJson
+              }
+            }
+            
+            // Extract error message for Ideogram V3 Reframe
             if (apiData.failMsg) {
               errorMessage = apiData.failMsg;
             }
@@ -1479,6 +1942,512 @@ class KieAiMcpServer {
     }
   }
 
+  private async handleByteDanceSeedreamImage(args: any) {
+    try {
+      const request = ByteDanceSeedreamImageSchema.parse(args);
+      
+      // Use environment variable as fallback if callBackUrl not provided
+      if (!request.callBackUrl && process.env.KIE_AI_CALLBACK_URL) {
+        request.callBackUrl = process.env.KIE_AI_CALLBACK_URL;
+      }
+      
+      const response = await this.client.generateByteDanceSeedreamImage(request);
+      
+      if (response.code === 200 && response.data?.taskId) {
+        // Determine mode for user feedback
+        const isEdit = !!request.image_urls && request.image_urls.length > 0;
+        const mode = isEdit ? 'Image Editing' : 'Text-to-Image';
+        
+        // Store task in database
+        await this.db.createTask({
+          task_id: response.data.taskId,
+          api_type: 'bytedance-seedream-image',
+          status: 'pending'
+        });
+        
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify({
+                success: true,
+                task_id: response.data.taskId,
+                message: `ByteDance Seedream V4 ${mode} task created successfully`,
+                parameters: {
+                  mode: mode,
+                  prompt: request.prompt.substring(0, 100) + (request.prompt.length > 100 ? '...' : ''),
+                  image_size: request.image_size || '1:1',
+                  image_resolution: request.image_resolution || '1K',
+                  max_images: request.max_images || 1,
+                  seed: request.seed !== undefined ? request.seed : -1,
+                  ...(isEdit && { image_urls_count: request.image_urls?.length || 0 })
+                },
+                next_steps: [
+                  `Use get_task_status with task_id: ${response.data.taskId} to check progress`,
+                  'Generated images will be available when status is "completed"'
+                ],
+                usage_examples: [
+                  `get_task_status: {"task_id": "${response.data.taskId}"}`,
+                  `list_tasks: {"limit": 10}`
+                ]
+              }, null, 2)
+            }
+          ]
+        };
+      } else {
+        throw new Error(response.msg || 'Failed to create ByteDance Seedream V4 image task');
+      }
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return this.formatError('bytedance_seedream_image', error, {
+          prompt: 'Required: Text prompt for image generation or editing (max 10000 characters)',
+          image_urls: 'Optional: Array of image URLs for editing mode (1-10 images)',
+          image_size: 'Optional: Image aspect ratio (default: 1:1)',
+          image_resolution: 'Optional: Image resolution - 1K/2K/4K (default: 1K)',
+          max_images: 'Optional: Number of images to generate (1-6, default: 1)',
+          seed: 'Optional: Random seed for reproducible results (default: -1 for random)',
+          callBackUrl: 'Optional: URL for task completion notifications (uses KIE_AI_CALLBACK_URL env var if not provided)'
+        });
+      }
+      
+      return this.formatError('bytedance_seedream_image', error, {
+        prompt: 'Required: Text prompt for image generation or editing (max 10000 characters)',
+        image_urls: 'Optional: Array of image URLs for editing mode (1-10 images)',
+        image_size: 'Optional: Image aspect ratio (default: 1:1)',
+        image_resolution: 'Optional: Image resolution - 1K/2K/4K (default: 1K)',
+        max_images: 'Optional: Number of images to generate (1-6, default: 1)',
+        seed: 'Optional: Random seed for reproducible results (default: -1 for random)',
+        callBackUrl: 'Optional: URL for task completion notifications (uses KIE_AI_CALLBACK_URL env var if not provided)'
+      });
+    }
+  }
+
+  private async handleQwenImage(args: any) {
+    try {
+      const request = QwenImageSchema.parse(args);
+      
+      // Use environment variable as fallback if callBackUrl not provided
+      if (!request.callBackUrl && process.env.KIE_AI_CALLBACK_URL) {
+        request.callBackUrl = process.env.KIE_AI_CALLBACK_URL;
+      }
+      
+      const response = await this.client.generateQwenImage(request);
+      
+      if (response.code === 200 && response.data?.taskId) {
+        // Determine mode for user feedback
+        const isEdit = !!request.image_url;
+        const mode = isEdit ? 'Image Editing' : 'Text-to-Image';
+        
+        // Store task in database
+        await this.db.createTask({
+          task_id: response.data.taskId,
+          api_type: 'qwen-image',
+          status: 'pending'
+        });
+        
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify({
+                success: true,
+                task_id: response.data.taskId,
+                message: `Qwen ${mode} task created successfully`,
+                parameters: {
+                  mode: mode,
+                  prompt: request.prompt.substring(0, 100) + (request.prompt.length > 100 ? '...' : ''),
+                  image_size: request.image_size || 'square_hd',
+                  num_inference_steps: request.num_inference_steps || (isEdit ? 25 : 30),
+                  guidance_scale: request.guidance_scale || (isEdit ? 4 : 2.5),
+                  enable_safety_checker: request.enable_safety_checker !== false,
+                  output_format: request.output_format || 'png',
+                  negative_prompt: request.negative_prompt || (isEdit ? 'blurry, ugly' : ' '),
+                  acceleration: request.acceleration || 'none',
+                  seed: request.seed,
+                  ...(isEdit && { 
+                    image_url: request.image_url,
+                    num_images: request.num_images,
+                    sync_mode: request.sync_mode
+                  })
+                },
+                next_steps: [
+                  `Use get_task_status with task_id: ${response.data.taskId} to check progress`,
+                  'Generated images will be available when status is "completed"'
+                ],
+                usage_examples: [
+                  `get_task_status: {"task_id": "${response.data.taskId}"}`,
+                  `list_tasks: {"limit": 10}`
+                ]
+              }, null, 2)
+            }
+          ]
+        };
+      } else {
+        throw new Error(response.msg || 'Failed to create Qwen image task');
+      }
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return this.formatError('qwen_image', error, {
+          prompt: 'Required: Text prompt for image generation or editing',
+          image_url: 'Optional: URL of image to edit (required for edit mode)',
+          image_size: 'Optional: Image size (square, square_hd, portrait_4_3, portrait_16_9, landscape_4_3, landscape_16_9)',
+          num_inference_steps: 'Optional: Number of inference steps (2-250 for text-to-image, 2-49 for edit)',
+          guidance_scale: 'Optional: CFG scale (0-20, default: 2.5 for text-to-image, 4 for edit)',
+          enable_safety_checker: 'Optional: Enable safety checker (default: true)',
+          output_format: 'Optional: Output format (png/jpeg, default: png)',
+          negative_prompt: 'Optional: Negative prompt (max 500 chars)',
+          acceleration: 'Optional: Acceleration level (none/regular/high, default: none)',
+          num_images: 'Optional: Number of images (1-4, edit mode only)',
+          sync_mode: 'Optional: Sync mode (edit mode only)',
+          seed: 'Optional: Random seed for reproducible results',
+          callBackUrl: 'Optional: URL for task completion notifications (uses KIE_AI_CALLBACK_URL env var if not provided)'
+        });
+      }
+      
+      return this.formatError('qwen_image', error, {
+        prompt: 'Required: Text prompt for image generation or editing',
+        image_url: 'Optional: URL of image to edit (required for edit mode)',
+        image_size: 'Optional: Image size (square, square_hd, portrait_4_3, portrait_16_9, landscape_4_3, landscape_16_9)',
+        num_inference_steps: 'Optional: Number of inference steps (2-250 for text-to-image, 2-49 for edit)',
+        guidance_scale: 'Optional: CFG scale (0-20, default: 2.5 for text-to-image, 4 for edit)',
+        enable_safety_checker: 'Optional: Enable safety checker (default: true)',
+        output_format: 'Optional: Output format (png/jpeg, default: png)',
+        negative_prompt: 'Optional: Negative prompt (max 500 chars)',
+        acceleration: 'Optional: Acceleration level (none/regular/high, default: none)',
+        num_images: 'Optional: Number of images (1-4, edit mode only)',
+        sync_mode: 'Optional: Sync mode (edit mode only)',
+        seed: 'Optional: Random seed for reproducible results',
+        callBackUrl: 'Optional: URL for task completion notifications (uses KIE_AI_CALLBACK_URL env var if not provided)'
+      });
+    }
+  }
+
+  private async handleMidjourneyGenerate(args: any) {
+    try {
+      const request = MidjourneyGenerateSchema.parse(args);
+      
+      // Use environment variable as fallback if callBackUrl not provided
+      if (!request.callBackUrl && process.env.KIE_AI_CALLBACK_URL) {
+        request.callBackUrl = process.env.KIE_AI_CALLBACK_URL;
+      }
+      
+      const response = await this.client.generateMidjourney(request);
+      
+      if (response.code === 200 && response.data?.taskId) {
+        // Determine task type for user feedback
+        const hasImage = request.fileUrl || (request.fileUrls && request.fileUrls.length > 0);
+        const isVideoMode = request.motion || request.videoBatchSize || request.high_definition_video;
+        const isOmniMode = request.ow || request.taskType === 'mj_omni_reference';
+        const isStyleMode = request.taskType === 'mj_style_reference';
+        
+        let taskTypeDisplay = 'Text-to-Image';
+        if (isOmniMode) {
+          taskTypeDisplay = 'Omni Reference';
+        } else if (isStyleMode) {
+          taskTypeDisplay = 'Style Reference';
+        } else if (isVideoMode) {
+          taskTypeDisplay = request.high_definition_video ? 'Image-to-HD-Video' : 'Image-to-Video';
+        } else if (hasImage) {
+          taskTypeDisplay = 'Image-to-Image';
+        }
+        
+        // Store task in database
+        await this.db.createTask({
+          task_id: response.data.taskId,
+          api_type: 'midjourney',
+          status: 'pending'
+        });
+        
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify({
+                success: true,
+                task_id: response.data.taskId,
+                message: `Midjourney ${taskTypeDisplay} task created successfully`,
+                parameters: {
+                  task_type: taskTypeDisplay,
+                  prompt: request.prompt.substring(0, 100) + (request.prompt.length > 100 ? '...' : ''),
+                  aspect_ratio: request.aspectRatio || '16:9',
+                  version: request.version || '7',
+                  speed: request.speed,
+                  variety: request.variety,
+                  stylization: request.stylization,
+                  weirdness: request.weirdness,
+                  enable_translation: request.enableTranslation || false,
+                  waterMark: request.waterMark,
+                  ...(hasImage && { 
+                    file_urls: request.fileUrls || [request.fileUrl]
+                  }),
+                  ...(isVideoMode && { 
+                    motion: request.motion || 'high',
+                    video_batch_size: request.videoBatchSize || '1',
+                    high_definition_video: request.high_definition_video || false
+                  }),
+                  ...(isOmniMode && { 
+                    ow: request.ow
+                  })
+                },
+                next_steps: [
+                  `Use get_task_status with task_id: ${response.data.taskId} to check progress`,
+                  'Generated content will be available when status is "completed"'
+                ],
+                usage_examples: [
+                  `get_task_status: {"task_id": "${response.data.taskId}"}`,
+                  `list_tasks: {"limit": 10}`
+                ]
+              }, null, 2)
+            }
+          ]
+        };
+      } else {
+        throw new Error(response.msg || 'Failed to create Midjourney task');
+      }
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return this.formatError('midjourney_generate', error, {
+          prompt: 'Required: Text prompt describing the desired image (max 2000 chars)',
+          taskType: 'Optional: Task type (mj_txt2img, mj_img2img, mj_style_reference, mj_omni_reference, mj_video, mj_video_hd) - auto-detected if not provided',
+          fileUrl: 'Optional: Single image URL for image-to-image or video generation (legacy)',
+          fileUrls: 'Optional: Array of image URLs for image-to-image or video generation (recommended)',
+          speed: 'Optional: Generation speed (relaxed/fast/turbo) - not required for video/omni tasks',
+          aspectRatio: 'Optional: Output aspect ratio (1:2, 9:16, 2:3, 3:4, 5:6, 6:5, 4:3, 3:2, 1:1, 16:9, 2:1, default: 16:9)',
+          version: 'Optional: Midjourney model version (7, 6.1, 6, 5.2, 5.1, niji6, default: 7)',
+          variety: 'Optional: Diversity control (0-100, increment by 5)',
+          stylization: 'Optional: Artistic style intensity (0-1000, suggested multiple of 50)',
+          weirdness: 'Optional: Creativity level (0-3000, suggested multiple of 100)',
+          ow: 'Optional: Omni intensity for omni reference tasks (1-1000)',
+          waterMark: 'Optional: Watermark identifier (max 100 chars)',
+          enableTranslation: 'Optional: Auto-translate non-English prompts (default: false)',
+          videoBatchSize: 'Optional: Number of videos to generate (1/2/4, default: 1, video mode only)',
+          motion: 'Optional: Video motion level (high/low, default: high, required for video)',
+          high_definition_video: 'Optional: Use HD video generation (default: false, uses standard definition)',
+          callBackUrl: 'Optional: URL for task completion notifications (uses KIE_AI_CALLBACK_URL env var if not provided)'
+        });
+      }
+      
+      return this.formatError('midjourney_generate', error, {
+        prompt: 'Required: Text prompt describing the desired image (max 2000 chars)',
+        taskType: 'Optional: Task type (mj_txt2img, mj_img2img, mj_style_reference, mj_omni_reference, mj_video, mj_video_hd) - auto-detected if not provided',
+        fileUrl: 'Optional: Single image URL for image-to-image or video generation (legacy)',
+        fileUrls: 'Optional: Array of image URLs for image-to-image or video generation (recommended)',
+        speed: 'Optional: Generation speed (relaxed/fast/turbo) - not required for video/omni tasks',
+        aspectRatio: 'Optional: Output aspect ratio (1:2, 9:16, 2:3, 3:4, 5:6, 6:5, 4:3, 3:2, 1:1, 16:9, 2:1, default: 16:9)',
+        version: 'Optional: Midjourney model version (7, 6.1, 6, 5.2, 5.1, niji6, default: 7)',
+        variety: 'Optional: Diversity control (0-100, increment by 5)',
+        stylization: 'Optional: Artistic style intensity (0-1000, suggested multiple of 50)',
+        weirdness: 'Optional: Creativity level (0-3000, suggested multiple of 100)',
+        ow: 'Optional: Omni intensity for omni reference tasks (1-1000)',
+        waterMark: 'Optional: Watermark identifier (max 100 chars)',
+        enableTranslation: 'Optional: Auto-translate non-English prompts (default: false)',
+        videoBatchSize: 'Optional: Number of videos to generate (1/2/4, default: 1, video mode only)',
+        motion: 'Optional: Video motion level (high/low, default: high, required for video)',
+        high_definition_video: 'Optional: Use HD video generation (default: false, uses standard definition)',
+        callBackUrl: 'Optional: URL for task completion notifications (uses KIE_AI_CALLBACK_URL env var if not provided)'
+      });
+    }
+  }
+
+  private async handleOpenAI4oImage(args: any) {
+    try {
+      const request = OpenAI4oImageSchema.parse(args);
+      
+      // Use environment variable as fallback if callBackUrl not provided
+      if (!request.callBackUrl && process.env.KIE_AI_CALLBACK_URL) {
+        request.callBackUrl = process.env.KIE_AI_CALLBACK_URL;
+      }
+      
+      const response = await this.client.generateOpenAI4oImage(request);
+      
+      if (response.code === 200 && response.data?.taskId) {
+        // Determine mode for user feedback
+        const hasPrompt = !!request.prompt;
+        const hasImages = request.filesUrl && request.filesUrl.length > 0;
+        const hasMask = !!request.maskUrl;
+        
+        let modeDisplay = 'Text-to-Image';
+        if (hasMask && hasImages) {
+          modeDisplay = 'Image Editing';
+        } else if (hasImages && !hasMask) {
+          modeDisplay = 'Image Variants';
+        }
+        
+        // Store task in database
+        await this.db.createTask({
+          task_id: response.data.taskId,
+          api_type: 'openai-4o-image',
+          status: 'pending'
+        });
+        
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify({
+                success: true,
+                task_id: response.data.taskId,
+                message: `OpenAI 4o Image ${modeDisplay} task created successfully`,
+                parameters: {
+                  mode: modeDisplay,
+                  prompt: request.prompt ? request.prompt.substring(0, 100) + (request.prompt.length > 100 ? '...' : '') : undefined,
+                  size: request.size || '1:1',
+                  n_variants: request.nVariants || '4',
+                  is_enhance: request.isEnhance || false,
+                  enable_fallback: request.enableFallback !== false,
+                  fallback_model: request.fallbackModel || 'FLUX_MAX',
+                  ...(hasImages && { 
+                    files_url: request.filesUrl
+                  }),
+                  ...(hasMask && { 
+                    mask_url: request.maskUrl
+                  })
+                },
+                next_steps: [
+                  `Use get_task_status with task_id: ${response.data.taskId} to check progress`,
+                  'Generated images will be available when status is "completed"'
+                ],
+                usage_examples: [
+                  `get_task_status: {"task_id": "${response.data.taskId}"}`,
+                  `list_tasks: {"limit": 10}`
+                ]
+              }, null, 2)
+            }
+          ]
+        };
+      } else {
+        throw new Error(response.msg || 'Failed to create OpenAI 4o Image task');
+      }
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return this.formatError('openai_4o_image', error, {
+          prompt: 'Optional: Text prompt describing the desired image (max 5000 chars)',
+          filesUrl: 'Optional: Array of up to 5 image URLs for editing or variants',
+          size: 'Required: Image aspect ratio (1:1, 3:2, 2:3, default: 1:1)',
+          nVariants: 'Optional: Number of image variations (1, 2, 4, default: 4)',
+          maskUrl: 'Optional: Mask image URL for precise editing (black=edit, white=preserve)',
+          callBackUrl: 'Optional: Webhook URL for completion notifications',
+          isEnhance: 'Optional: Enable prompt enhancement for specialized scenarios (default: false)',
+          uploadCn: 'Optional: Route uploads via China servers (default: false)',
+          enableFallback: 'Optional: Enable automatic fallback to backup models (default: true)',
+          fallbackModel: 'Optional: Backup model choice (GPT_IMAGE_1, FLUX_MAX, default: FLUX_MAX)'
+        });
+      }
+      
+      return this.formatError('openai_4o_image', error, {
+        prompt: 'Optional: Text prompt describing the desired image (max 5000 chars)',
+        filesUrl: 'Optional: Array of up to 5 image URLs for editing or variants',
+        size: 'Required: Image aspect ratio (1:1, 3:2, 2:3, default: 1:1)',
+        nVariants: 'Optional: Number of image variations (1, 2, 4, default: 4)',
+        maskUrl: 'Optional: Mask image URL for precise editing (black=edit, white=preserve)',
+        callBackUrl: 'Optional: Webhook URL for completion notifications',
+        isEnhance: 'Optional: Enable prompt enhancement for specialized scenarios (default: false)',
+        uploadCn: 'Optional: Route uploads via China servers (default: false)',
+        enableFallback: 'Optional: Enable automatic fallback to backup models (default: true)',
+        fallbackModel: 'Optional: Backup model choice (GPT_IMAGE_1, FLUX_MAX, default: FLUX_MAX)'
+      });
+    }
+  }
+
+  private async handleFluxKontextImage(args: any) {
+    try {
+      const request = FluxKontextImageSchema.parse(args);
+      
+      // Determine mode based on presence of inputImage
+      const hasInputImage = !!request.inputImage;
+      const modeDisplay = hasInputImage ? 'Image Editing' : 'Text-to-Image Generation';
+      
+      // Use environment variable as fallback if callBackUrl not provided
+      if (!request.callBackUrl && process.env.KIE_AI_CALLBACK_URL) {
+        request.callBackUrl = process.env.KIE_AI_CALLBACK_URL;
+      }
+      
+      const response = await this.client.generateFluxKontextImage(request);
+      
+      if (response.code === 200 && response.data?.taskId) {
+        // Store task in database
+        await this.db.createTask({
+          task_id: response.data.taskId,
+          api_type: 'flux-kontext-image',
+          status: 'pending'
+        });
+        
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify({
+                success: true,
+                task_id: response.data.taskId,
+                message: `Flux Kontext ${modeDisplay} task created successfully`,
+                parameters: {
+                  mode: modeDisplay,
+                  prompt: request.prompt.substring(0, 100) + (request.prompt.length > 100 ? '...' : ''),
+                  aspect_ratio: request.aspectRatio || '16:9',
+                  output_format: request.outputFormat || 'jpeg',
+                  model: request.model || 'flux-kontext-pro',
+                  enable_translation: request.enableTranslation !== false,
+                  prompt_upsampling: request.promptUpsampling || false,
+                  safety_tolerance: request.safetyTolerance || 2,
+                  upload_cn: request.uploadCn || false,
+                  ...(hasInputImage && { 
+                    input_image: request.inputImage 
+                  }),
+                  ...(request.watermark && { 
+                    watermark: request.watermark 
+                  })
+                },
+                next_steps: [
+                  `Use get_task_status with task_id: ${response.data.taskId} to check progress`,
+                  'Generated images will be available when status is "completed"',
+                  hasInputImage 
+                    ? 'Image editing typically takes 1-3 minutes depending on complexity'
+                    : 'Image generation typically takes 30-60 seconds depending on complexity'
+                ],
+                usage_examples: [
+                  `get_task_status: {"task_id": "${response.data.taskId}"}`,
+                  `list_tasks: {"limit": 10}`
+                ]
+              }, null, 2)
+            }
+          ]
+        };
+      } else {
+        throw new Error(response.msg || 'Failed to create Flux Kontext image task');
+      }
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return this.formatError('flux_kontext_image', error, {
+          prompt: 'Required: Text prompt describing the desired image or edit (max 5000 chars, English recommended)',
+          inputImage: 'Optional: Input image URL for editing mode (required for image editing)',
+          aspectRatio: 'Optional: Output aspect ratio (21:9, 16:9, 4:3, 1:1, 3:4, 9:16, default: 16:9)',
+          outputFormat: 'Optional: Output format (jpeg, png, default: jpeg)',
+          model: 'Optional: Model version (flux-kontext-pro, flux-kontext-max, default: flux-kontext-pro)',
+          enableTranslation: 'Optional: Auto-translate non-English prompts (default: true)',
+          promptUpsampling: 'Optional: Enable prompt enhancement (default: false)',
+          safetyTolerance: 'Optional: Content moderation level (0-6 for generation, 0-2 for editing, default: 2)',
+          uploadCn: 'Optional: Route uploads via China servers (default: false)',
+          watermark: 'Optional: Watermark identifier to add to generated image',
+          callBackUrl: 'Optional: Webhook URL for completion notifications'
+        });
+      }
+      
+      return this.formatError('flux_kontext_image', error, {
+        prompt: 'Required: Text prompt describing the desired image or edit (max 5000 chars, English recommended)',
+        inputImage: 'Optional: Input image URL for editing mode (required for image editing)',
+        aspectRatio: 'Optional: Output aspect ratio (21:9, 16:9, 4:3, 1:1, 3:4, 9:16, default: 16:9)',
+        outputFormat: 'Optional: Output format (jpeg, png, default: jpeg)',
+        model: 'Optional: Model version (flux-kontext-pro, flux-kontext-max, default: flux-kontext-pro)',
+        enableTranslation: 'Optional: Auto-translate non-English prompts (default: true)',
+        promptUpsampling: 'Optional: Enable prompt enhancement (default: false)',
+        safetyTolerance: 'Optional: Content moderation level (0-6 for generation, 0-2 for editing, default: 2)',
+        uploadCn: 'Optional: Route uploads via China servers (default: false)',
+        watermark: 'Optional: Watermark identifier to add to generated image',
+        callBackUrl: 'Optional: Webhook URL for completion notifications'
+      });
+    }
+  }
+
   private async handleRunwayAlephVideo(args: any) {
     try {
       const request = RunwayAlephVideoSchema.parse(args);
@@ -1629,6 +2598,137 @@ class KieAiMcpServer {
         image_url: 'Optional: URL of input image',
         aspect_ratio: 'Optional: Video aspect ratio',
         resolution: 'Optional: Video resolution',
+        callBackUrl: 'Optional: URL for task completion notifications'
+      });
+    }
+  }
+
+  private async handleRecraftRemoveBackground(args: any) {
+    try {
+      const request = RecraftRemoveBackgroundSchema.parse(args);
+      
+      // Use environment variable as fallback if callBackUrl not provided
+      if (!request.callBackUrl && process.env.KIE_AI_CALLBACK_URL) {
+        request.callBackUrl = process.env.KIE_AI_CALLBACK_URL;
+      }
+      
+      const response = await this.client.generateRecraftRemoveBackground(request);
+      
+      if (response.code === 200 && response.data?.taskId) {
+        // Store task in database
+        await this.db.createTask({
+          task_id: response.data.taskId,
+          api_type: 'recraft-remove-background',
+          status: 'pending'
+        });
+        
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify({
+                success: true,
+                task_id: response.data.taskId,
+                message: 'Recraft Remove Background task created successfully',
+                parameters: {
+                  image: request.image,
+                  callBackUrl: request.callBackUrl
+                },
+                next_steps: [
+                  'Use get_task_status to check generation progress',
+                  'Task completion will be sent to the provided callback URL',
+                  'Background removal typically takes 30-60 seconds depending on image complexity'
+                ]
+              }, null, 2)
+            }
+          ]
+        };
+      } else {
+        throw new Error(response.msg || 'Failed to create Recraft Remove Background task');
+      }
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return this.formatError('recraft_remove_background', error, {
+          image: 'Required: URL of image to remove background from (PNG, JPG, WEBP, max 5MB, 16MP, 4096px max, 256px min)',
+          callBackUrl: 'Optional: URL for task completion notifications (uses KIE_AI_CALLBACK_URL env var if not provided)'
+        });
+      }
+      
+      return this.formatError('recraft_remove_background', error, {
+        image: 'Required: URL of image to remove background from',
+        callBackUrl: 'Optional: URL for task completion notifications'
+      });
+    }
+  }
+
+  private async handleIdeogramReframe(args: any) {
+    try {
+      const request = IdeogramReframeSchema.parse(args);
+      
+      // Use environment variable as fallback if callBackUrl not provided
+      if (!request.callBackUrl && process.env.KIE_AI_CALLBACK_URL) {
+        request.callBackUrl = process.env.KIE_AI_CALLBACK_URL;
+      }
+      
+      const response = await this.client.generateIdeogramReframe(request);
+      
+      if (response.code === 200 && response.data?.taskId) {
+        // Store task in database
+        await this.db.createTask({
+          task_id: response.data.taskId,
+          api_type: 'ideogram-reframe',
+          status: 'pending'
+        });
+        
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify({
+                success: true,
+                task_id: response.data.taskId,
+                message: 'Ideogram V3 Reframe task created successfully',
+                parameters: {
+                  image_url: request.image_url,
+                  image_size: request.image_size,
+                  rendering_speed: request.rendering_speed,
+                  style: request.style,
+                  num_images: request.num_images,
+                  seed: request.seed,
+                  callBackUrl: request.callBackUrl
+                },
+                next_steps: [
+                  'Use get_task_status to check generation progress',
+                  'Task completion will be sent to the provided callback URL',
+                  'Image reframing typically takes 30-120 seconds depending on complexity and settings'
+                ]
+              }, null, 2)
+            }
+          ]
+        };
+      } else {
+        throw new Error(response.msg || 'Failed to create Ideogram V3 Reframe task');
+      }
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return this.formatError('ideogram_reframe', error, {
+          image_url: 'Required: URL of image to reframe (JPEG, PNG, WEBP, max 10MB)',
+          image_size: 'Required: Output size (square, square_hd, portrait_4_3, portrait_16_9, landscape_4_3, landscape_16_9)',
+          rendering_speed: 'Optional: Rendering speed (TURBO, BALANCED, QUALITY) - default: BALANCED',
+          style: 'Optional: Style type (AUTO, GENERAL, REALISTIC, DESIGN) - default: AUTO',
+          num_images: 'Optional: Number of images (1, 2, 3, 4) - default: 1',
+          seed: 'Optional: Seed for reproducible results (default: 0)',
+          callBackUrl: 'Optional: URL for task completion notifications (uses KIE_AI_CALLBACK_URL env var if not provided)'
+        });
+      }
+      
+      return this.formatError('ideogram_reframe', error, {
+        image_url: 'Required: URL of image to reframe',
+        image_size: 'Required: Output size for the reframed image',
+        rendering_speed: 'Optional: Rendering speed preference',
+        style: 'Optional: Style type for generation',
+        num_images: 'Optional: Number of images to generate',
+        seed: 'Optional: Seed for reproducible results',
         callBackUrl: 'Optional: URL for task completion notifications'
       });
     }

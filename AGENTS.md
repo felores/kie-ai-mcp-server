@@ -298,3 +298,230 @@ git push origin main --tags
 2. **Check GitHub release**: Ensure notes and assets are correct
 3. **Update documentation**: Update any external references if needed
 4. **Monitor issues**: Watch for user feedback and bug reports
+
+## MCP Tool Architecture & Schema Design
+
+### **Unified Tool Pattern**
+
+Our primary design goal is **unified tools** that consolidate multiple related capabilities into single interfaces. This reduces cognitive load and simplifies user experience.
+
+#### **Examples of Unified Tools:**
+- `bytedance_seedance_video`: Text-to-video + Image-to-video
+- `bytedance_seedream_image`: Text-to-image + Image editing
+- `qwen_image`: Text-to-image + Image editing
+- `midjourney_generate`: 6 generation modes in one tool
+- `openai_4o_image`: Text-to-image + Image editing + Image variants
+
+### **Schema Design Principles**
+
+#### **1. Union Schema Pattern**
+For unified tools, create a single schema that encompasses ALL possible parameters across all modes:
+
+```typescript
+// All parameters are optional at the schema level
+UnifiedToolSchema = z.object({
+  // Parameters for mode A
+  prompt: z.string().optional(),
+  
+  // Parameters for mode B  
+  imageUrl: z.string().url().optional(),
+  
+  // Parameters for mode C
+  maskUrl: z.string().url().optional(),
+  
+  // Common parameters
+  quality: z.enum(['standard', 'hd']).default('standard'),
+  callBackUrl: z.string().url().optional()
+}).refine((data) => {
+  // Business logic validation for mode requirements
+  return validateModeRequirements(data);
+});
+```
+
+#### **2. Smart Mode Detection**
+Implement logic to detect the intended mode based on parameter combinations:
+
+```typescript
+// Mode detection logic in refine() or handler
+const hasPrompt = !!data.prompt;
+const hasImage = !!data.imageUrl;
+const hasMask = !!data.maskUrl;
+
+if (hasImage && hasMask) {
+  // Image editing mode
+  return hasPrompt; // prompt required for editing
+} else if (hasImage) {
+  // Image variants mode
+  return true; // prompt optional
+} else {
+  // Text-to-image mode
+  return hasPrompt; // prompt required
+}
+```
+
+#### **3. Single vs Multiple Endpoints**
+
+**Single Endpoint Tools** (API handles mode detection internally):
+- `openai_4o_image`: One endpoint `/gpt4o-image/generate`
+- API determines behavior based on parameter presence
+- Server just passes parameters through
+
+**Multiple Endpoint Tools** (Server routes to different endpoints):
+- `bytedance_seedance_video`: Routes to different endpoints based on quality/mode
+- `midjourney_generate`: Routes to different MJ endpoints based on task type
+- Server handles intelligent endpoint selection
+
+### **Client Instructions vs Schema Delivery**
+
+#### **What MCP Server Provides Automatically:**
+1. **Tool Discovery**: `ListToolsResponse` with all available tools
+2. **Schema Delivery**: Complete JSON Schema for each tool
+3. **Parameter Validation**: Type checking, constraints, enums
+4. **Error Messages**: Validation failures with specific guidance
+
+#### **What Should Go in Client Instructions:**
+
+**❌ DON'T Include:**
+- Raw schema definitions (they're delivered automatically)
+- Parameter type information (handled by MCP)
+- Validation rules (enforced by server)
+
+**✅ DO Include:**
+1. **Tool Capabilities**: High-level descriptions of what each tool does
+2. **Usage Patterns**: Common workflows and parameter combinations
+3. **Mode Logic**: Explain how unified tools detect modes
+4. **Best Practices**: Tips for getting good results
+5. **Parameter Selection**: Guidance on choosing between options
+6. **Error Handling**: What to do when things go wrong
+
+**Example Client Instruction:**
+> "Use `openai_4o_image` for all image generation needs. It automatically detects whether you want to generate from text (provide prompt), edit an existing image (provide prompt + imageUrl + maskUrl), or create variants (provide imageUrl). Generate 4 variants by default for best results. Use HD quality for professional work."
+
+### **Implementation Patterns**
+
+#### **Pattern 1: Single Endpoint, Smart API**
+```typescript
+// API handles mode detection internally
+async generateOpenAI4oImage(request: OpenAI4oImageRequest) {
+  const payload = {
+    prompt: request.prompt,
+    filesUrl: request.filesUrl,
+    maskUrl: request.maskUrl,
+    // ... other parameters
+  };
+  
+  // Always same endpoint - API figures out what to do
+  return this.makeRequest('/gpt4o-image/generate', 'POST', payload);
+}
+```
+
+#### **Pattern 2: Multiple Endpoints, Smart Routing**
+```typescript
+// Server routes to different endpoints based on mode
+async generateByteDanceSeedanceVideo(request: ByteDanceSeedanceVideoRequest) {
+  const isImageToVideo = !!request.image_url;
+  const isProQuality = request.quality === 'pro';
+  
+  let endpoint = '/bytedance/seedance/';
+  endpoint += isProQuality ? 'v1-pro-' : 'v1-lite-';
+  endpoint += isImageToVideo ? 'image-to-video' : 'text-to-video';
+  
+  return this.makeRequest(endpoint, 'POST', request);
+}
+```
+
+#### **Pattern 3: Complex Mode Detection**
+```typescript
+// Midjourney - complex parameter combinations determine mode
+async generateMidjourney(request: MidjourneyGenerateRequest) {
+  let taskType = 'mj_txt2img'; // default
+  
+  // Smart detection based on parameters
+  if (request.high_definition_video || request.motion) {
+    taskType = request.high_definition_video ? 'mj_video_hd' : 'mj_video';
+  } else if (request.ow) {
+    taskType = 'mj_omni_reference';
+  } else if (request.taskType === 'mj_style_reference') {
+    taskType = 'mj_style_reference';
+  } else if (request.fileUrls || request.fileUrl) {
+    taskType = 'mj_img2img';
+  }
+  
+  const payload = { ...request, taskType };
+  return this.makeRequest('/mj/generate', 'POST', payload);
+}
+```
+
+### **Schema Validation Best Practices**
+
+#### **1. Layered Validation**
+- **Schema Layer**: Basic type checking (string, number, URL format)
+- **Business Logic Layer**: Mode-specific requirement validation
+- **API Layer**: Final validation by the target API
+
+#### **2. Clear Error Messages**
+```typescript
+.refine((data) => {
+  // Complex validation with clear error messages
+  if (data.maskUrl && !data.filesUrl) {
+    return false;
+  }
+  return true;
+}, {
+  message: "maskUrl requires filesUrl to be provided",
+  path: ["maskUrl"]
+});
+```
+
+#### **3. Environment Variable Fallbacks**
+```typescript
+.refine((data) => {
+  // Check both direct parameter and environment variable
+  const hasCallBackUrl = data.callBackUrl || process.env.KIE_AI_CALLBACK_URL;
+  return !!hasCallBackUrl;
+}, {
+  message: "callBackUrl is required (either directly or via KIE_AI_CALLBACK_URL environment variable)",
+  path: ["callBackUrl"]
+});
+```
+
+### **Future Development Guidelines**
+
+#### **When Adding New Tools:**
+
+1. **Analyze API Structure**: 
+   - Single endpoint with smart mode detection? → Pattern 1
+   - Multiple distinct endpoints? → Pattern 2
+   - Complex parameter combinations? → Pattern 3
+
+2. **Design Unified Schema**:
+   - Include ALL possible parameters
+   - Make parameters optional at schema level
+   - Add business logic validation in refine()
+
+3. **Implement Smart Detection**:
+   - Clear, predictable mode detection logic
+   - Document the detection rules in client instructions
+   - Provide helpful error messages for invalid combinations
+
+4. **Update Documentation**:
+   - Add tool to README.md with examples
+   - Update CHANGELOG.md
+   - Document mode detection logic in AGENTS.md
+
+#### **When Modifying Existing Tools:**
+
+1. **Backward Compatibility**: Add new parameters as optional
+2. **Schema Evolution**: Extend existing schemas without breaking changes
+3. **Documentation**: Update examples and usage patterns
+4. **Testing**: Verify all modes still work correctly
+
+### **Key Takeaways**
+
+1. **Unified Tools > Multiple Tools**: Reduce cognitive load
+2. **Schema Delivery is Automatic**: Don't manually paste schemas in client instructions
+3. **Smart Mode Detection**: Either API handles it (Pattern 1) or server routes it (Pattern 2/3)
+4. **Client Instructions Focus on Usage**: How to use, not what the parameters are
+5. **Clear Error Messages**: Help users understand what went wrong and how to fix it
+
+This architecture ensures a clean, maintainable codebase while providing an excellent user experience through intelligent, unified tool interfaces.
