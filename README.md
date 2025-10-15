@@ -1,6 +1,6 @@
 # Kie.ai MCP Server
 
-**Access State of the Art AI models at half the pricewith one MCP Server. Generate videos, images, music, and audio with the latest generative AI technologies using a developer-friendly API.**
+**Access State of the Art AI models at half the price using one MCP Server. Generate videos, images, music, and audio with the latest generative AI technologies using a developer-friendly API.**
 
  Generate stunning videos, images, music, and audio at **30-50% lower cost** than competitors with 99.9% uptime and 24/7 human support.
 
