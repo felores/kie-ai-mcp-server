@@ -21,6 +21,7 @@ import {
   ElevenLabsTTSSchema,
   ElevenLabsTTSTurboSchema,
   ElevenLabsSoundEffectsSchema,
+  ByteDanceSeedanceVideoSchema,
   KieAiConfig 
 } from './types.js';
 
@@ -32,7 +33,7 @@ class KieAiMcpServer {
   constructor() {
     this.server = new Server({
       name: 'kie-ai-mcp-server',
-      version: '1.4.0',
+      version: '1.5.0',
     });
 
     // Initialize client with config from environment
@@ -586,6 +587,78 @@ class KieAiMcpServer {
               },
               required: ['text']
             }
+          },
+          {
+            name: 'bytedance_seedance_video',
+            description: 'Generate videos using ByteDance Seedance models (unified tool for both text-to-video and image-to-video)',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                prompt: {
+                  type: 'string',
+                  description: 'Text prompt for video generation (max 10000 characters)',
+                  minLength: 1,
+                  maxLength: 10000
+                },
+                image_url: {
+                  type: 'string',
+                  description: 'URL of input image for image-to-video generation (optional - if not provided, uses text-to-video)',
+                  format: 'uri'
+                },
+                quality: {
+                  type: 'string',
+                  description: 'Model quality level - lite for faster generation, pro for higher quality',
+                  enum: ['lite', 'pro'],
+                  default: 'lite'
+                },
+                aspect_ratio: {
+                  type: 'string',
+                  description: 'Aspect ratio of the generated video',
+                  enum: ['1:1', '9:16', '16:9', '4:3', '3:4', '21:9', '9:21'],
+                  default: '16:9'
+                },
+                resolution: {
+                  type: 'string',
+                  description: 'Video resolution - 480p for faster generation, 720p for balance, 1080p for higher quality',
+                  enum: ['480p', '720p', '1080p'],
+                  default: '720p'
+                },
+                duration: {
+                  type: 'string',
+                  description: 'Duration of video in seconds (2-12)',
+                  pattern: '^[2-9]|1[0-2]$',
+                  default: '5'
+                },
+                camera_fixed: {
+                  type: 'boolean',
+                  description: 'Whether to fix the camera position',
+                  default: false
+                },
+                seed: {
+                  type: 'integer',
+                  description: 'Random seed to control video generation. Use -1 for random',
+                  minimum: -1,
+                  maximum: 2147483647,
+                  default: -1
+                },
+                enable_safety_checker: {
+                  type: 'boolean',
+                  description: 'Enable content safety checking',
+                  default: true
+                },
+                end_image_url: {
+                  type: 'string',
+                  description: 'URL of image the video should end with (image-to-video only)',
+                  format: 'uri'
+                },
+                callBackUrl: {
+                  type: 'string',
+                  description: 'Optional: URL for task completion notifications (uses KIE_AI_CALLBACK_URL env var if not provided)',
+                  format: 'uri'
+                }
+              },
+              required: ['prompt']
+            }
           }
         ]
       };
@@ -628,6 +701,9 @@ class KieAiMcpServer {
           
           case 'elevenlabs_ttsfx':
             return await this.handleElevenLabsSoundEffects(args);
+          
+          case 'bytedance_seedance_video':
+            return await this.handleByteDanceSeedanceVideo(args);
           
           default:
             throw new McpError(
@@ -1332,6 +1408,89 @@ class KieAiMcpServer {
         text: 'Required: The text describing the sound effect to generate (max 5000 characters)',
         duration_seconds: 'Optional: Duration in seconds (0.5-22)',
         output_format: 'Optional: Audio output format',
+        callBackUrl: 'Optional: URL for task completion notifications'
+      });
+    }
+  }
+
+  private async handleByteDanceSeedanceVideo(args: any) {
+    try {
+      const request = ByteDanceSeedanceVideoSchema.parse(args);
+      
+      // Use environment variable as fallback if callBackUrl not provided
+      if (!request.callBackUrl && process.env.KIE_AI_CALLBACK_URL) {
+        request.callBackUrl = process.env.KIE_AI_CALLBACK_URL;
+      }
+      
+      const response = await this.client.generateByteDanceSeedanceVideo(request);
+      
+      if (response.code === 200 && response.data?.taskId) {
+        // Determine mode for user feedback
+        const isImageToVideo = !!request.image_url;
+        const mode = isImageToVideo ? 'Image-to-Video' : 'Text-to-Video';
+        const quality = request.quality || 'lite';
+        
+        // Store task in database
+        await this.db.createTask({
+          task_id: response.data.taskId,
+          api_type: 'bytedance-seedance-video',
+          status: 'pending'
+        });
+        
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify({
+                success: true,
+                task_id: response.data.taskId,
+                message: `ByteDance Seedance ${mode} generation task created successfully`,
+                parameters: {
+                  mode: mode,
+                  quality: quality,
+                  prompt: request.prompt.substring(0, 100) + (request.prompt.length > 100 ? '...' : ''),
+                  aspect_ratio: request.aspect_ratio || '16:9',
+                  resolution: request.resolution || '720p',
+                  duration: request.duration || '5',
+                  ...(isImageToVideo && { image_url: request.image_url }),
+                  ...(request.end_image_url && { end_image_url: request.end_image_url })
+                },
+                next_steps: [
+                  'Use get_task_status to check generation progress',
+                  'Task completion will be sent to the provided callback URL',
+                  `${mode} generation typically takes 2-5 minutes depending on quality and complexity`
+                ]
+              }, null, 2)
+            }
+          ]
+        };
+      } else {
+        throw new Error(response.msg || 'Failed to create ByteDance Seedance video generation task');
+      }
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return this.formatError('bytedance_seedance_video', error, {
+          prompt: 'Required: Text prompt for video generation (max 10000 characters)',
+          image_url: 'Optional: URL of input image for image-to-video mode',
+          quality: 'Optional: Model quality - lite (faster) or pro (higher quality, default: lite)',
+          aspect_ratio: 'Optional: Video aspect ratio (default: 16:9)',
+          resolution: 'Optional: Video resolution - 480p/720p/1080p (default: 720p)',
+          duration: 'Optional: Video duration in seconds 2-12 (default: 5)',
+          camera_fixed: 'Optional: Fix camera position (default: false)',
+          seed: 'Optional: Random seed for reproducible results (default: -1 for random)',
+          enable_safety_checker: 'Optional: Enable content safety checking (default: true)',
+          end_image_url: 'Optional: URL of ending image (image-to-video only)',
+          callBackUrl: 'Optional: URL for task completion notifications (uses KIE_AI_CALLBACK_URL env var if not provided)'
+        });
+      }
+      
+      return this.formatError('bytedance_seedance_video', error, {
+        prompt: 'Required: Text prompt for video generation (max 10000 characters)',
+        image_url: 'Optional: URL of input image for image-to-video mode',
+        quality: 'Optional: Model quality - lite or pro',
+        aspect_ratio: 'Optional: Video aspect ratio',
+        resolution: 'Optional: Video resolution',
+        duration: 'Optional: Video duration in seconds 2-12',
         callBackUrl: 'Optional: URL for task completion notifications'
       });
     }

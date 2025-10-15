@@ -45,3 +45,8 @@
 - [Logging](https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/logging.md)
 - [Pagination](https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/pagination.md)
 - [Versioning](https://modelcontextprotocol.io/specification/versioning.md)
+
+
+## Kie.ai
+
+https://kie.ai/bytedance/seedance-v1

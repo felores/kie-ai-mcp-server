@@ -9,6 +9,7 @@ import {
   ElevenLabsTTSRequest,
   ElevenLabsTTSTurboRequest,
   ElevenLabsSoundEffectsRequest,
+  ByteDanceSeedanceVideoRequest,
   ImageResponse,
   TaskResponse 
 } from './types.js';
@@ -108,7 +109,7 @@ export class KieAiClient {
       return this.makeRequest<any>(`/jobs/recordInfo?taskId=${taskId}`, 'GET');
     } else if (apiType === 'suno') {
       return this.makeRequest<any>(`/generate/record-info?taskId=${taskId}`, 'GET');
-    } else if (apiType === 'elevenlabs-tts' || apiType === 'elevenlabs-tts-turbo' || apiType === 'elevenlabs-sound-effects') {
+    } else if (apiType === 'elevenlabs-tts' || apiType === 'elevenlabs-tts-turbo' || apiType === 'elevenlabs-sound-effects' || apiType === 'bytedance-seedance-video') {
       return this.makeRequest<any>(`/jobs/recordInfo?taskId=${taskId}`, 'GET');
     }
     
@@ -188,6 +189,45 @@ export class KieAiClient {
         prompt_influence: request.prompt_influence || 0.3,
         output_format: request.output_format || 'mp3_44100_192'
       },
+      callBackUrl: request.callBackUrl || process.env.KIE_AI_CALLBACK_URL
+    };
+
+    return this.makeRequest<TaskResponse>('/jobs/createTask', 'POST', jobRequest);
+  }
+
+  async generateByteDanceSeedanceVideo(request: ByteDanceSeedanceVideoRequest): Promise<KieAiResponse<TaskResponse>> {
+    // Determine model based on quality and mode (text-to-video vs image-to-video)
+    const isImageToVideo = !!request.image_url;
+    const quality = request.quality || 'lite';
+    
+    let model: string;
+    if (isImageToVideo) {
+      model = quality === 'pro' ? 'bytedance/v1-pro-image-to-video' : 'bytedance/v1-lite-image-to-video';
+    } else {
+      model = quality === 'pro' ? 'bytedance/v1-pro-text-to-video' : 'bytedance/v1-lite-text-to-video';
+    }
+
+    const input: any = {
+      prompt: request.prompt,
+      aspect_ratio: request.aspect_ratio || '16:9',
+      resolution: request.resolution || '720p',
+      duration: request.duration || '5',
+      camera_fixed: request.camera_fixed || false,
+      seed: request.seed !== undefined ? request.seed : -1,
+      enable_safety_checker: request.enable_safety_checker !== false
+    };
+
+    // Add image-specific parameters
+    if (isImageToVideo) {
+      input.image_url = request.image_url;
+      if (request.end_image_url) {
+        input.end_image_url = request.end_image_url;
+      }
+    }
+
+    const jobRequest = {
+      model,
+      input,
       callBackUrl: request.callBackUrl || process.env.KIE_AI_CALLBACK_URL
     };
 

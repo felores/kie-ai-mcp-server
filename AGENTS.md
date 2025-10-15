@@ -28,6 +28,11 @@
 - **Error handling**: Wrap errors in `McpError` with appropriate `ErrorCode`
 - **Naming**: camelCase for variables/functions, PascalCase for classes/types
 - **Database**: SQLite with TaskDatabase class, always update task status
+  - Use `await db.createTask()` when creating new generation tasks
+  - Use `await db.updateTask()` to sync status after API calls
+  - Store api_type for intelligent endpoint routing
+  - Handle database errors gracefully with try-catch blocks
+  - Use local database as cache to reduce API calls
 - **API client**: Use KieAiClient class methods, never construct raw fetch calls
 - **Response format**: Return MCP tool responses with JSON.stringify and `null, 2`
 - **Async/await**: Use async/await, avoid promises directly
@@ -48,6 +53,101 @@ For tools requiring callback URLs (like Veo3, Suno):
 - MCP server (index.ts) → KieAiClient (kie-ai-client.ts) → Kie.ai API
 - Task persistence via TaskDatabase (database.ts)
 - Smart endpoint routing based on api_type (veo vs playground)
+
+## Database & Task Management
+
+### **Database Architecture**
+- **SQLite Database**: Local persistent storage using `sqlite3` package
+- **TaskDatabase Class**: Wrapper class providing Promise-based database operations
+- **Auto-initialization**: Creates tables and indexes on first run
+- **Thread Safety**: Uses SQLite serialization for concurrent access
+
+### **Database Schema**
+```sql
+CREATE TABLE tasks (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  task_id TEXT UNIQUE NOT NULL,
+  api_type TEXT NOT NULL,
+  status TEXT DEFAULT 'pending',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  result_url TEXT,
+  error_message TEXT
+);
+
+-- Performance indexes
+CREATE INDEX idx_task_id ON tasks(task_id);
+CREATE INDEX idx_status ON tasks(status);
+```
+
+### **Task Lifecycle Management**
+1. **Task Creation**: When user calls generation tool → `INSERT` with status 'pending'
+2. **Status Updates**: During API polling → `UPDATE` status based on API response
+3. **Completion**: When API returns success → `UPDATE` with result_url
+4. **Failure**: When API returns error → `UPDATE` with error_message
+
+### **Database Operations**
+```typescript
+// Core methods available in TaskDatabase class
+await db.createTask({ task_id, api_type, status });           // Create new task
+await db.getTask(task_id);                                   // Get specific task
+await db.updateTask(task_id, { status, result_url });         // Update task
+await db.getAllTasks(limit);                                 // List all tasks
+await db.getTasksByStatus(status, limit);                    // Filter by status
+```
+
+### **Smart Status Checking Pattern**
+The `get_task_status` tool implements intelligent status checking:
+
+1. **Local Database Query**: Fast lookup of task metadata and api_type
+2. **API Endpoint Routing**: Use api_type to call correct Kie.ai endpoint
+3. **Database Synchronization**: Update local record with latest API data
+4. **Combined Response**: Merge local and API data for complete picture
+
+### **API Type Routing Strategy**
+```typescript
+// Client uses api_type to determine correct endpoint
+if (apiType === 'veo3') {
+  return this.makeRequest(`/veo/record-info?taskId=${taskId}`, 'GET');
+} else if (apiType === 'suno') {
+  return this.makeRequest(`/generate/record-info?taskId=${taskId}`, 'GET');
+} else if (apiType.includes('elevenlabs') || apiType.includes('bytedance')) {
+  return this.makeRequest(`/jobs/recordInfo?taskId=${taskId}`, 'GET');
+}
+```
+
+### **Database Configuration**
+- **Environment Variable**: `KIE_AI_DB_PATH` (default: `./tasks.db`)
+- **Auto-creation**: Database and tables created automatically on startup
+- **Persistence**: Data survives server restarts
+- **Inspectability**: Can be opened with any SQLite client tool
+
+### **Task Status Values**
+- **`pending`**: Task created, waiting for API processing
+- **`processing`**: API is actively processing the task
+- **`completed`**: Task finished successfully, result available
+- **`failed`**: Task failed, error message available
+
+### **Best Practices for Agents**
+- **Always update task status** in database after API calls
+- **Use api_type from database** for intelligent endpoint routing
+- **Store both local and API status** for comprehensive tracking
+- **Handle database errors gracefully** with proper error messages
+- **Use transactions** when multiple updates are needed (not currently implemented)
+- **Consider cleanup strategies** for old completed tasks (future enhancement)
+
+### **Performance Considerations**
+- **Indexed Queries**: task_id and status fields are indexed for fast lookups
+- **Local Caching**: Database reduces API calls for status checks
+- **Connection Management**: Single database connection per server instance
+- **Memory Usage**: SQLite is lightweight and efficient for task tracking
+
+### **Future Database Enhancements**
+- **Task Expiration**: Automatic cleanup of old completed tasks
+- **User Association**: Multi-user support with user_id field
+- **Task Metadata**: Additional fields for parameters, model versions, etc.
+- **Statistics**: Analytics and usage tracking tables
+- **Batch Operations**: Bulk status updates and cleanup operations
 
 ## Publishing to NPM
 

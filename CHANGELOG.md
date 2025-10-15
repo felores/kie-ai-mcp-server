@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2025-01-14
+
+### Added
+- **ByteDance Seedance Video**: New unified `bytedance_seedance_video` tool for video generation
+- **Text-to-Video Support**: Generate videos from text prompts using ByteDance models
+- **Image-to-Video Support**: Animate static images with natural language descriptions
+- **Smart Mode Detection**: Automatically detects text-to-video vs image-to-video based on parameters
+- **Quality Tiers**: Lite quality for faster generation, Pro quality for higher results
+- **Model Consolidation**: Single tool replaces 4 separate ByteDance video endpoints
+  - `bytedance/v1-lite-text-to-video`
+  - `bytedance/v1-lite-image-to-video` 
+  - `bytedance/v1-pro-text-to-video`
+  - `bytedance/v1-pro-image-to-video`
+- **Flexible Aspect Ratios**: Support for 1:1, 9:16, 16:9, 4:3, 3:4, 21:9, 9:21 formats
+- **Resolution Options**: 480p, 720p, 1080p video quality settings
+- **Camera Control**: Fixed camera position option for stable video generation
+- **Seed Control**: Reproducible video generation with random seed support
+- **End Frame Support**: Specify ending image for image-to-video transitions
+- **Safety Features**: Built-in content safety checking with disable option
+- **Task Integration**: Full database tracking and status monitoring
+
+### Technical
+- Updated database schema to support `bytedance-seedance-video` api_type
+- Enhanced client routing for unified ByteDance video endpoint handling
+- Comprehensive parameter validation with Zod schemas
+- Smart endpoint selection based on quality and mode parameters
+
 ## [1.4.0] - 2025-01-14
 
 ### Added

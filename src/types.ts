@@ -118,6 +118,45 @@ export const ElevenLabsSoundEffectsSchema = z.object({
   callBackUrl: z.string().url().optional()
 });
 
+export const ByteDanceSeedanceVideoSchema = z.object({
+  prompt: z.string().min(1).max(10000),
+  image_url: z.string().url().optional(),
+  quality: z.enum(['lite', 'pro']).default('lite').optional(),
+  aspect_ratio: z.enum(['1:1', '9:16', '16:9', '4:3', '3:4', '21:9', '9:21']).default('16:9').optional(),
+  resolution: z.enum(['480p', '720p', '1080p']).default('720p').optional(),
+  duration: z.string().refine((val) => {
+    const num = parseInt(val);
+    return !isNaN(num) && num >= 2 && num <= 12;
+  }, {
+    message: "Duration must be a string number between 2 and 12"
+  }).default('5').optional(),
+  camera_fixed: z.boolean().default(false).optional(),
+  seed: z.number().int().min(-1).max(2147483647).default(-1).optional(),
+  enable_safety_checker: z.boolean().default(true).optional(),
+  end_image_url: z.string().url().optional(),
+  callBackUrl: z.string().url().optional()
+}).refine((data) => {
+  // Check if callBackUrl is provided directly or via environment variable
+  const hasCallBackUrl = data.callBackUrl || process.env.KIE_AI_CALLBACK_URL;
+  if (!hasCallBackUrl) {
+    return false;
+  }
+  return true;
+}, {
+  message: "callBackUrl is required (either directly or via KIE_AI_CALLBACK_URL environment variable)",
+  path: ["callBackUrl"]
+}).refine((data) => {
+  // If image_url is provided, aspect_ratio should be limited to options supported by image-to-video models
+  if (data.image_url) {
+    const validRatios = ['1:1', '9:16', '16:9', '4:3', '3:4', '21:9'];
+    return !data.aspect_ratio || validRatios.includes(data.aspect_ratio);
+  }
+  return true;
+}, {
+  message: "Invalid aspect_ratio for image-to-video mode. Valid options: 1:1, 9:16, 16:9, 4:3, 3:4, 21:9",
+  path: ["aspect_ratio"]
+});
+
 // TypeScript types
 export type NanoBananaGenerateRequest = z.infer<typeof NanoBananaGenerateSchema>;
 export type NanaBananaEditRequest = z.infer<typeof NanoBananaEditSchema>;
@@ -127,6 +166,7 @@ export type SunoGenerateRequest = z.infer<typeof SunoGenerateSchema>;
 export type ElevenLabsTTSRequest = z.infer<typeof ElevenLabsTTSSchema>;
 export type ElevenLabsTTSTurboRequest = z.infer<typeof ElevenLabsTTSTurboSchema>;
 export type ElevenLabsSoundEffectsRequest = z.infer<typeof ElevenLabsSoundEffectsSchema>;
+export type ByteDanceSeedanceVideoRequest = z.infer<typeof ByteDanceSeedanceVideoSchema>;
 
 export interface KieAiResponse<T = any> {
   code: number;
@@ -146,7 +186,7 @@ export interface TaskResponse {
 export interface TaskRecord {
   id?: number;
   task_id: string;
-  api_type: 'nano-banana' | 'nano-banana-edit' | 'nano-banana-upscale' | 'veo3' | 'suno' | 'elevenlabs-tts' | 'elevenlabs-tts-turbo' | 'elevenlabs-sound-effects';
+  api_type: 'nano-banana' | 'nano-banana-edit' | 'nano-banana-upscale' | 'veo3' | 'suno' | 'elevenlabs-tts' | 'elevenlabs-tts-turbo' | 'elevenlabs-sound-effects' | 'bytedance-seedance-video';
   status: 'pending' | 'processing' | 'completed' | 'failed';
   created_at: string;
   updated_at: string;
