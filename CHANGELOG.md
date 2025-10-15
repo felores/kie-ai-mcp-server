@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.1] - 2025-01-14
+
+### Changed
+- **Unified ElevenLabs TTS Tool**: Merged `elevenlabs_tts` and `elevenlabs_tts_turbo` into single tool
+- **Smart Model Selection**: Added `model` parameter (turbo/multilingual) with turbo as default
+- **Simplified Interface**: Reduced cognitive load with single entry point for TTS generation
+- **Parameter Routing**: Smart parameter handling based on selected model
+  - Turbo model: uses `language_code` for language enforcement
+  - Multilingual model: uses `previous_text`/`next_text` for context
+- **Backwards Compatibility**: Maintained all existing functionality and parameters
+
+### Technical
+- Updated `ElevenLabsTTSSchema` with unified model selection
+- Removed `ElevenLabsTTSTurboSchema` and related types
+- Updated database schema to remove 'elevenlabs-tts-turbo' from TaskRecord api_type
+- Merged `generateElevenLabsTTS()` methods with intelligent model routing
+- Enhanced `handleElevenLabsTTS()` with model-specific parameter handling
+- Updated task status checking for unified elevenlabs-tts api_type
+- Improved response messages with model-specific information
+
+### User Experience
+- **Faster Default**: Turbo 2.5 model is now the default for faster generation
+- **Clear Documentation**: Updated tool description to explain both models
+- **Intelligent Parameters**: Only relevant parameters are used based on model selection
+- **Consistent Interface**: Single tool name reduces confusion and simplifies usage
+
 ## [1.7.0] - 2025-01-14
 
 ### Added

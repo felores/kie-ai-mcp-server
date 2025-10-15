@@ -340,24 +340,25 @@ Using explicit model (overrides default V5):
 **Note**: In custom mode, `style` and `title` are required. If `instrumental` is false, `prompt` is used as exact lyrics. The `callBackUrl` is optional and will use the `KIE_AI_CALLBACK_URL` environment variable if not provided. The `model` parameter defaults to "V5" but can be explicitly set to any available version.
 
 ### 9. `elevenlabs_tts`
-Generate speech from text using ElevenLabs multilingual TTS v2 model.
+Generate speech from text using ElevenLabs TTS models (Turbo 2.5 by default, with optional Multilingual v2 support).
 
 **Parameters:**
 - `text` (string, required): The text to convert to speech (max 5000 characters)
+- `model` (enum, optional): TTS model to use - "turbo" (faster, default) or "multilingual" (supports context)
 - `voice` (enum, optional): Voice to use - "Rachel", "Aria", "Roger", "Sarah", "Laura", "Charlie", "George", "Callum", "River", "Liam", "Charlotte", "Alice", "Matilda", "Will", "Jessica", "Eric", "Chris", "Brian", "Daniel", "Lily", "Bill" (default: "Rachel")
 - `stability` (number, optional): Voice stability (0-1, step 0.01, default: 0.5)
 - `similarity_boost` (number, optional): Similarity boost (0-1, step 0.01, default: 0.75)
 - `style` (number, optional): Style exaggeration (0-1, step 0.01, default: 0)
 - `speed` (number, optional): Speech speed (0.7-1.2, step 0.01, default: 1.0)
 - `timestamps` (boolean, optional): Whether to return timestamps for each word (default: false)
-- `previous_text` (string, optional): Text that came before current request for continuity (max 5000 chars)
-- `next_text` (string, optional): Text that comes after current request for continuity (max 5000 chars)
-- `language_code` (string, optional): ISO 639-1 language code for language enforcement (max 500 chars)
+- `previous_text` (string, optional): Text that came before current request (multilingual model only, max 5000 chars)
+- `next_text` (string, optional): Text that comes after current request (multilingual model only, max 5000 chars)
+- `language_code` (string, optional): ISO 639-1 language code for language enforcement (turbo model only, max 500 chars)
 - `callBackUrl` (string, optional): URL to receive task completion updates (uses KIE_AI_CALLBACK_URL environment variable if not provided)
 
 **Examples:**
 
-Basic TTS generation:
+Basic TTS generation (uses Turbo model by default):
 ```json
 {
   "text": "Hello, this is a test of the ElevenLabs text-to-speech system.",
@@ -365,86 +366,36 @@ Basic TTS generation:
 }
 ```
 
-Advanced voice controls:
+Fast generation with language enforcement (Turbo model):
 ```json
 {
-  "text": "Welcome to our presentation on artificial intelligence",
-  "voice": "Aria",
-  "stability": 0.8,
-  "similarity_boost": 0.9,
-  "style": 0.3,
-  "speed": 1.1
+  "text": "Bonjour, comment allez-vous?",
+  "voice": "Rachel",
+  "model": "turbo",
+  "language_code": "fr"
 }
 ```
 
-With continuity for longer texts:
+Advanced voice controls with context (Multilingual model):
 ```json
 {
   "text": "This is the second part of our conversation.",
   "voice": "Roger",
+  "model": "multilingual",
+  "stability": 0.8,
+  "similarity_boost": 0.9,
   "previous_text": "This is the first part of our conversation.",
   "next_text": "This is the third part of our conversation."
 }
 ```
 
-**Note**: The `callBackUrl` is optional and will use the `KIE_AI_CALLBACK_URL` environment variable if not provided. Generation typically takes 30 seconds to 2 minutes depending on text length.
+**Model Comparison:**
+- **Turbo 2.5** (default): Faster generation (15-60 seconds), supports language enforcement with `language_code`
+- **Multilingual v2**: Supports context with `previous_text`/`next_text`, generation takes 30-120 seconds
 
-### 10. `elevenlabs_tts_turbo`
-Generate speech from text using ElevenLabs Turbo 2.5 TTS model (faster generation with language enforcement support).
+**Note**: The `callBackUrl` is optional and will use the `KIE_AI_CALLBACK_URL` environment variable if not provided. Choose Turbo model for speed and language enforcement, or Multilingual model for context-aware speech generation.
 
-**Parameters:**
-- `text` (string, required): The text to convert to speech (max 5000 characters)
-- `voice` (enum, optional): Voice to use - "Rachel", "Aria", "Roger", "Sarah", "Laura", "Charlie", "George", "Callum", "River", "Liam", "Charlotte", "Alice", "Matilda", "Will", "Jessica", "Eric", "Chris", "Brian", "Daniel", "Lily", "Bill" (default: "Rachel")
-- `stability` (number, optional): Voice stability (0-1, step 0.01, default: 0.5)
-- `similarity_boost` (number, optional): Similarity boost (0-1, step 0.01, default: 0.75)
-- `style` (number, optional): Style exaggeration (0-1, step 0.01, default: 0)
-- `speed` (number, optional): Speech speed (0.7-1.2, step 0.01, default: 1.0)
-- `timestamps` (boolean, optional): Whether to return timestamps for each word (default: false)
-- `previous_text` (string, optional): Text that came before current request for continuity (max 5000 chars)
-- `next_text` (string, optional): Text that comes after current request for continuity (max 5000 chars)
-- `language_code` (string, optional): ISO 639-1 language code for language enforcement - Turbo 2.5 supports this feature (max 500 chars)
-- `callBackUrl` (string, optional): URL to receive task completion updates (uses KIE_AI_CALLBACK_URL environment variable if not provided)
-
-**Examples:**
-
-Fast TTS generation:
-```json
-{
-  "text": "This is a fast generation using the Turbo model.",
-  "voice": "Aria"
-}
-```
-
-With language enforcement:
-```json
-{
-  "text": "Bonjour, comment allez-vous?",
-  "voice": "Rachel",
-  "language_code": "fr"
-}
-```
-
-Advanced controls with continuity:
-```json
-{
-  "text": "This is part two of our series.",
-  "voice": "Roger",
-  "stability": 0.9,
-  "similarity_boost": 0.8,
-  "previous_text": "This is part one of our series.",
-  "language_code": "en"
-}
-```
-
-**Key Differences from Multilingual TTS:**
-- **Faster Generation**: Turbo 2.5 processes text 15-60 seconds (vs 30-120 seconds for multilingual)
-- **Language Enforcement**: Supports ISO 639-1 language codes for consistent language output
-- **Same Voice Options**: All 21 voices available
-- **Same Quality**: Maintains high audio quality with faster processing
-
-**Note**: The `callBackUrl` is optional and will use the `KIE_AI_CALLBACK_URL` environment variable if not provided. Turbo 2.5 generation is faster and supports language enforcement.
-
-### 11. `elevenlabs_ttsfx`
+### 10. `elevenlabs_ttsfx`
 Generate sound effects from text descriptions using ElevenLabs Sound Effects v2 model.
 
 **Parameters:**
@@ -945,7 +896,7 @@ nano_banana_generate: "Modern minimalist app icon for fitness tracker"
 bytedance_seedance_video: "Screen recording showing app features, clean interface"
 
 # Add narration
-elevenlabs_tts_turbo: "Tap here to get started with your new profile"
+elevenlabs_tts: "Tap here to get started with your new profile"
 ```
 
 ### 🏢 **Enterprise Applications**

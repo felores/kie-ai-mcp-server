@@ -19,7 +19,6 @@ import {
   Veo3GenerateSchema,
   SunoGenerateSchema,
   ElevenLabsTTSSchema,
-  ElevenLabsTTSTurboSchema,
   ElevenLabsSoundEffectsSchema,
   ByteDanceSeedanceVideoSchema,
   RunwayAlephVideoSchema,
@@ -35,7 +34,7 @@ class KieAiMcpServer {
   constructor() {
     this.server = new Server({
       name: 'kie-ai-mcp-server',
-      version: '1.7.0',
+      version: '1.7.1',
     });
 
     // Initialize client with config from environment
@@ -381,7 +380,7 @@ class KieAiMcpServer {
           },
           {
             name: 'elevenlabs_tts',
-            description: 'Generate speech from text using ElevenLabs multilingual TTS v2 model',
+            description: 'Generate speech from text using ElevenLabs TTS models (Turbo 2.5 by default, with optional Multilingual v2 support)',
             inputSchema: {
               type: 'object',
               properties: {
@@ -390,6 +389,12 @@ class KieAiMcpServer {
                   description: 'The text to convert to speech (max 5000 characters)',
                   minLength: 1,
                   maxLength: 5000
+                },
+                model: {
+                  type: 'string',
+                  description: 'TTS model to use - turbo (faster, default) or multilingual (supports context)',
+                  enum: ['turbo', 'multilingual'],
+                  default: 'turbo'
                 },
                 voice: {
                   type: 'string',
@@ -436,101 +441,19 @@ class KieAiMcpServer {
                 },
                 previous_text: {
                   type: 'string',
-                  description: 'Text that came before current request (max 5000 characters)',
+                  description: 'Text that came before current request (multilingual model only, max 5000 characters)',
                   maxLength: 5000,
                   default: ''
                 },
                 next_text: {
                   type: 'string',
-                  description: 'Text that comes after current request (max 5000 characters)',
+                  description: 'Text that comes after current request (multilingual model only, max 5000 characters)',
                   maxLength: 5000,
                   default: ''
                 },
                 language_code: {
                   type: 'string',
-                  description: 'Language code (ISO 639-1) for language enforcement',
-                  maxLength: 500,
-                  default: ''
-                },
-                callBackUrl: {
-                  type: 'string',
-                  description: 'Optional: URL for task completion notifications (uses KIE_AI_CALLBACK_URL env var if not provided)',
-                  format: 'uri'
-                }
-              },
-              required: ['text']
-            }
-          },
-          {
-            name: 'elevenlabs_tts_turbo',
-            description: 'Generate speech from text using ElevenLabs Turbo 2.5 TTS model (faster generation with language enforcement support)',
-            inputSchema: {
-              type: 'object',
-              properties: {
-                text: {
-                  type: 'string',
-                  description: 'The text to convert to speech (max 5000 characters)',
-                  minLength: 1,
-                  maxLength: 5000
-                },
-                voice: {
-                  type: 'string',
-                  description: 'Voice to use for speech generation',
-                  enum: ['Rachel', 'Aria', 'Roger', 'Sarah', 'Laura', 'Charlie', 'George', 'Callum', 'River', 'Liam', 'Charlotte', 'Alice', 'Matilda', 'Will', 'Jessica', 'Eric', 'Chris', 'Brian', 'Daniel', 'Lily', 'Bill'],
-                  default: 'Rachel'
-                },
-                stability: {
-                  type: 'number',
-                  description: 'Voice stability (0-1, step 0.01)',
-                  minimum: 0,
-                  maximum: 1,
-                  multipleOf: 0.01,
-                  default: 0.5
-                },
-                similarity_boost: {
-                  type: 'number',
-                  description: 'Similarity boost (0-1, step 0.01)',
-                  minimum: 0,
-                  maximum: 1,
-                  multipleOf: 0.01,
-                  default: 0.75
-                },
-                style: {
-                  type: 'number',
-                  description: 'Style exaggeration (0-1, step 0.01)',
-                  minimum: 0,
-                  maximum: 1,
-                  multipleOf: 0.01,
-                  default: 0
-                },
-                speed: {
-                  type: 'number',
-                  description: 'Speech speed (0.7-1.2, step 0.01)',
-                  minimum: 0.7,
-                  maximum: 1.2,
-                  multipleOf: 0.01,
-                  default: 1
-                },
-                timestamps: {
-                  type: 'boolean',
-                  description: 'Whether to return timestamps for each word',
-                  default: false
-                },
-                previous_text: {
-                  type: 'string',
-                  description: 'Text that came before current request (max 5000 characters)',
-                  maxLength: 5000,
-                  default: ''
-                },
-                next_text: {
-                  type: 'string',
-                  description: 'Text that comes after current request (max 5000 characters)',
-                  maxLength: 5000,
-                  default: ''
-                },
-                language_code: {
-                  type: 'string',
-                  description: 'Language code (ISO 639-1) for language enforcement - Turbo 2.5 supports this feature',
+                  description: 'Language code (ISO 639-1) for language enforcement (turbo model only)',
                   maxLength: 500,
                   default: ''
                 },
@@ -811,9 +734,6 @@ class KieAiMcpServer {
           case 'elevenlabs_tts':
             return await this.handleElevenLabsTTS(args);
           
-          case 'elevenlabs_tts_turbo':
-            return await this.handleElevenLabsTTSTurbo(args);
-          
           case 'elevenlabs_ttsfx':
             return await this.handleElevenLabsSoundEffects(args);
           
@@ -1043,7 +963,7 @@ class KieAiMcpServer {
             if (apiData.errorMessage) {
               errorMessage = apiData.errorMessage;
             }
-          } else if (localTask?.api_type === 'elevenlabs-tts' || localTask?.api_type === 'elevenlabs-tts-turbo' || localTask?.api_type === 'elevenlabs-sound-effects') {
+          } else if (localTask?.api_type === 'elevenlabs-tts' || localTask?.api_type === 'elevenlabs-sound-effects') {
             // ElevenLabs TTS/Sound Effects-specific status mapping
             const elevenlabsState = apiData.state;
             if (elevenlabsState === 'success') status = 'completed';
@@ -1145,7 +1065,7 @@ class KieAiMcpServer {
           error_code: sunoData.errorCode,
           error_message: sunoData.errorMessage
         };
-        } else if ((localTask?.api_type === 'elevenlabs-tts' || localTask?.api_type === 'elevenlabs-tts-turbo' || localTask?.api_type === 'elevenlabs-sound-effects') && apiResponse?.data) {
+        } else if ((localTask?.api_type === 'elevenlabs-tts' || localTask?.api_type === 'elevenlabs-sound-effects') && apiResponse?.data) {
           const elevenlabsData = apiResponse.data;
           responseData.status = elevenlabsData.state; // Use ElevenLabs state directly
           
@@ -1341,6 +1261,8 @@ class KieAiMcpServer {
           status: 'pending'
         });
         
+        const model = request.model === 'multilingual' ? 'Multilingual v2' : 'Turbo 2.5';
+        
         return {
           content: [
             {
@@ -1348,18 +1270,28 @@ class KieAiMcpServer {
               text: JSON.stringify({
                 success: true,
                 task_id: response.data.taskId,
-                message: 'ElevenLabs TTS generation task created successfully',
+                message: `ElevenLabs TTS (${model}) generation task created successfully`,
                 parameters: {
+                  model: model,
                   text: request.text.substring(0, 100) + (request.text.length > 100 ? '...' : ''),
                   voice: request.voice || 'Rachel',
                   speed: request.speed || 1,
                   stability: request.stability || 0.5,
-                  similarity_boost: request.similarity_boost || 0.75
+                  similarity_boost: request.similarity_boost || 0.75,
+                  ...(request.model === 'multilingual' && {
+                    previous_text: request.previous_text || 'None',
+                    next_text: request.next_text || 'None'
+                  }),
+                  ...(request.model === 'turbo' && {
+                    language_code: request.language_code || 'None'
+                  })
                 },
                 next_steps: [
                   'Use get_task_status to check generation progress',
                   'Task completion will be sent to the provided callback URL',
-                  'Generation typically takes 30 seconds to 2 minutes depending on text length'
+                  request.model === 'turbo' 
+                    ? 'Turbo 2.5 generation is faster and supports language enforcement (15-60 seconds)'
+                    : 'Multilingual v2 generation supports context and continuity (30-120 seconds)'
                 ]
               }, null, 2)
             }
@@ -1372,100 +1304,30 @@ class KieAiMcpServer {
       if (error instanceof z.ZodError) {
         return this.formatError('elevenlabs_tts', error, {
           text: 'Required: The text to convert to speech (max 5000 characters)',
+          model: 'Optional: TTS model - turbo (faster, default) or multilingual (supports context)',
           voice: 'Optional: Voice to use (default: Rachel). Available: Rachel, Aria, Roger, Sarah, Laura, Charlie, George, Callum, River, Liam, Charlotte, Alice, Matilda, Will, Jessica, Eric, Chris, Brian, Daniel, Lily, Bill',
           stability: 'Optional: Voice stability (0-1, default: 0.5)',
           similarity_boost: 'Optional: Similarity boost (0-1, default: 0.75)',
           style: 'Optional: Style exaggeration (0-1, default: 0)',
           speed: 'Optional: Speech speed (0.7-1.2, default: 1.0)',
           timestamps: 'Optional: Return word timestamps (default: false)',
-          previous_text: 'Optional: Previous text for continuity (max 5000 chars)',
-          next_text: 'Optional: Next text for continuity (max 5000 chars)',
-          language_code: 'Optional: ISO 639-1 language code for enforcement',
+          previous_text: 'Optional: Previous text for continuity (multilingual model only, max 5000 chars)',
+          next_text: 'Optional: Next text for continuity (multilingual model only, max 5000 chars)',
+          language_code: 'Optional: ISO 639-1 language code for enforcement (turbo model only)',
           callBackUrl: 'Optional: URL for task completion notifications (uses KIE_AI_CALLBACK_URL env var if not provided)'
         });
       }
       
       return this.formatError('elevenlabs_tts', error, {
         text: 'Required: The text to convert to speech (max 5000 characters)',
+        model: 'Optional: TTS model - turbo (default) or multilingual',
         voice: 'Optional: Voice to use (default: Rachel)',
         callBackUrl: 'Optional: URL for task completion notifications'
       });
     }
   }
 
-  private async handleElevenLabsTTSTurbo(args: any) {
-    try {
-      const request = ElevenLabsTTSTurboSchema.parse(args);
-      
-      // Use environment variable as fallback if callBackUrl not provided
-      if (!request.callBackUrl && process.env.KIE_AI_CALLBACK_URL) {
-        request.callBackUrl = process.env.KIE_AI_CALLBACK_URL;
-      }
-      
-      const response = await this.client.generateElevenLabsTTSTurbo(request);
-      
-      if (response.code === 200 && response.data?.taskId) {
-        // Store task in database
-        await this.db.createTask({
-          task_id: response.data.taskId,
-          api_type: 'elevenlabs-tts-turbo',
-          status: 'pending'
-        });
-        
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify({
-                success: true,
-                task_id: response.data.taskId,
-                message: 'ElevenLabs TTS Turbo generation task created successfully',
-                parameters: {
-                  text: request.text.substring(0, 100) + (request.text.length > 100 ? '...' : ''),
-                  voice: request.voice || 'Rachel',
-                  speed: request.speed || 1,
-                  stability: request.stability || 0.5,
-                  similarity_boost: request.similarity_boost || 0.75,
-                  language_code: request.language_code || 'Not specified'
-                },
-                next_steps: [
-                  'Use get_task_status to check generation progress',
-                  'Task completion will be sent to the provided callback URL',
-                  'Turbo 2.5 generation is faster and supports language enforcement',
-                  'Generation typically takes 15-60 seconds depending on text length'
-                ]
-              }, null, 2)
-            }
-          ]
-        };
-      } else {
-        throw new Error(response.msg || 'Failed to create TTS Turbo generation task');
-      }
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return this.formatError('elevenlabs_tts_turbo', error, {
-          text: 'Required: The text to convert to speech (max 5000 characters)',
-          voice: 'Optional: Voice to use (default: Rachel). Available: Rachel, Aria, Roger, Sarah, Laura, Charlie, George, Callum, River, Liam, Charlotte, Alice, Matilda, Will, Jessica, Eric, Chris, Brian, Daniel, Lily, Bill',
-          stability: 'Optional: Voice stability (0-1, default: 0.5)',
-          similarity_boost: 'Optional: Similarity boost (0-1, default: 0.75)',
-          style: 'Optional: Style exaggeration (0-1, default: 0)',
-          speed: 'Optional: Speech speed (0.7-1.2, default: 1.0)',
-          timestamps: 'Optional: Return word timestamps (default: false)',
-          previous_text: 'Optional: Previous text for continuity (max 5000 chars)',
-          next_text: 'Optional: Next text for continuity (max 5000 chars)',
-          language_code: 'Optional: ISO 639-1 language code (Turbo 2.5 supports enforcement)',
-          callBackUrl: 'Optional: URL for task completion notifications (uses KIE_AI_CALLBACK_URL env var if not provided)'
-        });
-      }
-      
-      return this.formatError('elevenlabs_tts_turbo', error, {
-        text: 'Required: The text to convert to speech (max 5000 characters)',
-        voice: 'Optional: Voice to use (default: Rachel)',
-        language_code: 'Optional: ISO 639-1 language code for enforcement',
-        callBackUrl: 'Optional: URL for task completion notifications'
-      });
-    }
-  }
+
 
   private async handleElevenLabsSoundEffects(args: any) {
     try {

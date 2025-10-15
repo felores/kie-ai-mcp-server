@@ -7,7 +7,6 @@ import {
   Veo3GenerateRequest,
   SunoGenerateRequest,
   ElevenLabsTTSRequest,
-  ElevenLabsTTSTurboRequest,
   ElevenLabsSoundEffectsRequest,
   ByteDanceSeedanceVideoRequest,
   RunwayAlephVideoRequest,
@@ -111,7 +110,7 @@ export class KieAiClient {
       return this.makeRequest<any>(`/jobs/recordInfo?taskId=${taskId}`, 'GET');
     } else if (apiType === 'suno') {
       return this.makeRequest<any>(`/generate/record-info?taskId=${taskId}`, 'GET');
-    } else if (apiType === 'elevenlabs-tts' || apiType === 'elevenlabs-tts-turbo' || apiType === 'elevenlabs-sound-effects' || apiType === 'bytedance-seedance-video' || apiType === 'wan-video') {
+    } else if (apiType === 'elevenlabs-tts' || apiType === 'elevenlabs-sound-effects' || apiType === 'bytedance-seedance-video' || apiType === 'wan-video') {
       return this.makeRequest<any>(`/jobs/recordInfo?taskId=${taskId}`, 'GET');
     } else if (apiType === 'runway-aleph-video') {
       return this.makeRequest<any>(`/api/v1/aleph/record-info?taskId=${taskId}`, 'GET');
@@ -142,41 +141,33 @@ export class KieAiClient {
   }
 
   async generateElevenLabsTTS(request: ElevenLabsTTSRequest): Promise<KieAiResponse<TaskResponse>> {
-    const jobRequest = {
-      model: 'elevenlabs/text-to-speech-multilingual-v2',
-      input: {
-        text: request.text,
-        voice: request.voice || 'Rachel',
-        stability: request.stability || 0.5,
-        similarity_boost: request.similarity_boost || 0.75,
-        style: request.style || 0,
-        speed: request.speed || 1,
-        timestamps: request.timestamps || false,
-        previous_text: request.previous_text || '',
-        next_text: request.next_text || '',
-        language_code: request.language_code || ''
-      },
-      callBackUrl: request.callBackUrl || process.env.KIE_AI_CALLBACK_URL
+    // Determine model based on request parameter (default: turbo)
+    const model = request.model === 'multilingual' 
+      ? 'elevenlabs/text-to-speech-multilingual-v2'
+      : 'elevenlabs/text-to-speech-turbo-2-5';
+
+    const input: any = {
+      text: request.text,
+      voice: request.voice || 'Rachel',
+      stability: request.stability || 0.5,
+      similarity_boost: request.similarity_boost || 0.75,
+      style: request.style || 0,
+      speed: request.speed || 1,
+      timestamps: request.timestamps || false
     };
 
-    return this.makeRequest<TaskResponse>('/jobs/createTask', 'POST', jobRequest);
-  }
+    // Add model-specific parameters
+    if (request.model === 'multilingual') {
+      input.previous_text = request.previous_text || '';
+      input.next_text = request.next_text || '';
+    } else {
+      // Turbo model uses language_code
+      input.language_code = request.language_code || '';
+    }
 
-  async generateElevenLabsTTSTurbo(request: ElevenLabsTTSTurboRequest): Promise<KieAiResponse<TaskResponse>> {
     const jobRequest = {
-      model: 'elevenlabs/text-to-speech-turbo-2-5',
-      input: {
-        text: request.text,
-        voice: request.voice || 'Rachel',
-        stability: request.stability || 0.5,
-        similarity_boost: request.similarity_boost || 0.75,
-        style: request.style || 0,
-        speed: request.speed || 1,
-        timestamps: request.timestamps || false,
-        previous_text: request.previous_text || '',
-        next_text: request.next_text || '',
-        language_code: request.language_code || ''
-      },
+      model,
+      input,
       callBackUrl: request.callBackUrl || process.env.KIE_AI_CALLBACK_URL
     };
 
