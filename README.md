@@ -40,7 +40,8 @@ The easiest way to use this server is to add it to your MCP client configuration
       "command": "npx",
       "args": ["-y", "@felores/kie-ai-mcp-server"],
       "env": {
-        "KIE_AI_API_KEY": "your-api-key-here"
+        "KIE_AI_API_KEY": "your-api-key-here",
+        "KIE_AI_CALLBACK_URL": "https://your-domain.com/api/callback"
       }
     }
   }
