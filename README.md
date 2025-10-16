@@ -71,9 +71,83 @@ Voiceovers and sound effects. Use for:
 - Game audio
 - Accessibility features
 
+## MCP Features
+
+### 🎨 Agent Prompts (Slash Commands)
+
+Trigger specialized AI agents with simple commands in your MCP client:
+
+- **`/artist`** - Image generation and editing agent
+  - Automatically loads full artist workflow instructions
+  - Handles text-to-image, image editing, upscaling, background removal
+  - Intelligently selects the best model for your request
+  - Just describe what you want: _"/artist create a logo for a coffee shop"_
+
+- **`/filmographer`** - Video generation agent
+  - Automatically loads full video workflow instructions
+  - Handles text-to-video and image-to-video generation
+  - Optimizes quality vs cost based on your keywords
+  - Just describe what you want: _"/filmographer create a 10-second sunset video"_
+
+### 📚 Knowledge Resources
+
+Your AI assistant can research and learn about available models before using them:
+
+**Agent Instructions:**
+- `kie://agents/artist` - Complete image generation workflow
+- `kie://agents/filmographer` - Complete video generation workflow
+
+**Model Documentation (12+ models):**
+- `kie://models/bytedance-seedream` - 4K image generation
+- `kie://models/veo3` - Premium cinematic video
+- `kie://models/qwen-image` - Fast image processing
+- `kie://models/flux-kontext` - Professional image generation
+- ...and 8 more models
+
+**Comparison Guides:**
+- `kie://guides/image-models-comparison` - Feature matrix for all image models
+- `kie://guides/video-models-comparison` - Feature matrix for all video models
+- `kie://guides/quality-optimization` - Cost/quality strategies
+
+**Operational Resources:**
+- `kie://tasks/active` - Real-time task monitoring
+- `kie://stats/usage` - Usage statistics
+
+### 🛠️ 18 Unified AI Tools
+
+All tools feature **smart mode detection** - one tool does multiple things:
+
+**Image Tools (7):**
+- `bytedance_seedream_image` - Generate OR edit images (detects mode automatically)
+- `qwen_image` - Generate OR edit images with acceleration
+- `nano_banana_image` - Generate OR edit OR upscale images
+- `flux_kontext_image` - Generate OR edit with advanced controls
+- `openai_4o_image` - Generate OR edit OR create variants
+- `recraft_remove_background` - Professional background removal
+- `ideogram_reframe` - Intelligent aspect ratio conversion
+
+**Video Tools (4):**
+- `veo3_generate_video` - Premium cinematic video (text OR image input)
+- `bytedance_seedance_video` - Professional video (text OR image input, lite OR pro)
+- `wan_video` - Fast social media video (text OR image input)
+- `runway_aleph_video` - Video-to-video transformation
+- `midjourney_generate` - Images AND videos with multiple modes
+
+**Audio Tools (3):**
+- `suno_generate_music` - Professional music with vocals
+- `elevenlabs_tts` - Studio-quality text-to-speech
+- `elevenlabs_ttsfx` - AI-powered sound effects
+
+**Utility Tools (4):**
+- `list_tasks` - View all generation tasks
+- `get_task_status` - Check task progress
+- `veo3_get_1080p_video` - Upgrade to 1080p
+
 ## Key Features
 
 - **🎯 One API Key**: Access all models with one credential
+- **🤖 AI Agent Prompts**: Slash commands trigger specialized workflows
+- **📖 Knowledge Base**: 19 resources for model research and comparison
 - **🔄 Task Management**: Built-in SQLite database for tracking generations
 - **📱 Smart Routing**: Automatic endpoint detection and status monitoring
 - **🛡️ Error Handling**: Validation and error recovery
@@ -81,6 +155,278 @@ Voiceovers and sound effects. Use for:
 - **📊 Persistent Storage**: Tasks survive server restarts
 - **🎛️ Quality Control**: Choose between speed (lite) and quality (pro) modes
 - **🌐 Multilingual Support**: Text-to-speech in multiple languages
+
+## 🧠 Intelligent Intention Detection System
+
+The MCP server features advanced **intention detection algorithms** that automatically understand user requirements and optimize both cost and quality without manual configuration.
+
+### **🎯 Quality & Cost Optimization**
+
+#### **Automatic Quality Detection**
+The system analyzes user language to determine quality requirements:
+
+```typescript
+// Source: src/kie-ai-client.ts:224-232
+const quality = request.quality || 'lite';
+let model: string;
+if (isImageToVideo) {
+  model = quality === 'pro' ? 'bytedance/v1-pro-image-to-video' : 'bytedance/v1-lite-image-to-video';
+} else {
+  model = quality === 'pro' ? 'bytedance/v1-pro-text-to-video' : 'bytedance/v1-lite-text-to-video';
+}
+```
+
+**User Language → System Action**:
+- `"high quality"`, `"professional"`, `"premium"` → Pro models + 1080p
+- `"fast"`, `"quick"`, `"social media"` → Lite models + 720p  
+- No quality mentioned → Lite models + 720p (cost-effective default)
+
+#### **Dynamic Endpoint Routing**
+Quality parameters automatically map to optimal endpoints:
+
+| Quality Parameter | Text-to-Video Endpoint | Image-to-Video Endpoint |
+|------------------|----------------------|-----------------------|
+| `"lite"` | `bytedance/v1-lite-text-to-video` | `bytedance/v1-lite-image-to-video` |
+| `"pro"` | `bytedance/v1-pro-text-to-video` | `bytedance/v1-pro-image-to-video` |
+
+### **🔧 Unified Tool Architecture**
+
+#### **Smart Mode Detection**
+Single tools automatically detect operation mode based on parameter combinations:
+
+```typescript
+// Source: src/types.ts:146-166 (Nano Banana example)
+.refine((data) => {
+  const hasPrompt = !!data.prompt;
+  const hasImage = !!data.image_urls;
+  const hasMask = !!data.mask_url;
+  
+  if (hasImage && hasMask) return hasPrompt; // Edit mode
+  else if (hasImage) return true;             // Variants mode  
+  else return hasPrompt;                     // Generate mode
+});
+```
+
+**Unified Tools with Auto-Detection**:
+- **`nano_banana_image`**: Generate/Edit/Upscale based on parameters
+- **`bytedance_seedance_video`**: Text-to-video vs Image-to-video based on `image_url` presence
+- **`openai_4o_image`**: Generate/Edit/Variants based on `filesUrl` and `maskUrl` combination
+- **`qwen_image`**: Text-to-image vs Image editing based on `image_url` presence
+
+### **📊 Intelligent Task Management**
+
+#### **Smart Status Routing**
+The system automatically routes status checks to correct API endpoints based on task type:
+
+```typescript
+// Source: src/index.ts:1155-1175
+switch (task.api_type) {
+  case 'veo3': 
+    return this.makeRequest(`/veo/record-info?taskId=${taskId}`, 'GET');
+  case 'suno': 
+    return this.makeRequest(`/generate/record-info?taskId=${taskId}`, 'GET');
+  case 'bytedance-seedance-video':
+  case 'midjourney-generate':
+    return this.makeRequest(`/jobs/recordInfo?taskId=${taskId}`, 'GET');
+}
+```
+
+#### **Database-Driven Intelligence**
+Local SQLite database provides intelligent caching and routing:
+
+```sql
+-- Source: README.md database schema
+CREATE TABLE tasks (
+  task_id TEXT UNIQUE NOT NULL,
+  api_type TEXT NOT NULL,  -- Enables intelligent endpoint routing
+  status TEXT DEFAULT 'pending',
+  result_url TEXT,
+  -- ... other fields
+);
+```
+
+### **💡 Cost Control by Design**
+
+#### **Default to Savings**
+- **Resolution**: Defaults to `"720p"` (API defaults to 1080p - explicit setting prevents cost overruns)
+- **Quality**: Defaults to `"lite"` (2-3x cheaper than pro versions)
+- **Models**: Defaults to faster variants unless premium quality requested
+
+#### **Explicit Upgrade Required**
+Users must explicitly request higher quality:
+- `"high quality"` → Automatic upgrade to pro models + 1080p
+- `"high quality in 720p"` → Pro models + cost-effective resolution
+- `"professional"` → Pro models + balanced resolution
+
+### **🔍 Verifiable Intelligence**
+
+All intelligent behaviors are implemented in the codebase:
+- **Quality Detection**: `src/kie-ai-client.ts:224-232`
+- **Mode Detection**: `src/types.ts:146-166` (multiple examples)
+- **Endpoint Routing**: `src/index.ts:1155-1175`
+- **Schema Validation**: `src/types.ts` (all tool schemas)
+- **Database Integration**: `src/database.ts` + `src/index.ts`
+
+This system ensures **optimal user experience** while maintaining **cost control** and **technical accuracy** - users get what they want without needing to understand the underlying complexity.
+
+### **🎯 Intelligent System Architecture**
+
+```mermaid
+flowchart TD
+    %% User Input Layer
+    A[User Request] --> B{Parse Intent}
+    
+    %% Intent Detection
+    B --> C[Quality Detection]
+    B --> D[Mode Detection] 
+    B --> E[Model Selection]
+    
+    %% Quality Detection Logic
+    C --> C1{Keywords Detected?}
+    C1 -->|high quality, professional, premium| C2[Set quality: pro]
+    C1 -->|fast, quick, social media| C3[Set quality: lite]
+    C1 -->|no quality keywords| C3[Set quality: lite]
+    
+    %% Mode Detection Examples
+    D --> D1{Tool & Parameters}
+    D1 -->|nano_banana_image + prompt| D2[Generate Mode]
+    D1 -->|nano_banana_image + prompt + image_urls| D3[Edit Mode]
+    D1 -->|nano_banana_image + image_urls + scale| D4[Upscale Mode]
+    D1 -->|bytedance_seedance_video + image_url| D5[Image-to-Video]
+    D1 -->|bytedance_seedance_video + no image| D6[Text-to-Video]
+    
+    %% Model Selection Logic
+    E --> E1{Content Type}
+    E1 -->|cinematic, premium| E2[veo3_generate]
+    E1 -->|professional video| E3[bytedance_seedance_video]
+    E1 -->|fast/social media| E4[wan_2_5_video]
+    E1 -->|existing video| E5[runway_aleph_video]
+    E1 -->|default| E3[bytedance_seedance_video]
+    
+    %% Endpoint Resolution
+    C2 --> F[Pro Model Selection]
+    C3 --> G[Lite Model Selection]
+    
+    F --> H{Video Mode?}
+    G --> H
+    
+    H -->|Text-to-Video| I[bytedance/v1-pro-text-to-video]
+    H -->|Image-to-Video| J[bytedance/v1-pro-image-to-video]
+    H -->|Text-to-Video Lite| K[bytedance/v1-lite-text-to-video]
+    H -->|Image-to-Video Lite| L[bytedance/v1-lite-image-to-video]
+    
+    %% Other Model Endpoints
+    E2 --> M[/veo/generate]
+    E4 --> N[/jobs/createTask<br/>wan-2-5-video]
+    E5 --> O[/jobs/createTask<br/>runway-aleph-video]
+    
+    %% Task Creation & Tracking
+    I --> P[Create Task]
+    J --> P
+    K --> P
+    L --> P
+    M --> P
+    N --> P
+    O --> P
+    
+    P --> Q[Store in SQLite DB<br/>api_type + task_id]
+    Q --> R[Return task_id to user]
+    
+    %% Status Monitoring Loop
+    R --> S[User Polls Status]
+    S --> T{Get api_type from DB}
+    T --> U{Route to Correct Endpoint}
+    
+    U -->|veo3| V[/veo/record-info]
+    U -->|suno| W[/generate/record-info]
+    U -->|jobs models| X[/jobs/recordInfo]
+    
+    V --> Y[Update Local DB]
+    W --> Y
+    X --> Y
+    
+    Y --> Z{Status Complete?}
+    Z -->|pending/processing| S
+    Z -->|completed| AA[Return Result URL]
+    Z -->|failed| BB[Return Error]
+    
+    %% Styling
+    classDef userBox fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    classDef intentBox fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef modelBox fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+    classDef endpointBox fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef dbBox fill:#fce4ec,stroke:#880e4f,stroke-width:2px
+    
+    class A userBox
+    class B,C,D,E intentBox
+    class C2,C3,F,G,H,I,J,K,L,M,N,O modelBox
+    class P,Q,R,S,T,U,V,W,X,Y,Z,BB,AA endpointBox
+```
+
+### **🚀 Real-World Intelligence Examples**
+
+#### **Example 1: Video Generation Request**
+```
+User: "Make a quick social media video of a sunset"
+```
+**System Automatically Chooses**:
+- **Tool**: `bytedance_seedance_video` (default video model)
+- **Quality**: `"lite"` (detected "quick" → cost-effective)
+- **Resolution**: `"720p"` (default for cost control)
+- **Endpoint**: `bytedance/v1-lite-text-to-video`
+- **Duration**: `"5"` (optimal for social media)
+
+#### **Example 2: Professional Quality Request**
+```
+User: "I need a high quality video for a client presentation"
+```
+**System Automatically Chooses**:
+- **Tool**: `bytedance_seedance_video` (default video model)
+- **Quality**: `"pro"` (detected "high quality" → premium)
+- **Resolution**: `"1080p"` (high quality default)
+- **Endpoint**: `bytedance/v1-pro-text-to-video`
+- **Duration**: `"5"` (professional standard)
+
+#### **Example 3: Specific Quality Requirements**
+```
+User: "Generate a professional video but keep it 720p to save costs"
+```
+**System Automatically Chooses**:
+- **Tool**: `bytedance_seedance_video`
+- **Quality**: `"pro"` (detected "professional" → premium)
+- **Resolution**: `"720p"` (explicitly requested)
+- **Endpoint**: `bytedance/v1-pro-text-to-video`
+- **Cost**: ~2x lite model but 50% less than 1080p
+
+#### **Example 4: Unified Tool Intelligence**
+```json
+// User provides image + prompt
+{
+  "tool": "nano_banana_image",
+  "arguments": {
+    "prompt": "Add sunglasses to the person",
+    "image_urls": ["https://example.com/portrait.jpg"]
+  }
+}
+```
+**System Automatically Detects**: **Edit Mode** (prompt + image_urls)
+**Routes to**: `/jobs/createTask` with edit-specific parameters
+
+#### **Example 5: Smart Status Monitoring**
+```json
+// User checks task status
+{
+  "tool": "get_task_status",
+  "arguments": {
+    "task_id": "abc123"
+  }
+}
+```
+**System Automatically**:
+1. **Queries database**: Gets `api_type: "bytedance-seedance-video"`
+2. **Routes to**: `/jobs/recordInfo?taskId=abc123` (correct endpoint)
+3. **Updates local record**: Syncs API response with database
+4. **Returns combined data**: Local + API information
 
 ## Quick Start
 

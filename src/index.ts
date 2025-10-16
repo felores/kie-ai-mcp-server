@@ -6,6 +6,10 @@ import {
   CallToolRequestSchema,
   ErrorCode,
   ListToolsRequestSchema,
+  ListResourcesRequestSchema,
+  ReadResourceRequestSchema,
+  ListPromptsRequestSchema,
+  GetPromptRequestSchema,
   McpError,
 } from '@modelcontextprotocol/sdk/types.js';
 
@@ -39,7 +43,7 @@ class KieAiMcpServer {
   constructor() {
     this.server = new Server({
       name: 'kie-ai-mcp-server',
-      version: '1.9.2',
+      version: '1.9.3',
     });
 
     // Initialize client with config from environment
@@ -1195,6 +1199,377 @@ class KieAiMcpServer {
         
         const message = error instanceof Error ? error.message : 'Unknown error';
         throw new McpError(ErrorCode.InternalError, message);
+      }
+    });
+
+    // Resource Handlers
+    this.server.setRequestHandler(ListResourcesRequestSchema, async () => {
+      return {
+        resources: [
+          // Agent Instructions
+          {
+            uri: "kie://agents/artist",
+            name: "Artist Agent Instructions",
+            description: "Complete system instructions for image generation and editing agent",
+            mimeType: "text/markdown",
+            annotations: {
+              audience: ["assistant"],
+              priority: 0.9
+            }
+          },
+          {
+            uri: "kie://agents/filmographer",
+            name: "Filmographer Agent Instructions",
+            description: "Complete system instructions for video generation agent",
+            mimeType: "text/markdown",
+            annotations: {
+              audience: ["assistant"],
+              priority: 0.9
+            }
+          },
+          
+          // Model Documentation - Images
+          {
+            uri: "kie://models/bytedance-seedream",
+            name: "ByteDance Seedream V4",
+            description: "4K image generation and editing with batch processing (1-10 images)",
+            mimeType: "text/markdown",
+            annotations: {
+              audience: ["assistant"],
+              priority: 0.7
+            }
+          },
+          {
+            uri: "kie://models/qwen-image",
+            name: "Qwen Image",
+            description: "Multi-image editing, single-image consistency, fast processing",
+            mimeType: "text/markdown",
+            annotations: {
+              audience: ["assistant"],
+              priority: 0.7
+            }
+          },
+          {
+            uri: "kie://models/flux-kontext",
+            name: "Flux Kontext",
+            description: "Advanced controls, customizable parameters, technical precision",
+            mimeType: "text/markdown",
+            annotations: {
+              audience: ["assistant"],
+              priority: 0.6
+            }
+          },
+          {
+            uri: "kie://models/openai-4o-image",
+            name: "OpenAI GPT-4o Image",
+            description: "Creative variants (up to 4), mask editing, limited aspect ratios",
+            mimeType: "text/markdown",
+            annotations: {
+              audience: ["assistant"],
+              priority: 0.6
+            }
+          },
+          {
+            uri: "kie://models/nano-banana",
+            name: "Nano Banana (Gemini 2.5)",
+            description: "Bulk simple edits, fastest processing, 4x upscaling",
+            mimeType: "text/markdown",
+            annotations: {
+              audience: ["assistant"],
+              priority: 0.5
+            }
+          },
+          
+          // Model Documentation - Videos
+          {
+            uri: "kie://models/veo3",
+            name: "Google Veo3",
+            description: "Premium cinematic video generation with 1080p support",
+            mimeType: "text/markdown",
+            annotations: {
+              audience: ["assistant"],
+              priority: 0.8
+            }
+          },
+          {
+            uri: "kie://models/bytedance-seedance",
+            name: "ByteDance Seedance",
+            description: "Professional video generation with lite/pro quality modes",
+            mimeType: "text/markdown",
+            annotations: {
+              audience: ["assistant"],
+              priority: 0.7
+            }
+          },
+          {
+            uri: "kie://models/wan-video",
+            name: "Wan Video 2.5",
+            description: "Fast video generation for social media content",
+            mimeType: "text/markdown",
+            annotations: {
+              audience: ["assistant"],
+              priority: 0.6
+            }
+          },
+          {
+            uri: "kie://models/runway-aleph",
+            name: "Runway Aleph",
+            description: "Video-to-video editing and transformation",
+            mimeType: "text/markdown",
+            annotations: {
+              audience: ["assistant"],
+              priority: 0.6
+            }
+          },
+          
+          // Specialized Tools
+          {
+            uri: "kie://models/recraft-bg-removal",
+            name: "Recraft Background Removal",
+            description: "AI-powered background removal for subject isolation",
+            mimeType: "text/markdown",
+            annotations: {
+              audience: ["assistant"],
+              priority: 0.5
+            }
+          },
+          {
+            uri: "kie://models/ideogram-reframe",
+            name: "Ideogram V3 Reframe",
+            description: "Intelligent aspect ratio changes and composition adjustment",
+            mimeType: "text/markdown",
+            annotations: {
+              audience: ["assistant"],
+              priority: 0.5
+            }
+          },
+          
+          // Comparison Guides
+          {
+            uri: "kie://guides/image-models-comparison",
+            name: "Image Models Comparison",
+            description: "Feature matrix comparing all image generation models",
+            mimeType: "text/markdown",
+            annotations: {
+              audience: ["assistant"],
+              priority: 0.5
+            }
+          },
+          {
+            uri: "kie://guides/video-models-comparison",
+            name: "Video Models Comparison",
+            description: "Feature matrix comparing all video generation models",
+            mimeType: "text/markdown",
+            annotations: {
+              audience: ["assistant"],
+              priority: 0.5
+            }
+          },
+          
+          // Best Practices
+          {
+            uri: "kie://guides/quality-optimization",
+            name: "Quality & Cost Optimization",
+            description: "Resolution settings, quality levels, and cost control strategies",
+            mimeType: "text/markdown",
+            annotations: {
+              audience: ["assistant"],
+              priority: 0.6
+            }
+          },
+          
+          // Operational Resources
+          {
+            uri: "kie://tasks/active",
+            name: "Active Generation Tasks",
+            description: "Real-time status of all currently active AI generation tasks",
+            mimeType: "application/json",
+            annotations: {
+              audience: ["user", "assistant"],
+              priority: 0.4
+            }
+          },
+          {
+            uri: "kie://stats/usage",
+            name: "Usage Statistics",
+            description: "Current usage statistics and cost tracking",
+            mimeType: "application/json",
+            annotations: {
+              audience: ["user"],
+              priority: 0.3
+            }
+          }
+        ]
+      };
+    });
+
+    this.server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
+      const { uri } = request.params;
+      
+      // Agent Instructions
+      if (uri === "kie://agents/artist") {
+        return {
+          contents: [{
+            uri,
+            mimeType: "text/markdown",
+            text: await this.getAgentInstructions('artist')
+          }]
+        };
+      }
+      
+      if (uri === "kie://agents/filmographer") {
+        return {
+          contents: [{
+            uri,
+            mimeType: "text/markdown",
+            text: await this.getAgentInstructions('filmographer')
+          }]
+        };
+      }
+      
+      // Model Documentation
+      const modelMatch = uri.match(/^kie:\/\/models\/(.+)$/);
+      if (modelMatch) {
+        const modelKey = modelMatch[1];
+        return {
+          contents: [{
+            uri,
+            mimeType: "text/markdown",
+            text: await this.getModelDocumentation(modelKey)
+          }]
+        };
+      }
+      
+      // Comparison Guides
+      if (uri === "kie://guides/image-models-comparison") {
+        return {
+          contents: [{
+            uri,
+            mimeType: "text/markdown",
+            text: this.getImageModelsComparison()
+          }]
+        };
+      }
+      
+      if (uri === "kie://guides/video-models-comparison") {
+        return {
+          contents: [{
+            uri,
+            mimeType: "text/markdown",
+            text: this.getVideoModelsComparison()
+          }]
+        };
+      }
+      
+      if (uri === "kie://guides/quality-optimization") {
+        return {
+          contents: [{
+            uri,
+            mimeType: "text/markdown",
+            text: this.getQualityOptimizationGuide()
+          }]
+        };
+      }
+      
+      // Operational Resources
+      switch (uri) {
+        case "kie://tasks/active":
+          return {
+            contents: [{
+              uri,
+              mimeType: "application/json",
+              text: await this.getActiveTasks()
+            }]
+          };
+          
+        case "kie://stats/usage":
+          return {
+            contents: [{
+              uri,
+              mimeType: "application/json", 
+              text: await this.getUsageStats()
+            }]
+          };
+          
+        default:
+          throw new McpError(
+            ErrorCode.InternalError,
+            `Resource not found: ${uri}`
+          );
+      }
+    });
+
+    // Prompt Handlers
+    this.server.setRequestHandler(ListPromptsRequestSchema, async () => {
+      return {
+        prompts: [
+          {
+            name: "artist",
+            title: "🎨 Create Images",
+            description: "Generate, edit, or enhance images using AI models. Just describe what you want and include any image URLs in your message."
+          },
+          {
+            name: "filmographer",
+            title: "🎬 Create Videos",
+            description: "Generate videos from text or images. Describe what you want and include any image URLs to animate."
+          }
+        ]
+      };
+    });
+
+    this.server.setRequestHandler(GetPromptRequestSchema, async (request) => {
+      const { name, arguments: args } = request.params;
+      
+      switch (name) {
+        case "artist": {
+          const agentInstructions = await this.getAgentInstructions('artist');
+          
+          return {
+            description: "Generate, edit, or enhance images using AI models",
+            messages: [
+              {
+                role: "user" as const,
+                content: {
+                  type: "resource" as const,
+                  resource: {
+                    uri: "kie://agents/artist",
+                    name: "artist",
+                    mimeType: "text/markdown",
+                    text: agentInstructions
+                  }
+                }
+              }
+            ]
+          };
+        }
+          
+        case "filmographer": {
+          const agentInstructions = await this.getAgentInstructions('filmographer');
+          
+          return {
+            description: "Generate videos from text or images",
+            messages: [
+              {
+                role: "user" as const,
+                content: {
+                  type: "resource" as const,
+                  resource: {
+                    uri: "kie://agents/filmographer",
+                    name: "filmographer",
+                    mimeType: "text/markdown",
+                    text: agentInstructions
+                  }
+                }
+              }
+            ]
+          };
+        }
+          
+        default:
+          throw new McpError(
+            ErrorCode.InternalError,
+            `Prompt not found: ${name}`
+          );
       }
     });
   }
@@ -2731,6 +3106,606 @@ class KieAiMcpServer {
         seed: 'Optional: Seed for reproducible results',
         callBackUrl: 'Optional: URL for task completion notifications'
       });
+    }
+  }
+
+  // Dynamic Resource Methods
+  private async getActiveTasks(): Promise<string> {
+    try {
+      const activeTasks = await this.db.getTasksByStatus('pending', 50);
+      const processingTasks = await this.db.getTasksByStatus('processing', 50);
+      
+      return JSON.stringify({
+        timestamp: new Date().toISOString(),
+        active_tasks: {
+          pending: activeTasks.length,
+          processing: processingTasks.length,
+          total: activeTasks.length + processingTasks.length
+        },
+        tasks: {
+          pending: activeTasks.map(task => ({
+            task_id: task.task_id,
+            api_type: task.api_type,
+            created_at: task.created_at
+          })),
+          processing: processingTasks.map(task => ({
+            task_id: task.task_id,
+            api_type: task.api_type,
+            created_at: task.created_at
+          }))
+        }
+      }, null, 2);
+    } catch (error) {
+      return JSON.stringify({
+        error: 'Failed to retrieve active tasks',
+        message: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString()
+      }, null, 2);
+    }
+  }
+
+  private async getUsageStats(): Promise<string> {
+    try {
+      const allTasks = await this.db.getAllTasks(1000);
+      const completedTasks = await this.db.getTasksByStatus('completed', 1000);
+      const failedTasks = await this.db.getTasksByStatus('failed', 1000);
+      
+      // Calculate usage by API type
+      const usageByType: Record<string, number> = {};
+      allTasks.forEach(task => {
+        usageByType[task.api_type] = (usageByType[task.api_type] || 0) + 1;
+      });
+      
+      // Calculate recent activity (last 24 hours)
+      const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      const recentTasks = allTasks.filter(task => 
+        new Date(task.created_at) > oneDayAgo
+      );
+      
+      return JSON.stringify({
+        timestamp: new Date().toISOString(),
+        total_tasks: allTasks.length,
+        completed_tasks: completedTasks.length,
+        failed_tasks: failedTasks.length,
+        success_rate: allTasks.length > 0 ? (completedTasks.length / allTasks.length * 100).toFixed(2) + '%' : '0%',
+        recent_activity: {
+          last_24_hours: recentTasks.length,
+          by_type: recentTasks.reduce((acc, task) => {
+            acc[task.api_type] = (acc[task.api_type] || 0) + 1;
+            return acc;
+          }, {} as Record<string, number>)
+        },
+        usage_by_type: usageByType,
+        most_used_model: Object.keys(usageByType).reduce((a, b) => 
+          usageByType[a] > usageByType[b] ? a : b, ''
+        )
+      }, null, 2);
+    } catch (error) {
+      return JSON.stringify({
+        error: 'Failed to retrieve usage statistics',
+        message: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString()
+      }, null, 2);
+    }
+  }
+
+  private async getModelsStatus(): Promise<string> {
+    // This would typically ping the Kie.ai API to get real-time model status
+    // For now, we'll return simulated status based on typical availability
+    const models = [
+      { name: 'veo3', status: 'available', category: 'video', quality: 'premium' },
+      { name: 'veo3_fast', status: 'available', category: 'video', quality: 'standard' },
+      { name: 'bytedance_seedance', status: 'available', category: 'video', quality: 'professional' },
+      { name: 'wan_video', status: 'available', category: 'video', quality: 'standard' },
+      { name: 'runway_aleph', status: 'available', category: 'video', quality: 'professional' },
+      { name: 'nano_banana', status: 'available', category: 'image', quality: 'standard' },
+      { name: 'qwen_image', status: 'available', category: 'image', quality: 'professional' },
+      { name: 'openai_4o_image', status: 'available', category: 'image', quality: 'professional' },
+      { name: 'flux_kontext', status: 'available', category: 'image', quality: 'premium' },
+      { name: 'bytedance_seedream', status: 'available', category: 'image', quality: 'professional' },
+      { name: 'midjourney', status: 'available', category: 'image', quality: 'premium' },
+      { name: 'recraft_remove_background', status: 'available', category: 'image', quality: 'professional' },
+      { name: 'ideogram_reframe', status: 'available', category: 'image', quality: 'professional' },
+      { name: 'suno_v5', status: 'available', category: 'audio', quality: 'professional' },
+      { name: 'elevenlabs_tts', status: 'available', category: 'audio', quality: 'professional' },
+      { name: 'elevenlabs_sound_effects', status: 'available', category: 'audio', quality: 'professional' }
+    ];
+
+    return JSON.stringify({
+      timestamp: new Date().toISOString(),
+      total_models: models.length,
+      available_models: models.filter(m => m.status === 'available').length,
+      models_by_category: {
+        video: models.filter(m => m.category === 'video'),
+        image: models.filter(m => m.category === 'image'),
+        audio: models.filter(m => m.category === 'audio')
+      },
+      models_by_quality: {
+        premium: models.filter(m => m.quality === 'premium'),
+        professional: models.filter(m => m.quality === 'professional'),
+        standard: models.filter(m => m.quality === 'standard')
+      },
+      models: models
+    }, null, 2);
+  }
+
+  private async getConfigLimits(): Promise<string> {
+    // Return current configuration, rate limits, and quotas
+    const config = {
+      api_config: {
+        base_url: process.env.KIE_AI_BASE_URL || 'https://api.kie.ai',
+        timeout: parseInt(process.env.KIE_AI_TIMEOUT || '120000'),
+        callback_url: process.env.KIE_AI_CALLBACK_URL || null
+      },
+      rate_limits: {
+        requests_per_minute: 60,
+        requests_per_hour: 1000,
+        concurrent_tasks: 5,
+        max_file_size: '50MB',
+        max_video_duration: 60,
+        max_image_resolution: '4K'
+      },
+      model_limits: {
+        video: {
+          max_duration_seconds: 60,
+          max_resolution: '1080p',
+          supported_formats: ['mp4', 'mov', 'avi'],
+          max_file_size: '100MB'
+        },
+        image: {
+          max_resolution: '4K',
+          supported_formats: ['png', 'jpeg', 'webp'],
+          max_file_size: '10MB',
+          max_batch_size: 4
+        },
+        audio: {
+          max_duration_seconds: 300,
+          supported_formats: ['mp3', 'wav', 'm4a'],
+          max_file_size: '20MB'
+        }
+      },
+      quotas: {
+        daily_generation_limit: 100,
+        monthly_generation_limit: 2000,
+        storage_retention_days: 30,
+        max_concurrent_generations: 5
+      },
+      cost_controls: {
+        default_quality: 'standard',
+        auto_upscale_enabled: false,
+        cost_alert_threshold: 50,
+        monthly_budget_limit: 500
+      },
+      features: {
+        callback_support: true,
+        batch_processing: true,
+        status_tracking: true,
+        error_recovery: true,
+        quality_optimization: true
+      },
+      database: {
+        path: process.env.KIE_AI_DB_PATH || './tasks.db',
+        max_tasks_stored: 10000,
+        cleanup_enabled: true,
+        cleanup_after_days: 30
+      }
+    };
+
+    return JSON.stringify({
+      timestamp: new Date().toISOString(),
+      server_version: '1.2.0',
+      configuration: config,
+      warnings: [
+        'Rate limits are enforced per API key',
+        'Large files may take longer to process',
+        'HD quality content costs significantly more',
+        'Callback URLs must be publicly accessible'
+      ],
+      recommendations: [
+        'Use standard quality for testing',
+        'Monitor task status to avoid duplicate requests',
+        'Clean up completed tasks regularly',
+        'Set up cost alerts for production use'
+      ]
+    }, null, 2);
+  }
+
+  private async loadQualityGuidelines(): Promise<string> {
+    return `# Quality Control Guidelines
+
+## 🎯 Cost-Effective Defaults
+
+### **Standard Default Settings**
+- **Resolution**: 720p (cost-effective, good quality)
+- **Quality**: Lite/Pro models based on user intent detection
+- **Duration**: 5 seconds (optimal for most content)
+- **Format**: Standard output formats
+
+### **Quality Detection Logic**
+The system automatically detects user intent:
+
+#### **High Quality Indicators**
+- Keywords: "high quality", "professional", "premium", "cinematic", "best"
+- Action: Upgrade to pro models + 1080p resolution
+- Cost Impact: ~2-4x higher than defaults
+
+#### **Speed Indicators**  
+- Keywords: "fast", "quick", "rapid", "social media", "draft"
+- Action: Use lite/fast models + 720p resolution
+- Cost Impact: Standard (cost-effective)
+
+#### **Standard Requests**
+- No quality keywords mentioned
+- Action: Use default settings (lite + 720p)
+- Cost Impact: Lowest possible
+
+## 💰 Cost Management Strategy
+
+### **Video Generation Costs**
+| Quality | Resolution | Model | Cost Multiplier |
+|---------|------------|-------|-----------------|
+| Lite | 720p | Fast models | 1x (baseline) |
+| Lite | 1080p | Fast models | ~2x |
+| Pro | 720p | Pro models | ~2x |
+| Pro | 1080p | Pro models | ~4x |
+
+### **Image Generation Costs**
+| Quality | Model | Features | Cost Multiplier |
+|---------|-------|----------|-----------------|
+| Standard | Nano Banana | Fast generation | 1x (baseline) |
+| Artistic | Qwen Image | High quality | ~1.5x |
+| Professional | OpenAI 4o | Advanced features | ~2x |
+| Premium | Flux Kontext | Professional grade | ~2.5x |
+
+### **Audio Generation Costs**
+| Type | Model | Quality | Cost Multiplier |
+|------|-------|---------|-----------------|
+| Speech | ElevenLabs Turbo | Fast | 1x (baseline) |
+| Speech | ElevenLabs Pro | High quality | ~1.5x |
+| Music | Suno V5 | Professional | ~2x |
+| Sound Effects | ElevenLabs SFX | Standard | ~1x |
+
+## 🔧 Intelligent Parameter Selection
+
+### **Video Parameters**
+- **ByteDance Seedance**: 
+  - Default: \`quality: "lite"\`, \`resolution: "720p"\`
+  - High Quality: \`quality: "pro"\`, \`resolution: "1080p"\`
+  - Professional 720p: \`quality: "pro"\`, \`resolution: "720p"\`
+
+- **Veo3**:
+  - Default: \`model: "veo3_fast"\`
+  - High Quality: \`model: "veo3"\`
+
+- **Wan Video**:
+  - Default: \`resolution: "720p"\`
+  - High Quality: \`resolution: "1080p"\`
+
+### **Image Parameters**
+- **Nano Banana**: Automatic mode detection, cost-effective by default
+- **OpenAI 4o**: Multiple variants (default 4) for cost efficiency
+- **Flux Kontext**: Professional quality with cost controls
+
+### **Audio Parameters**
+- **ElevenLabs**: Turbo model for cost-effective speech
+- **Suno**: Custom mode for professional music generation
+
+## 🎯 Use Case Optimization
+
+### **Social Media Content**
+- **Video**: Wan Video, 720p, 5 seconds
+- **Images**: Nano Banana, lite quality
+- **Audio**: ElevenLabs Turbo for voiceovers
+- **Cost Strategy**: Lowest cost, fast generation
+
+### **Professional Commercial Work**
+- **Video**: ByteDance Seedance Pro, 1080p
+- **Images**: OpenAI 4o or Flux Kontext, professional quality
+- **Audio**: ElevenLabs Pro or Suno V5
+- **Cost Strategy**: Balanced quality and cost
+
+### **Premium Cinematic Content**
+- **Video**: Veo3, highest quality settings
+- **Images**: Flux Kontext Max, premium quality
+- **Audio**: Suno V5 custom mode
+- **Cost Strategy**: Quality prioritized over cost
+
+### **Internal Prototyping**
+- **Video**: Wan Video or ByteDance Lite, 720p
+- **Images**: Nano Banana, fast generation
+- **Audio**: ElevenLabs Turbo
+- **Cost Strategy**: Maximum cost efficiency
+
+## ⚠️ Cost Prevention Measures
+
+### **Automatic Safeguards**
+- **Resolution Control**: Explicit 720p default prevents accidental 1080p
+- **Quality Defaults**: Lite models prevent accidental pro usage
+- **Duration Limits**: 5-second default prevents excessive generation
+- **Parameter Validation**: Prevents invalid expensive combinations
+
+### **User Intent Confirmation**
+- **High Quality Detection**: Requires explicit keywords
+- **Specific Requests**: "high quality in 720p" prevents unnecessary 1080p
+- **Professional Context**: "professional" triggers pro models but maintains 720p
+
+### **Budget Monitoring**
+- **Task Tracking**: Database tracks all generation costs
+- **Status Monitoring**: Prevents duplicate expensive generations
+- **Error Handling**: Graceful failure prevents wasted costs
+
+## 🚀 Optimization Recommendations
+
+### **For Cost-Conscious Projects**
+1. Use default settings whenever possible
+2. Prefer lite models for iterative work
+3. Use 720p resolution unless 1080p is essential
+4. Limit video duration to 5 seconds
+5. Batch similar requests for efficiency
+
+### **For Quality-Critical Projects**
+1. Upgrade to pro models selectively
+2. Use 1080p only for final deliverables
+3. Test with lite models before pro generation
+4. Use consistent parameters for batch work
+5. Plan generation costs in project budget
+
+### **For Balanced Projects**
+1. Use pro models with 720p resolution
+2. Upgrade specific elements rather than entire project
+3. Mix lite and pro models strategically
+4. Monitor costs through task database
+5. Optimize workflows based on results
+
+## 📊 Cost Tracking
+
+### **Database Monitoring**
+- **Task Records**: All tasks stored with parameters and costs
+- **Status Tracking**: Monitor expensive operations
+- **Result Analysis**: Compare quality vs cost effectiveness
+
+### **Performance Metrics**
+- **Success Rates**: Track failed vs successful generations
+- **Cost per Quality**: Analyze quality improvement vs cost increase
+- **Time Analysis**: Compare generation speed vs quality
+
+These guidelines ensure optimal balance between quality requirements and cost management while maintaining excellent user experience.`;
+  }
+
+
+
+
+
+  private getImageModelsComparison(): string {
+    return `# Image Models Comparison
+
+| Model | Resolution | Batch Size | Speed | Editing | Key Strengths |
+|-------|-----------|------------|-------|---------|---------------|
+| **ByteDance Seedream V4** | Up to 4K | 1-6 images | Medium | ✅ Yes (1-10 images) | Professional quality, batch processing, high resolution |
+| **Qwen Image** | HD | 1-4 images | Fast | ✅ Yes (multi-image) | Fast processing, multi-image editing, pose transfer |
+| **Flux Kontext** | HD | Single | Medium | ✅ Yes | Advanced controls, technical precision, safety tolerance |
+| **OpenAI GPT-4o** | Limited AR | 1-4 variants | Medium | ✅ Yes (with mask) | Creative variants, mask editing, fallback support |
+| **Nano Banana** | Custom | 1-10 images | Fastest | ✅ Yes (simple) | Bulk edits, 4x upscaling, face enhancement |
+| **Recraft BG Removal** | Original | Single | Fast | N/A | Background removal only |
+| **Ideogram Reframe** | HD | 1-4 images | Medium | N/A | Aspect ratio changes, intelligent composition |
+
+## Use Case Recommendations
+
+- **Professional/Commercial Work**: ByteDance Seedream V4 (4K, batch processing)
+- **Multi-Image Editing**: Qwen Image (pose transfer, style consistency)  
+- **Technical Precision**: Flux Kontext (advanced controls, safety settings)
+- **Creative Exploration**: OpenAI GPT-4o (4 variants, creative prompts)
+- **Bulk Simple Edits**: Nano Banana (fastest, bulk processing)
+- **Product Photography**: Recraft BG Removal → Nano Banana upscale
+- **Aspect Ratio Changes**: Ideogram Reframe (intelligent composition)
+
+## Parameter Compatibility
+
+### Image Input
+- **filesUrl/image_urls**: ByteDance, Qwen, OpenAI, Nano Banana
+- **inputImage**: Flux Kontext
+- **image_url**: Qwen, Ideogram, Recraft
+- **image**: Nano Banana (upscale mode)
+
+### Quality Control
+- **Resolution**: ByteDance (1K/2K/4K), Qwen (6 presets), Ideogram (6 presets)
+- **Guidance Scale**: Qwen (0-20), Flux (implicit)
+- **Safety**: Flux (tolerance 0-6), Qwen (checker on/off)
+
+### Output Quantity
+- **max_images**: ByteDance (1-6)
+- **num_images**: Qwen (1-4 string), Ideogram (1-4)
+- **nVariants**: OpenAI (1/2/4 string)
+`;
+  }
+
+  private getVideoModelsComparison(): string {
+    return `# Video Models Comparison
+
+| Model | Max Resolution | Quality Modes | Duration | Speed | Key Strengths |
+|-------|---------------|---------------|----------|-------|---------------|
+| **Google Veo3** | 1080p | veo3/veo3_fast | Default | Medium | Premium cinematic quality, 1080p support |
+| **ByteDance Seedance** | 1080p | lite/pro | 2-12s | Medium | Professional standard, quality modes |
+| **Wan Video 2.5** | 1080p | Single | 5-10s | Fast | Quick generation, social media |
+| **Runway Aleph** | 1080p | Single | Source | Medium | Video-to-video editing, style transfer |
+
+## Quality & Cost Trade-offs
+
+### Default Settings (Cost-Effective)
+- **Resolution**: 720p (unless user requests high quality)
+- **Quality Mode**: lite/fast (unless user requests high quality)
+- **Model**: ByteDance Seedance lite as default
+
+### High Quality Upgrades
+- **User says "high quality"**: Pro models + 1080p
+- **User says "high quality in 720p"**: Pro models + 720p
+- **User says "cinematic"**: Veo3 model
+- **User says "fast/quick"**: Lite models + 720p (already default)
+
+## Use Case Recommendations
+
+- **Cinematic/Premium Content**: Veo3 (model: "veo3")
+- **Professional/Commercial**: ByteDance Seedance (quality: "pro")
+- **Social Media/Fast**: Wan Video 2.5 or ByteDance lite
+- **Video Editing**: Runway Aleph (existing video transformation)
+
+## Parameter Mapping
+
+### Input Methods
+- **Text-to-Video**: All models (prompt only)
+- **Image-to-Video**: Veo3 (imageUrls), ByteDance (image_url), Wan (image_url)
+- **Video-to-Video**: Runway Aleph (videoUrl)
+
+### Quality Control
+- **Veo3**: model selection (veo3 vs veo3_fast)
+- **ByteDance**: quality parameter (lite vs pro) + resolution
+- **Wan**: resolution parameter only
+- **Runway**: implicit (no quality settings)
+
+### Aspect Ratios
+- **Veo3**: 16:9, 9:16, Auto
+- **ByteDance**: 16:9, 9:16, 1:1, 4:3, 3:4, 21:9, 9:21
+- **Wan**: 16:9, 9:16, 1:1
+- **Runway**: 16:9, 9:16, 1:1, 4:3, 3:4, 21:9
+`;
+  }
+
+  private getQualityOptimizationGuide(): string {
+    return `# Quality & Cost Optimization Guide
+
+## 🎯 Default Settings (Cost-Effective)
+
+### **CRITICAL COST CONTROL RULES**
+- **Resolution**: ALWAYS use \`"720p"\` unless user explicitly requests high quality
+- **Quality Level**: ALWAYS use **lite/fast** versions unless user requests "high quality"
+- **Model Selection**: bytedance_seedance_video with \`quality: "lite"\` as default
+
+### **Quality Upgrade Logic**
+
+#### **When User Says "high quality"**
+- Upgrade to: Pro versions + 1080p resolution
+- ByteDance: \`quality: "pro"\` + \`"resolution": "1080p"\`
+- Wan Video: \`"resolution": "1080p"\`
+- Veo3: \`model: "veo3"\`
+
+#### **When User Says "high quality in 720p"**
+- Upgrade to: Pro versions + keep 720p resolution
+- ByteDance: \`quality: "pro"\` + \`"resolution": "720p"\`
+- Veo3: \`model: "veo3"\`
+
+#### **When User Says "fast" or "quick"**
+- Keep: Lite versions + 720p resolution (already default)
+- ByteDance: \`quality: "lite"\` + \`"resolution": "720p"\`
+- Veo3: \`model: "veo3_fast"\` + \`"resolution": "720p"\`
+
+## 💰 Cost Impact Matrix
+
+### **Video Generation**
+| Quality | Resolution | Model | Relative Cost |
+|---------|-----------|-------|---------------|
+| Lite | 720p | Default | 1x (baseline) |
+| Lite | 1080p | Upgraded | ~2x |
+| Pro | 720p | Upgraded | ~2x |
+| Pro | 1080p | Maximum | ~4x |
+
+### **Image Generation**
+| Model | Resolution | Relative Cost |
+|-------|-----------|---------------|
+| Nano Banana | Standard | 1x |
+| Qwen | HD | 1.5x |
+| ByteDance Seedream | 2K | 2x |
+| ByteDance Seedream | 4K | 3x |
+| Flux Kontext | Pro | 2.5x |
+
+## 🎯 Parameter Selection Strategy
+
+### **For Cost-Sensitive Projects**
+1. Use lite models with 720p resolution (default)
+2. Avoid 1080p unless explicitly needed
+3. Use batch processing when possible
+4. Monitor costs through task database
+
+### **For Quality-Focused Projects**
+1. Use pro models with 1080p resolution
+2. Accept 2-4x cost increase
+3. Use professional models (Veo3, Flux Kontext Max)
+4. Optimize selectively (not all content needs max quality)
+
+### **For Balanced Projects**
+1. Use pro models with 720p resolution
+2. Upgrade specific elements rather than entire project
+3. Mix lite and pro models strategically
+4. Monitor costs through task database
+
+## 📊 Cost Tracking
+
+### **Database Monitoring**
+- **Task Records**: All tasks stored with parameters and costs
+- **Status Tracking**: Monitor expensive operations
+- **Result Analysis**: Compare quality vs cost effectiveness
+
+### **Performance Metrics**
+- **Success Rates**: Track failed vs successful generations
+- **Cost per Quality**: Analyze quality improvement vs cost increase
+- **Time Analysis**: Compare generation speed vs quality
+`;
+  }
+
+  private async getAgentInstructions(agentName: string): Promise<string> {
+    const fs = await import('fs/promises');
+    const path = await import('path');
+    const { fileURLToPath } = await import('url');
+    
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = path.dirname(__filename);
+    const agentPath = path.join(__dirname, '..', 'ai_docs', `${agentName}.md`);
+    
+    try {
+      return await fs.readFile(agentPath, 'utf-8');
+    } catch (error) {
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to load agent instructions for ${agentName}: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  private async getModelDocumentation(modelKey: string): Promise<string> {
+    const fs = await import('fs/promises');
+    const path = await import('path');
+    const { fileURLToPath } = await import('url');
+    
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = path.dirname(__filename);
+    
+    // Map URI keys to file names
+    const modelFiles: Record<string, string> = {
+      'bytedance-seedream': 'bytedance_seedream-v4-text-to-image.md',
+      'qwen-image': 'qwen_text-to-image.md',
+      'flux-kontext': 'flux_kontext_image.md',
+      'openai-4o-image': 'openai_4o-image.md',
+      'veo3': 'bytedance_seedance-v1-lite-text-to-video.md', // placeholder, needs actual veo3 doc
+      'bytedance-seedance': 'bytedance_seedance-v1-lite-text-to-video.md',
+      'wan-video': 'wan_2-5-text-to-video.md',
+      'runway-aleph': 'runway_aleph_video.md',
+      'recraft-bg-removal': 'recraft_remove_background.md',
+      'ideogram-reframe': 'ideogram_reframe_image.md'
+    };
+    
+    const fileName = modelFiles[modelKey];
+    if (!fileName) {
+      throw new McpError(ErrorCode.InternalError, `Unknown model: ${modelKey}`);
+    }
+    
+    const modelPath = path.join(__dirname, '..', 'ai_docs', 'kie', fileName);
+    
+    try {
+      return await fs.readFile(modelPath, 'utf-8');
+    } catch (error) {
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to load model documentation for ${modelKey}: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 

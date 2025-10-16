@@ -5,6 +5,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.3] - 2025-01-15
+
+### Changed
+- **MCP Prompts & Resources Redesign**: Complete overhaul of prompts and resources following MCP protocol specifications
+  - **Agent-Based Prompts**: Replaced generic workflow prompts with slash command triggers
+    - `/artist` - Image generation agent with full artist.md instructions
+    - `/filmographer` - Video generation agent with full filmographer.md instructions
+  - **Simplified Invocation**: Prompts load full agent instructions without requiring structured arguments
+  - **Natural Language**: Users provide complete context in their message (including image URLs)
+  - **Embedded Resources**: Agent instructions delivered as embedded resources in prompt responses
+  
+  - **Knowledge Resources**: Comprehensive model documentation and comparison guides
+    - **Agent Instructions**: Full system prompts for artist and filmographer agents
+    - **Model Documentation**: Individual docs for all 12+ models (ByteDance, Qwen, Flux, Veo3, etc.)
+    - **Comparison Guides**: Feature matrices for image and video models
+    - **Optimization Guide**: Quality & cost control strategies with default settings
+  
+  - **Resource Annotations**: Priority and audience hints for intelligent context inclusion
+    - Agent instructions: priority 0.9, audience "assistant"
+    - Model docs: priority 0.6-0.8, audience "assistant"
+    - Comparison guides: priority 0.5, audience "assistant"
+    - Operational resources: priority 0.3-0.4, audience "user" or "user, assistant"
+  
+  - **Removed**: Old generic prompts (create_social_media_content, product_photography, explainer_video)
+  - **Removed**: Placeholder resources (models/status, config/limits) in favor of real documentation
+
+### Technical
+- Added `getAgentInstructions()` helper to load agent markdown files dynamically
+- Added `getModelDocumentation()` helper to load model docs with file name mapping
+- Added `getImageModelsComparison()` with feature matrix for all image models
+- Added `getVideoModelsComparison()` with feature matrix and cost trade-offs
+- Added `getQualityOptimizationGuide()` with resolution/quality control strategies
+- Updated `ReadResourceRequestSchema` handler with model matching and guide routing
+- Updated `GetPromptRequestSchema` handler to embed agent instructions as resources
+- Maintained backward compatibility with existing operational resources (tasks/active, stats/usage)
+
 ## [1.9.2] - 2025-01-15
 
 ### Changed

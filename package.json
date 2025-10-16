@@ -1,6 +1,6 @@
 {
   "name": "@felores/kie-ai-mcp-server",
-  "version": "1.9.2",
+  "version": "1.9.3",
   "description": "MCP server for Kie.ai APIs (19 AI tools: Nano Banana image generation/editing/upscaling, Veo3 video generation, Suno music generation, ElevenLabs TTS/sound effects, ByteDance Seedance/Seedream video/image, Qwen image generation/editing, Runway Aleph video transformation, Midjourney AI generation, Wan video generation, OpenAI 4o image generation/editing/variants, Flux Kontext image generation/editing, Recraft background removal, Ideogram image reframing)",
   "main": "dist/index.js",
   "bin": {
@@ -9,8 +9,8 @@
   "type": "module",
   "scripts": {
     "build": "tsc",
-    "start": "node dist/index.js",
-    "dev": "tsx src/index.ts",
+    "start": "node --env-file=.env dist/index.js",
+    "dev": "tsx --env-file=.env src/index.ts",
     "test": "jest",
     "prepublishOnly": "npm run build"
   },
@@ -52,22 +52,18 @@
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/felores/kie-ai-mcp-server.git"
-  },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^0.4.0",
     "sqlite3": "^5.1.6",
     "zod": "^3.22.4"
   },
   "devDependencies": {
+    "@types/jest": "^29.5.8",
     "@types/node": "^20.10.0",
     "@types/sqlite3": "^3.1.11",
-    "typescript": "^5.3.0",
-    "tsx": "^4.6.0",
     "jest": "^29.7.0",
-    "@types/jest": "^29.5.8"
+    "tsx": "^4.6.0",
+    "typescript": "^5.3.0"
   },
   "engines": {
     "node": ">=18.0.0"
