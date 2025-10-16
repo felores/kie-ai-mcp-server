@@ -1,6 +1,8 @@
 # Kie.ai MCP Server
 
-**Access State of the Art AI models at half the price using one MCP Server. Generate videos, images, music, and audio with the latest generative AI technologies using a developer-friendly API.**
+**Access State of the Art AI models at half the price using one MCP Server.** Generate videos, images, music, and audio with the latest generative AI technologies using a developer-friendly API.
+
+Kie.ai offers **30-50% lower cost** than competitors with 99.9% uptime and 24/7 human support.
 
 ## 🚀 **Quick Start - Add to Your MCP Client**
 
@@ -25,9 +27,7 @@ The easiest way to use this server is to add it to your MCP client configuration
 
 **For Claude Desktop:** Add this to `~/Library/Application Support/Claude/claude_desktop_config.json` (Mac) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows)
 
----
-
-Generate stunning videos, images, music, and audio at **30-50% lower cost** than competitors with 99.9% uptime and 24/7 human support.
+**Works with Cursor, Windsurf, VS Code, Claude Code, OpenCode, Droid, etc.**
 
 ## Why Choose Kie.ai MCP Server?
 
