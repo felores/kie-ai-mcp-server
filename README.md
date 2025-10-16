@@ -2,7 +2,32 @@
 
 **Access State of the Art AI models at half the price using one MCP Server. Generate videos, images, music, and audio with the latest generative AI technologies using a developer-friendly API.**
 
- Generate stunning videos, images, music, and audio at **30-50% lower cost** than competitors with 99.9% uptime and 24/7 human support.
+## 🚀 **Quick Start - Add to Your MCP Client**
+
+The easiest way to use this server is to add it to your MCP client configuration:
+
+```json
+{
+  "mcpServers": {
+    "kie-ai": {
+      "command": "npx",
+      "args": ["-y", "@felores/kie-ai-mcp-server"],
+      "env": {
+        "KIE_AI_API_KEY": "your-api-key-here",
+        "KIE_AI_CALLBACK_URL": "https://your-domain.com/api/callback"
+      }
+    }
+  }
+}
+```
+
+**Get your free API key:** [kie.ai/api-key](https://kie.ai/api-key)
+
+**For Claude Desktop:** Add this to `~/Library/Application Support/Claude/claude_desktop_config.json` (Mac) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows)
+
+---
+
+Generate stunning videos, images, music, and audio at **30-50% lower cost** than competitors with 99.9% uptime and 24/7 human support.
 
 ## Why Choose Kie.ai MCP Server?
 
@@ -28,29 +53,6 @@
 - **Midjourney AI**: Industry-leading image and video generation with multiple modes (unified)
 - **Recraft Remove Background**: Professional AI-powered background removal with clean edge detection
 - **Ideogram V3 Reframe**: Intelligent image reframing and aspect ratio conversion with content-aware adaptation
-
-### 🚀 **Quick Start - Add to Your MCP Client**
-
-The easiest way to use this server is to add it to your MCP client configuration:
-
-```json
-{
-  "mcpServers": {
-    "kie-ai": {
-      "command": "npx",
-      "args": ["-y", "@felores/kie-ai-mcp-server"],
-      "env": {
-        "KIE_AI_API_KEY": "your-api-key-here",
-        "KIE_AI_CALLBACK_URL": "https://your-domain.com/api/callback"
-      }
-    }
-  }
-}
-```
-
-**Get your free API key:** [kie.ai/api-key](https://kie.ai/api-key)
-
-**For Claude Desktop:** Add this to `~/Library/Application Support/Claude/claude_desktop_config.json` (Mac) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows)
 
 ### 💰 **Affordable Pricing**
 Pay-as-you-go credit system means you only pay for what you use. Good for startups and enterprises looking to reduce AI costs.
