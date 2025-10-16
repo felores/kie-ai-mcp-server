@@ -153,7 +153,7 @@ All tools feature **smart mode detection** - one tool does multiple things:
 - `recraft_remove_background` - Professional background removal
 - `ideogram_reframe` - Intelligent aspect ratio conversion
 
-**Video Tools (4):**
+**Video Tools (5):**
 - `veo3_generate_video` - Premium cinematic video (text OR image input)
 - `bytedance_seedance_video` - Professional video (text OR image input, lite OR pro)
 - `wan_video` - Fast social media video (text OR image input)
@@ -165,7 +165,7 @@ All tools feature **smart mode detection** - one tool does multiple things:
 - `elevenlabs_tts` - Studio-quality text-to-speech
 - `elevenlabs_ttsfx` - AI-powered sound effects
 
-**Utility Tools (4):**
+**Utility Tools (3):**
 - `list_tasks` - View all generation tasks
 - `get_task_status` - Check task progress
 - `veo3_get_1080p_video` - Upgrade to 1080p
