@@ -430,7 +430,8 @@ Add to your Claude Desktop or MCP client configuration:
     "command": "node",
     "args": ["/path/to/kie-ai-mcp-server/dist/index.js"],
     "env": {
-      "KIE_AI_API_KEY": "your-api-key-here"
+      "KIE_AI_API_KEY": "your-api-key-here",
+      "KIE_AI_CALLBACK_URL": "https://your-domain.com/api/callback"
     }
   }
 }
@@ -444,7 +445,8 @@ Or if installed globally:
     "command": "npx",
     "args": ["-y", "@felores/kie-ai-mcp-server"],
     "env": {
-      "KIE_AI_API_KEY": "your-api-key-here"
+      "KIE_AI_API_KEY": "your-api-key-here",
+      "KIE_AI_CALLBACK_URL": "https://your-domain.com/api/callback"
     }
   }
 }
