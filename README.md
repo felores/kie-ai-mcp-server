@@ -16,7 +16,7 @@ The easiest way to use this server is to add it to your MCP client configuration
       "args": ["-y", "@felores/kie-ai-mcp-server"],
       "env": {
         "KIE_AI_API_KEY": "your-api-key-here",
-        "KIE_AI_CALLBACK_URL": "https://your-domain.com/api/callback"
+        "KIE_AI_CALLBACK_URL": "https://example.com/api/callback"
       }
     }
   }
@@ -24,6 +24,8 @@ The easiest way to use this server is to add it to your MCP client configuration
 ```
 
 **Get your free API key:** [kie.ai/api-key](https://kie.ai/api-key)
+
+You can keep the CALLBACK URL as is. You don't need to change it.
 
 **For Claude Desktop:** Add this to `~/Library/Application Support/Claude/claude_desktop_config.json` (Mac) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows)
 
