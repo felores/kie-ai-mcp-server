@@ -29,6 +29,28 @@
 - **Recraft Remove Background**: Professional AI-powered background removal with clean edge detection
 - **Ideogram V3 Reframe**: Intelligent image reframing and aspect ratio conversion with content-aware adaptation
 
+### 🚀 **Quick Start - Add to Your MCP Client**
+
+The easiest way to use this server is to add it to your MCP client configuration:
+
+```json
+{
+  "mcpServers": {
+    "kie-ai": {
+      "command": "npx",
+      "args": ["-y", "@felores/kie-ai-mcp-server"],
+      "env": {
+        "KIE_AI_API_KEY": "your-api-key-here"
+      }
+    }
+  }
+}
+```
+
+**Get your free API key:** [kie.ai/api-key](https://kie.ai/api-key)
+
+**For Claude Desktop:** Add this to `~/Library/Application Support/Claude/claude_desktop_config.json` (Mac) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows)
+
 ### 💰 **Affordable Pricing**
 Pay-as-you-go credit system means you only pay for what you use. Good for startups and enterprises looking to reduce AI costs.
 
@@ -268,100 +290,6 @@ All intelligent behaviors are implemented in the codebase:
 - **Database Integration**: `src/database.ts` + `src/index.ts`
 
 This system ensures **optimal user experience** while maintaining **cost control** and **technical accuracy** - users get what they want without needing to understand the underlying complexity.
-
-### **🎯 Intelligent System Architecture**
-
-```mermaid
-flowchart TD
-    %% User Input Layer
-    A[User Request] --> B{Parse Intent}
-    
-    %% Intent Detection
-    B --> C[Quality Detection]
-    B --> D[Mode Detection] 
-    B --> E[Model Selection]
-    
-    %% Quality Detection Logic
-    C --> C1{Keywords Detected?}
-    C1 -->|high quality, professional, premium| C2[Set quality: pro]
-    C1 -->|fast, quick, social media| C3[Set quality: lite]
-    C1 -->|no quality keywords| C3[Set quality: lite]
-    
-    %% Mode Detection Examples
-    D --> D1{Tool & Parameters}
-    D1 -->|nano_banana_image + prompt| D2[Generate Mode]
-    D1 -->|nano_banana_image + prompt + image_urls| D3[Edit Mode]
-    D1 -->|nano_banana_image + image_urls + scale| D4[Upscale Mode]
-    D1 -->|bytedance_seedance_video + image_url| D5[Image-to-Video]
-    D1 -->|bytedance_seedance_video + no image| D6[Text-to-Video]
-    
-    %% Model Selection Logic
-    E --> E1{Content Type}
-    E1 -->|cinematic, premium| E2[veo3_generate]
-    E1 -->|professional video| E3[bytedance_seedance_video]
-    E1 -->|fast/social media| E4[wan_2_5_video]
-    E1 -->|existing video| E5[runway_aleph_video]
-    E1 -->|default| E3[bytedance_seedance_video]
-    
-    %% Endpoint Resolution
-    C2 --> F[Pro Model Selection]
-    C3 --> G[Lite Model Selection]
-    
-    F --> H{Video Mode?}
-    G --> H
-    
-    H -->|Text-to-Video| I[bytedance/v1-pro-text-to-video]
-    H -->|Image-to-Video| J[bytedance/v1-pro-image-to-video]
-    H -->|Text-to-Video Lite| K[bytedance/v1-lite-text-to-video]
-    H -->|Image-to-Video Lite| L[bytedance/v1-lite-image-to-video]
-    
-    %% Other Model Endpoints
-    E2 --> M[/veo/generate]
-    E4 --> N[/jobs/createTask<br/>wan-2-5-video]
-    E5 --> O[/jobs/createTask<br/>runway-aleph-video]
-    
-    %% Task Creation & Tracking
-    I --> P[Create Task]
-    J --> P
-    K --> P
-    L --> P
-    M --> P
-    N --> P
-    O --> P
-    
-    P --> Q[Store in SQLite DB<br/>api_type + task_id]
-    Q --> R[Return task_id to user]
-    
-    %% Status Monitoring Loop
-    R --> S[User Polls Status]
-    S --> T{Get api_type from DB}
-    T --> U{Route to Correct Endpoint}
-    
-    U -->|veo3| V[/veo/record-info]
-    U -->|suno| W[/generate/record-info]
-    U -->|jobs models| X[/jobs/recordInfo]
-    
-    V --> Y[Update Local DB]
-    W --> Y
-    X --> Y
-    
-    Y --> Z{Status Complete?}
-    Z -->|pending/processing| S
-    Z -->|completed| AA[Return Result URL]
-    Z -->|failed| BB[Return Error]
-    
-    %% Styling
-    classDef userBox fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    classDef intentBox fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
-    classDef modelBox fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
-    classDef endpointBox fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    classDef dbBox fill:#fce4ec,stroke:#880e4f,stroke-width:2px
-    
-    class A userBox
-    class B,C,D,E intentBox
-    class C2,C3,F,G,H,I,J,K,L,M,N,O modelBox
-    class P,Q,R,S,T,U,V,W,X,Y,Z,BB,AA endpointBox
-```
 
 ### **🚀 Real-World Intelligence Examples**
 
