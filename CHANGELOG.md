@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.5] - 2025-01-16
+
+### Fixed
+- **Veo3 API Image Parameters**: Veo3 API actually supports 2 images for image-to-video mode
+  - **1 image mode**: Video unfolds around the provided image
+  - **2 images mode**: First image serves as start frame, second as end frame (creates transition effect)
+  - Updated schema from `max(1)` to `min(1).max(2)` to reflect API capability
+  - Enhanced tool documentation to clarify both image modes with examples
+  - Updated error messages with mode-specific guidance
+
+- **Missing ai_docs in npm Package**: Agent instruction files were not included in published package
+  - Added `ai_docs/` directory to `package.json` files field
+  - MCP clients can now load `filmographer.md` and `artist.md` instructions without ENOENT errors
+  - All AI documentation files now properly distributed with package
+
+### Technical
+- Updated `Veo3GenerateSchema` in types.ts to accept 1-2 images with `.min(1).max(2)`
+- Enhanced MCP tool schema with `minItems: 1` and `maxItems: 2` for imageUrls
+- Updated tool description to explain both single and dual image modes
+- Updated error message guidance for better UX
+
 ## [1.9.4] - 2025-01-16
 
 ### Added
