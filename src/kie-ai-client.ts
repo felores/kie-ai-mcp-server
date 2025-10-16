@@ -16,6 +16,7 @@ import {
   FluxKontextImageRequest,
   RecraftRemoveBackgroundRequest,
   IdeogramReframeRequest,
+  KlingVideoRequest,
   ImageResponse,
   TaskResponse 
 } from './types.js';
@@ -121,7 +122,7 @@ export class KieAiClient {
       return this.makeRequest<any>(`/jobs/recordInfo?taskId=${taskId}`, 'GET');
     } else if (apiType === 'suno') {
       return this.makeRequest<any>(`/generate/record-info?taskId=${taskId}`, 'GET');
-    } else if (apiType === 'elevenlabs-tts' || apiType === 'elevenlabs-sound-effects' || apiType === 'bytedance-seedance-video' || apiType === 'bytedance-seedream-image' || apiType === 'qwen-image' || apiType === 'wan-video' || apiType === 'recraft-remove-background' || apiType === 'ideogram-reframe') {
+    } else if (apiType === 'elevenlabs-tts' || apiType === 'elevenlabs-sound-effects' || apiType === 'bytedance-seedance-video' || apiType === 'bytedance-seedream-image' || apiType === 'qwen-image' || apiType === 'wan-video' || apiType === 'recraft-remove-background' || apiType === 'ideogram-reframe' || apiType === 'kling-v2-1-pro' || apiType === 'kling-v2-5-turbo-text-to-video' || apiType === 'kling-v2-5-turbo-image-to-video') {
       return this.makeRequest<any>(`/jobs/recordInfo?taskId=${taskId}`, 'GET');
     } else if (apiType === 'runway-aleph-video') {
       return this.makeRequest<any>(`/api/v1/aleph/record-info?taskId=${taskId}`, 'GET');
@@ -536,11 +537,61 @@ export class KieAiClient {
     return this.makeRequest<TaskResponse>('/jobs/createTask', 'POST', jobRequest);
   }
 
-  async getVeo1080pVideo(taskId: string, index?: number): Promise<KieAiResponse<any>> {
-    const params = new URLSearchParams({ taskId });
-    if (index !== undefined) {
-      params.append('index', index.toString());
-    }
-    return this.makeRequest<any>(`/veo/get-1080p-video?${params}`, 'GET');
-  }
+   async getVeo1080pVideo(taskId: string, index?: number): Promise<KieAiResponse<any>> {
+     const params = new URLSearchParams({ taskId });
+     if (index !== undefined) {
+       params.append('index', index.toString());
+     }
+     return this.makeRequest<any>(`/veo/get-1080p-video?${params}`, 'GET');
+   }
+
+   async generateKlingVideo(request: KlingVideoRequest): Promise<KieAiResponse<TaskResponse>> {
+     // Smart mode detection based on parameters
+     const hasImageUrl = !!request.image_url;
+     const hasTailImageUrl = !!request.tail_image_url;
+     
+     let model: string;
+     let input: any;
+     
+     if (hasTailImageUrl) {
+       // v2.1-pro mode: start frame + end frame reference
+       model = 'kling/v2-1-pro';
+       input = {
+         prompt: request.prompt,
+         image_url: request.image_url,
+         tail_image_url: request.tail_image_url,
+         duration: request.duration || '5',
+         negative_prompt: request.negative_prompt || 'blur, distort, and low quality',
+         cfg_scale: request.cfg_scale !== undefined ? request.cfg_scale : 0.5
+       };
+     } else if (hasImageUrl) {
+       // v2.5-turbo image-to-video mode
+       model = 'kling/v2-5-turbo-image-to-video-pro';
+       input = {
+         prompt: request.prompt,
+         image_url: request.image_url,
+         duration: request.duration || '5',
+         negative_prompt: request.negative_prompt || 'blur, distort, and low quality',
+         cfg_scale: request.cfg_scale !== undefined ? request.cfg_scale : 0.5
+       };
+     } else {
+       // v2.5-turbo text-to-video mode (default)
+       model = 'kling/v2-5-turbo-text-to-video-pro';
+       input = {
+         prompt: request.prompt,
+         duration: request.duration || '5',
+         aspect_ratio: request.aspect_ratio || '16:9',
+         negative_prompt: request.negative_prompt || 'blur, distort, and low quality',
+         cfg_scale: request.cfg_scale !== undefined ? request.cfg_scale : 0.5
+       };
+     }
+
+     const jobRequest = {
+       model,
+       input,
+       callBackUrl: request.callBackUrl || process.env.KIE_AI_CALLBACK_URL
+     };
+
+     return this.makeRequest<TaskResponse>('/jobs/createTask', 'POST', jobRequest);
+   }
 }

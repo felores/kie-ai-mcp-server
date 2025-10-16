@@ -32,6 +32,7 @@ import {
   FluxKontextImageSchema,
   RecraftRemoveBackgroundSchema,
   IdeogramReframeSchema,
+  KlingVideoSchema,
   KieAiConfig 
 } from './types.js';
 
@@ -43,7 +44,7 @@ class KieAiMcpServer {
   constructor() {
     this.server = new Server({
       name: 'kie-ai-mcp-server',
-      version: '1.9.3',
+      version: '1.9.4',
     });
 
     // Initialize client with config from environment
@@ -1120,12 +1121,69 @@ class KieAiMcpServer {
                   format: 'uri'
                 }
               },
-              required: ['image_url']
-            }
-          }
-        ]
-      };
-    });
+               required: ['image_url']
+             }
+           },
+           {
+             name: 'kling_video',
+             description: 'Generate videos using Kling AI models (unified tool for text-to-video, image-to-video, and v2.1-pro with start/end frames)',
+             inputSchema: {
+               type: 'object',
+               properties: {
+                 prompt: {
+                   type: 'string',
+                   description: 'Text prompt describing the desired video content (max 5000 characters)',
+                   minLength: 1,
+                   maxLength: 5000
+                 },
+                 image_url: {
+                   type: 'string',
+                   description: 'URL of input image for image-to-video or v2.1-pro start frame (optional - if not provided, uses text-to-video)',
+                   format: 'uri'
+                 },
+                 tail_image_url: {
+                   type: 'string',
+                   description: 'URL of end frame image for v2.1-pro (optional - requires image_url). When provided, uses v2.1-pro model with start and end frame reference',
+                   format: 'uri'
+                 },
+                 duration: {
+                   type: 'string',
+                   description: 'Duration of video in seconds',
+                   enum: ['5', '10'],
+                   default: '5'
+                 },
+                 aspect_ratio: {
+                   type: 'string',
+                   description: 'Aspect ratio of video (text-to-video mode only, image-to-video uses 16:9/9:16/1:1)',
+                   enum: ['16:9', '9:16', '1:1'],
+                   default: '16:9'
+                 },
+                 negative_prompt: {
+                   type: 'string',
+                   description: 'Elements to avoid in the video (max 2500 characters)',
+                   maxLength: 2500,
+                   default: 'blur, distort, and low quality'
+                 },
+                 cfg_scale: {
+                   type: 'number',
+                   description: 'CFG (Classifier Free Guidance) scale - how close to stick to the prompt (0-1, step 0.1)',
+                   minimum: 0,
+                   maximum: 1,
+                   multipleOf: 0.1,
+                   default: 0.5
+                 },
+                 callBackUrl: {
+                   type: 'string',
+                   description: 'Optional: URL for task completion notifications (uses KIE_AI_CALLBACK_URL env var if not provided)',
+                   format: 'uri'
+                 }
+               },
+               required: ['prompt']
+             }
+           }
+         ]
+       };
+     });
 
     this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
       try {
@@ -1183,14 +1241,17 @@ class KieAiMcpServer {
           case 'recraft_remove_background':
             return await this.handleRecraftRemoveBackground(args);
           
-          case 'ideogram_reframe':
-            return await this.handleIdeogramReframe(args);
-          
-          default:
-            throw new McpError(
-              ErrorCode.MethodNotFound,
-              `Unknown tool: ${name}`
-            );
+           case 'ideogram_reframe':
+             return await this.handleIdeogramReframe(args);
+           
+           case 'kling_video':
+             return await this.handleKlingVideo(args);
+           
+           default:
+             throw new McpError(
+               ErrorCode.MethodNotFound,
+               `Unknown tool: ${name}`
+             );
         }
       } catch (error) {
         if (error instanceof McpError) {
@@ -3106,11 +3167,100 @@ class KieAiMcpServer {
         seed: 'Optional: Seed for reproducible results',
         callBackUrl: 'Optional: URL for task completion notifications'
       });
-    }
-  }
+     }
+   }
 
-  // Dynamic Resource Methods
-  private async getActiveTasks(): Promise<string> {
+   private async handleKlingVideo(args: any) {
+     try {
+       const request = KlingVideoSchema.parse(args);
+       
+       // Use environment variable as fallback if callBackUrl not provided
+       if (!request.callBackUrl && process.env.KIE_AI_CALLBACK_URL) {
+         request.callBackUrl = process.env.KIE_AI_CALLBACK_URL;
+       }
+       
+       const response = await this.client.generateKlingVideo(request);
+       
+       // Determine mode and api_type based on parameters
+       let apiType: string;
+       let modeDescription: string;
+       
+       if (request.tail_image_url) {
+         apiType = 'kling-v2-1-pro';
+         modeDescription = 'v2.1-pro with start and end frame reference';
+       } else if (request.image_url) {
+         apiType = 'kling-v2-5-turbo-image-to-video';
+         modeDescription = 'v2.5-turbo image-to-video';
+       } else {
+         apiType = 'kling-v2-5-turbo-text-to-video';
+         modeDescription = 'v2.5-turbo text-to-video';
+       }
+       
+       if (response.data?.taskId) {
+         await this.db.createTask({
+           task_id: response.data.taskId,
+           api_type: apiType as any,
+           status: 'pending'
+         });
+       }
+       
+       return {
+         content: [
+           {
+             type: 'text',
+             text: JSON.stringify({
+               success: true,
+               task_id: response.data?.taskId,
+               mode: modeDescription,
+               message: `Kling video generation task created successfully (${modeDescription})`,
+               parameters: {
+                 prompt: request.prompt,
+                 image_url: request.image_url,
+                 tail_image_url: request.tail_image_url,
+                 duration: request.duration || '5',
+                 aspect_ratio: request.aspect_ratio || '16:9',
+                 negative_prompt: request.negative_prompt || 'blur, distort, and low quality',
+                 cfg_scale: request.cfg_scale !== undefined ? request.cfg_scale : 0.5,
+                 callBackUrl: request.callBackUrl
+               },
+               next_steps: [
+                 'Use get_task_status to check generation progress',
+                 'Task completion will be sent to the provided callback URL',
+                 'Video generation typically takes 1-5 minutes depending on duration and complexity'
+               ]
+             }, null, 2)
+           }
+         ]
+       };
+     } catch (error) {
+       if (error instanceof z.ZodError) {
+         return this.formatError('kling_video', error, {
+           prompt: 'Required: video description (max 5000 chars)',
+           image_url: 'Optional: image URL for image-to-video or v2.1-pro start frame',
+           tail_image_url: 'Optional: end frame image for v2.1-pro (requires image_url)',
+           duration: 'Optional: video duration "5" or "10" (default: "5")',
+           aspect_ratio: 'Optional: aspect ratio for text-to-video "16:9", "9:16", or "1:1" (default: "16:9")',
+           negative_prompt: 'Optional: things to avoid (max 2500 chars)',
+           cfg_scale: 'Optional: CFG scale 0-1 step 0.1 (default: 0.5)',
+           callBackUrl: 'Optional: callback URL for notifications (uses KIE_AI_CALLBACK_URL env var if not provided)'
+         });
+       }
+       
+       return this.formatError('kling_video', error, {
+         prompt: 'Required: text description for video generation',
+         image_url: 'Optional: image URL for image-to-video generation',
+         tail_image_url: 'Optional: end frame image for v2.1-pro model',
+         duration: 'Optional: video duration in seconds (5 or 10)',
+         aspect_ratio: 'Optional: aspect ratio (16:9, 9:16, 1:1)',
+         negative_prompt: 'Optional: content to avoid in generation',
+         cfg_scale: 'Optional: guidance scale for prompt adherence',
+         callBackUrl: 'Optional: URL for task completion notifications'
+       });
+     }
+   }
+
+   // Dynamic Resource Methods
+   private async getActiveTasks(): Promise<string> {
     try {
       const activeTasks = await this.db.getTasksByStatus('pending', 50);
       const processingTasks = await this.db.getTasksByStatus('processing', 50);

@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.4] - 2025-01-16
+
+### Added
+- **New Kling Video Tool**: Unified MCP tool for high-quality video generation
+  - **Three Intelligent Modes**:
+    - `kling/v2-1-pro`: Advanced video generation with start and end frame references for precise control
+    - `kling/v2-5-turbo-image-to-video-pro`: Fast image-to-video animation
+    - `kling/v2-5-turbo-text-to-video-pro`: High-quality text-to-video generation
+  - **Smart Mode Detection**: Automatically selects the best model based on parameters
+  - **Unified Schema**: Single `kling_video` tool for all three endpoints with automatic routing
+  - **Frame Reference Control**: V2.1-pro supports both start and end frame images for controlled transitions
+  - **Database Integration**: Tracks all three Kling models with api_type routing for intelligent status polling
+
+### Changed
+- **Tool Count Update**: Increased from 18 to 19 unified AI tools
+- **Video Tools Expansion**: Added Kling to the video generation family alongside Veo3, ByteDance, Runway, and Wan
+- **API Routing**: Updated `getTaskStatus()` to support three new Kling api_types for intelligent endpoint routing
+- **Database Schema**: Extended `TaskRecord.api_type` union to include 'kling-v2-1-pro', 'kling-v2-5-turbo-text-to-video', 'kling-v2-5-turbo-image-to-video'
+- **Release Guidelines**: Added MCP Inspector local testing step with clear agent/user role clarification
+
+### Technical
+- Added `KlingVideoSchema` with unified parameter validation supporting all three modes
+- Implemented `generateKlingVideo()` in KieAiClient with smart endpoint selection
+- Added `handleKlingVideo()` handler in index.ts with proper mode detection and task tracking
+- All Kling endpoints use `/jobs/recordInfo` for status polling with consistent response format
+- Updated AGENTS.md Pre-Release Checklist to include MCP Inspector verification step
+
 ## [1.9.3] - 2025-01-15
 
 ### Changed

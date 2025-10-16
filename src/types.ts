@@ -500,6 +500,55 @@ export const IdeogramReframeSchema = z.object({
 
 export type IdeogramReframeRequest = z.infer<typeof IdeogramReframeSchema>;
 
+// Kling Video - Unified tool for text-to-video, image-to-video, and image-to-video with end frame
+export const KlingVideoSchema = z.object({
+  prompt: z.string().min(1).max(5000),
+  image_url: z.string().url().optional(),
+  tail_image_url: z.string().url().optional(),
+  duration: z.enum(['5', '10']).default('5').optional(),
+  aspect_ratio: z.enum(['16:9', '9:16', '1:1']).default('16:9').optional(),
+  negative_prompt: z.string().max(2500).default('blur, distort, and low quality').optional(),
+  cfg_scale: z.number().min(0).max(1).multipleOf(0.1).default(0.5).optional(),
+  callBackUrl: z.string().url().optional()
+}).refine((data) => {
+  // Check if callBackUrl is provided directly or via environment variable
+  const hasCallBackUrl = data.callBackUrl || process.env.KIE_AI_CALLBACK_URL;
+  if (!hasCallBackUrl) {
+    return false;
+  }
+  return true;
+}, {
+  message: "callBackUrl is required (either directly or via KIE_AI_CALLBACK_URL environment variable)",
+  path: ["callBackUrl"]
+}).refine((data) => {
+  // Validate mode requirements
+  const hasImageUrl = !!data.image_url;
+  const hasTailImageUrl = !!data.tail_image_url;
+  
+  // v2.1-pro mode: requires image_url, optional tail_image_url for start+end frame reference
+  if (hasTailImageUrl) {
+    return hasImageUrl; // tail_image_url requires image_url
+  }
+  
+  // image-to-video mode: requires image_url, no tail_image_url
+  if (hasImageUrl && !hasTailImageUrl) {
+    // aspect_ratio should not be provided for image-to-video
+    return !data.aspect_ratio || ['16:9', '9:16', '1:1'].includes(data.aspect_ratio);
+  }
+  
+  // text-to-video mode: no image_url or tail_image_url, aspect_ratio allowed
+  if (!hasImageUrl && !hasTailImageUrl) {
+    return true;
+  }
+  
+  return false;
+}, {
+  message: "Invalid parameter combination. Choose mode: 1) prompt only (text-to-video), 2) prompt + image_url (image-to-video), or 3) prompt + image_url + tail_image_url (v2.1-pro with start+end frames)",
+  path: []
+});
+
+export type KlingVideoRequest = z.infer<typeof KlingVideoSchema>;
+
 export interface KieAiResponse<T = any> {
   code: number;
   msg: string;
@@ -518,7 +567,7 @@ export interface TaskResponse {
 export interface TaskRecord {
   id?: number;
   task_id: string;
-  api_type: 'nano-banana' | 'nano-banana-edit' | 'nano-banana-upscale' | 'nano-banana-image' | 'veo3' | 'suno' | 'elevenlabs-tts' | 'elevenlabs-sound-effects' | 'bytedance-seedance-video' | 'runway-aleph-video' | 'wan-video' | 'bytedance-seedream-image' | 'qwen-image' | 'midjourney' | 'openai-4o-image' | 'flux-kontext-image' | 'recraft-remove-background' | 'ideogram-reframe';
+  api_type: 'nano-banana' | 'nano-banana-edit' | 'nano-banana-upscale' | 'nano-banana-image' | 'veo3' | 'suno' | 'elevenlabs-tts' | 'elevenlabs-sound-effects' | 'bytedance-seedance-video' | 'runway-aleph-video' | 'wan-video' | 'bytedance-seedream-image' | 'qwen-image' | 'midjourney' | 'openai-4o-image' | 'flux-kontext-image' | 'recraft-remove-background' | 'ideogram-reframe' | 'kling-v2-1-pro' | 'kling-v2-5-turbo-text-to-video' | 'kling-v2-5-turbo-image-to-video';
   status: 'pending' | 'processing' | 'completed' | 'failed';
   created_at: string;
   updated_at: string;

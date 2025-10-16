@@ -240,11 +240,21 @@ if (apiType === 'veo3') {
 ### Pre-Release Checklist
 1. **Version consistency**: All version files updated (package.json, index.ts, CHANGELOG.md)
 2. **Documentation**: README.md reflects current tool names and features
-3. **Build verification**: `npm run build` succeeds without errors
-4. **Type checking**: `npx tsc --noEmit` passes
-5. **Tests**: `npm test` passes (if tests exist)
-6. **Changelog**: Detailed CHANGELOG.md entry with user-facing changes
-7. **Git status**: Clean working directory with all changes committed
+3. **Build verification**: Agent runs `npm run build` - must succeed without errors
+4. **Type checking**: Agent runs `npx tsc --noEmit` - must have no errors
+5. **Tests**: Agent runs `npm test` - must pass (if tests exist)
+6. **Local testing with MCP Inspector** *(manual user step - after agent hands off dist/)*: 
+   - Agent builds the project and hands dist/ to user
+   - User runs: `npx @modelcontextprotocol/inspector node --env-file=.env dist/index.js`
+   - User verifies in Inspector UI:
+     - ListTools response shows all tools including new ones
+     - Test new/critical tools in Tools tab with sample parameters
+     - Resources tab displays documentation correctly
+     - Notifications pane shows no server errors
+     - Test all modes for unified tools (e.g., image-to-video with and without image_url)
+   - User confirms readiness before proceeding to publishing
+7. **Changelog**: Detailed CHANGELOG.md entry with user-facing changes
+8. **Git status**: Clean working directory with all changes committed
 
 ### Release Process Options
 

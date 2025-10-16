@@ -140,7 +140,7 @@ Your AI assistant can research and learn about available models before using the
 - `kie://tasks/active` - Real-time task monitoring
 - `kie://stats/usage` - Usage statistics
 
-### 🛠️ 18 Unified AI Tools
+### 🛠️ 19 Unified AI Tools
 
 All tools feature **smart mode detection** - one tool does multiple things:
 
@@ -153,10 +153,11 @@ All tools feature **smart mode detection** - one tool does multiple things:
 - `recraft_remove_background` - Professional background removal
 - `ideogram_reframe` - Intelligent aspect ratio conversion
 
-**Video Tools (5):**
+**Video Tools (6):**
 - `veo3_generate_video` - Premium cinematic video (text OR image input)
 - `bytedance_seedance_video` - Professional video (text OR image input, lite OR pro)
 - `wan_video` - Fast social media video (text OR image input)
+- `kling_video` - High-quality video (text, image-to-video, OR v2.1-pro with start+end frames)
 - `runway_aleph_video` - Video-to-video transformation
 - `midjourney_generate` - Images AND videos with multiple modes
 
@@ -1161,7 +1162,74 @@ Image-to-video generation:
 
 **Note**: The `callBackUrl` is optional and will use the `KIE_AI_CALLBACK_URL` environment variable if not provided. Video generation typically takes 2-6 minutes depending on resolution and complexity.
 
-### 15. `openai_4o_image`
+### 15. `kling_video`
+
+Generate high-quality videos using Kling AI models (unified tool for text-to-video, image-to-video, and v2.1-pro with start+end frames).
+
+**Parameters:**
+- `prompt` (string, required): Text prompt describing the video (max 5000 chars)
+- `image_url` (string, optional): URL of input image for image-to-video or v2.1-pro start frame (if not provided, uses text-to-video)
+- `tail_image_url` (string, optional): URL of end frame image for v2.1-pro (requires image_url). When provided, uses v2.1-pro model with start and end frame reference
+- `duration` (string, optional): Duration of video in seconds (default: "5")
+  - Options: `5`, `10`
+- `aspect_ratio` (string, optional): Aspect ratio for text-to-video (default: "16:9")
+  - Options: `16:9`, `9:16`, `1:1`
+- `negative_prompt` (string, optional): Elements to avoid (max 2500 chars, default: "blur, distort, and low quality")
+- `cfg_scale` (number, optional): CFG scale for prompt adherence (0-1, step 0.1, default: 0.5)
+- `callBackUrl` (string, optional): URL for task completion notifications
+
+**Examples:**
+
+Text-to-video generation:
+```json
+{
+  "prompt": "A serene forest scene with sunlight filtering through the canopy. Birds chirping, gentle breeze rustling leaves. Camera slowly pans through the trees revealing a hidden waterfall",
+  "aspect_ratio": "16:9",
+  "duration": "10",
+  "cfg_scale": 0.7
+}
+```
+
+Image-to-video generation:
+```json
+{
+  "prompt": "The person in the image waves and smiles, then turns to look at the scenic mountain view",
+  "image_url": "https://example.com/portrait.jpg",
+  "duration": "5"
+}
+```
+
+V2.1-pro with start and end frames:
+```json
+{
+  "prompt": "A smooth transition showing the landscape changing from day to night, with the person from frame 1 walking towards the sunset",
+  "image_url": "https://example.com/start-frame.jpg",
+  "tail_image_url": "https://example.com/end-frame.jpg",
+  "duration": "10",
+  "cfg_scale": 0.6
+}
+```
+
+**Key Features:**
+- **Three Intelligent Modes**:
+  - Text-to-video: Create videos from text descriptions
+  - Image-to-video: Animate static images
+  - V2.1-pro: Advanced mode with start and end frame references for controlled video transitions
+- **Smart Mode Detection**: Automatically selects the best model based on parameters
+- **Start/End Frame Control**: V2.1-pro uniquely supports specifying both start and end frames for precise video flows
+- **Flexible Duration**: 5 or 10 second options
+- **Aspect Ratio Control**: Multiple formats for text-to-video (16:9, 9:16, 1:1)
+- **Quality Control**: CFG scale for controlling prompt adherence
+- **Negative Prompts**: Fine-tune by specifying what to avoid
+
+**Model Selection Logic:**
+- If `tail_image_url` provided → `kling/v2-1-pro` (start + end frame reference)
+- If `image_url` provided → `kling/v2-5-turbo-image-to-video-pro` (image animation)
+- Otherwise → `kling/v2-5-turbo-text-to-video-pro` (text-to-video)
+
+**Note**: The `callBackUrl` is optional and will use the `KIE_AI_CALLBACK_URL` environment variable if not provided. Video generation typically takes 2-5 minutes depending on duration and complexity.
+
+### 17. `openai_4o_image`
 Generate, edit, and create image variants using OpenAI's GPT-4o image models (unified tool for text-to-image, image editing, and image variants).
 
 **Parameters:**
@@ -1328,7 +1396,7 @@ Mobile portrait generation:
 
 **Note**: The `callBackUrl` is optional and will use the `KIE_AI_CALLBACK_URL` environment variable if not provided. Safety tolerance levels are automatically validated based on the generation mode (0-2 for editing, 0-6 for generation).
 
-### 17. `ideogram_reframe`
+### 19. `ideogram_reframe`
 Reframe images to different aspect ratios and sizes using Ideogram V3 Reframe model with intelligent content adaptation.
 
 **Parameters:**
@@ -1538,7 +1606,7 @@ The server uses SQLite to track tasks:
 CREATE TABLE tasks (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   task_id TEXT UNIQUE NOT NULL,
-  api_type TEXT NOT NULL,  -- 'nano-banana', 'nano-banana-edit', 'nano-banana-upscale', 'veo3', 'suno', 'elevenlabs-tts', 'elevenlabs-sound-effects', 'bytedance-seedance-video', 'bytedance-seedream-image', 'qwen-image', 'runway-aleph-video', 'midjourney-generate', 'wan-video', 'openai-4o-image', 'flux-kontext-image', 'recraft-remove-background', 'ideogram-reframe'
+  api_type TEXT NOT NULL,  -- 'nano-banana', 'nano-banana-edit', 'nano-banana-upscale', 'veo3', 'suno', 'elevenlabs-tts', 'elevenlabs-sound-effects', 'bytedance-seedance-video', 'bytedance-seedream-image', 'qwen-image', 'runway-aleph-video', 'midjourney-generate', 'wan-video', 'kling-v2-1-pro', 'kling-v2-5-turbo-text-to-video', 'kling-v2-5-turbo-image-to-video', 'openai-4o-image', 'flux-kontext-image', 'recraft-remove-background', 'ideogram-reframe'
   status TEXT DEFAULT 'pending',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -1671,6 +1739,9 @@ The database `api_type` field determines which Kie.ai endpoint to query:
 | `runway-aleph-video` | `/jobs/recordInfo` | Video-to-video transformation |
 | `midjourney-generate` | `/jobs/recordInfo` | Image/video generation |
 | `wan-video` | `/jobs/recordInfo` | Video generation |
+| `kling-v2-1-pro` | `/jobs/recordInfo` | Video generation (start+end frames) |
+| `kling-v2-5-turbo-text-to-video` | `/jobs/recordInfo` | Video generation (text-to-video) |
+| `kling-v2-5-turbo-image-to-video` | `/jobs/recordInfo` | Video generation (image-to-video) |
 | `openai-4o-image` | `/jobs/recordInfo` | Image generation/editing/variants |
 | `flux-kontext-image` | `/jobs/recordInfo` | Image generation/editing |
 | `recraft-remove-background` | `/jobs/recordInfo` | Background removal |
