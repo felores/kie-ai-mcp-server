@@ -426,6 +426,15 @@ export KIE_AI_CALLBACK_URL="https://your-domain.com/api/callback"  # Optional: C
 export KIE_AI_CALLBACK_URL_FALLBACK="https://your-proxy.com/callback"  # Optional: Admin fallback
 ```
 
+### **Callback URL Priority:**
+
+| Priority | Source | Variable | Use Case |
+|----------|--------|----------|----------|
+| 1 | User Parameter | `callBackUrl` | Per-request override |
+| 2 | Environment | `KIE_AI_CALLBACK_URL` | User's custom callback |
+| 3 | Admin Fallback | `KIE_AI_CALLBACK_URL_FALLBACK` | ⭐ **Deployment-wide default** |
+| 4 | Hardcoded | - | `https://proxy.kie.ai/mcp-callback` |
+
 ### MCP Configuration
 
 Add to your Claude Desktop or MCP client configuration:
@@ -467,6 +476,85 @@ Or if installed globally:
 
 **For Users:** Just provide your API key - everything else is handled automatically!
 **For Administrators:** Set `KIE_AI_CALLBACK_URL_FALLBACK` for custom proxy configurations
+
+## 🔧 Administrator Configuration
+
+### `KIE_AI_CALLBACK_URL_FALLBACK`
+
+For system administrators and deployment managers, this environment variable provides organization-wide control over callback URLs:
+
+```bash
+# Set deployment-wide callback URL
+export KIE_AI_CALLBACK_URL_FALLBACK="https://your-proxy.company.com/mcp-callback"
+```
+
+### **Use Cases:**
+
+**1. Corporate Proxy Setup:**
+```bash
+# For enterprise deployments behind corporate firewalls
+export KIE_AI_CALLBACK_URL_FALLBACK="https://internal-proxy.company.ai/kie-callback"
+```
+
+**2. Multi-Tenant Services:**
+```bash
+# For SaaS platforms managing multiple users
+export KIE_AI_CALLBACK_URL_FALLBACK="https://api.yourservice.com/webhooks/kie-ai"
+```
+
+**3. Development/Staging Environments:**
+```bash
+# Separate callbacks for different environments
+export KIE_AI_CALLBACK_URL_FALLBACK="https://staging-webhook.yourapp.com/kie"
+```
+
+### **Configuration Examples:**
+
+**Docker Compose:**
+```yaml
+services:
+  kie-ai-mcp:
+    image: node:18
+    environment:
+      - KIE_AI_API_KEY=${API_KEY}
+      - KIE_AI_CALLBACK_URL_FALLBACK=https://proxy.company.com/webhook
+    command: npx -y @felores/kie-ai-mcp-server
+```
+
+**Kubernetes:**
+```yaml
+env:
+  - name: KIE_AI_API_KEY
+    valueFrom:
+      secretKeyRef:
+        name: kie-ai-secrets
+        key: api-key
+  - name: KIE_AI_CALLBACK_URL_FALLBACK
+    value: "https://proxy.company.com/kie-callback"
+```
+
+**Systemd Service:**
+```ini
+[Service]
+Environment=KIE_AI_API_KEY=your-api-key
+Environment=KIE_AI_CALLBACK_URL_FALLBACK=https://proxy.company.com/webhook
+ExecStart=npx -y @felores/kie-ai-mcp-server
+```
+
+### **Security Considerations:**
+
+- **HTTPS Required:** Always use HTTPS URLs for callbacks
+- **Authentication:** Ensure your callback endpoint validates requests
+- **Rate Limiting:** Implement rate limiting on your callback endpoint
+- **Logging:** Log callback requests for debugging and monitoring
+
+### **Fallback Behavior:**
+
+The admin fallback only activates when:
+1. No user-provided `callBackUrl` parameter
+2. No `KIE_AI_CALLBACK_URL` environment variable set
+
+This ensures user preferences and existing configurations take priority.
 
 ## Available Tools
 
