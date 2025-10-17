@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.7] - 2025-10-17
+
+### Fixed
+- **Database Directory Permissions**: Added intelligent fallback strategy for directory creation
+  - When running with `npx -y`, temporary directories may not be writable
+  - Now automatically falls back to `~/.kie-ai/tasks.db` if current directory is not writable
+  - Eliminates `SQLITE_CANTOPEN` error in restricted environments
+  - Logs fallback location for user awareness
+
+### Technical
+- Added `resolveDbPath()` method with smart path resolution logic
+- Added error handling for `mkdirSync()` failures with graceful fallback
+- Added `homedir()` import from OS module for cross-platform home directory detection
+- Maintains support for custom `KIE_AI_DB_PATH` environment variable
+- Fully backwards compatible - existing installations unaffected
+
+### User Experience
+- Works seamlessly with `npx -y` installations in Claude Desktop
+- No manual directory creation required in any scenario
+- Transparent fallback with informative logging
+
 ## [1.9.6] - 2025-10-17
 
 ### Fixed

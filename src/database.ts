@@ -1,18 +1,38 @@
 import sqlite3 from "sqlite3";
 import { TaskRecord } from "./types.js";
-import { dirname } from "path";
-import { mkdirSync } from "fs";
+import { dirname, resolve } from "path";
+import { mkdirSync, existsSync } from "fs";
+import { homedir } from "os";
 
 export class TaskDatabase {
   private db: sqlite3.Database;
 
-  constructor(dbPath: string = "./tasks.db") {
-    // Create directory if it doesn't exist
-    const dir = dirname(dbPath);
-    mkdirSync(dir, { recursive: true });
+  constructor(dbPath?: string) {
+    // Determine the actual database path
+    const actualDbPath = this.resolveDbPath(dbPath);
 
-    this.db = new sqlite3.Database(dbPath);
+    // Create directory if it doesn't exist
+    const dir = dirname(actualDbPath);
+    try {
+      mkdirSync(dir, { recursive: true });
+    } catch (err) {
+      console.error(`Failed to create database directory ${dir}:`, err);
+      throw new Error(`Cannot create database directory: ${dir}`);
+    }
+
+    this.db = new sqlite3.Database(actualDbPath);
     this.initializeDatabase();
+  }
+
+  private resolveDbPath(dbPath?: string): string {
+    // If custom path provided via KIE_AI_DB_PATH, use it
+    if (dbPath) {
+      return resolve(dbPath);
+    }
+
+    // Default: use home directory for reliability with npx
+    const homeDir = homedir();
+    return resolve(homeDir, ".kie-ai", "tasks.db");
   }
 
   private initializeDatabase(): void {
