@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.6] - 2025-10-17
+
+### Fixed
+- **Database Directory Creation**: TaskDatabase now automatically creates parent directories if they don't exist
+  - Uses `fs.mkdirSync()` with `{ recursive: true }` in constructor
+  - Eliminates `SQLITE_CANTOPEN` error when using custom `KIE_AI_DB_PATH`
+  - Users no longer need to manually create directories before running the MCP server
+  - Fully backwards compatible - existing installations unaffected
+
+### Technical
+- Added `path` module import for `dirname()` function
+- Added `fs` module import for `mkdirSync()` function
+- Updated TaskDatabase constructor to create directory structure before opening database file
+
+### User Experience
+- Seamless MCP initialization with zero configuration required for database persistence
+- Works out-of-the-box with npx installations in Claude Desktop
+- Eliminates early connection failures due to missing directories
+
 ## [1.9.5] - 2025-01-16
 
 ### Fixed

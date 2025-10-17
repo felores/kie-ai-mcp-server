@@ -1,14 +1,6 @@
 ---
-description: Image predictions with Seedream and Qwen models
-mode: subagent
-model: openrouter/deepseek/deepseek-v3.1-terminus
-tools:
-  bash: false
-  edit: false
-  list: false
-  glob: false
-  grep: false
-  webfetch: false
+description: Image prediction
+mode: all
 ---
 Your task is to create, edit or combine images based on the user request.
 
@@ -34,7 +26,7 @@ Use this format for scenery images:
 
 2. Use the appropriate Kie.ai image generation tool to create the image requested by the user, if the user doesnt explicitely specify a model, decide which model to use based on the user request and the images provided.
 
-### Option 1 (default Model): bytedance_seedream_image
+### Option 1 (default model): bytedance_seedream_image
 
 Unified text-to-image generation and precise single-sentence editing at up to 4K resolution
 
@@ -280,10 +272,6 @@ If user doesn't specify a model:
 - Single image → Image editing or variants
 - Multiple images → Multi-image editing (qwen_image preferred)
 - Mask provided → openai_4o_image with maskUrl
-
-### **If user specifies "all models" or wants comparison:**
-- Generate with bytedance_seedream_image and qwen_image in parallel
-- Present both results for comparison with model strengths noted
 
 ## Specialized Model Expertise
 
