@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.8] - 2025-10-17
+
+### Added
+- **Zero-Configuration Callback URLs**: Callback URLs are now optional for all tools
+  - Users only need `KIE_AI_API_KEY` to get started - no callback URL setup required
+  - Added `KIE_AI_CALLBACK_URL_FALLBACK` environment variable for administrators
+  - Hardcoded fallback to `https://proxy.kie.ai/mcp-callback` as ultimate default
+  - Maintains backward compatibility with existing `KIE_AI_CALLBACK_URL` setups
+
+### Improved
+- **User Experience**: Simplified onboarding with single API key requirement
+- **Administrative Control**: Deployments can configure custom fallback callbacks
+- **Fallback Chain**: User parameter → KIE_AI_CALLBACK_URL → KIE_AI_CALLBACK_URL_FALLBACK → hardcoded default
+
+### Technical
+- Updated all schemas to make `callBackUrl` truly optional at validation level
+- Added `getCallbackUrl()` helper method with intelligent fallback resolution
+- Extended `KieAiConfig` interface with `callbackUrlFallback` property
+- Simplified handler logic across 10+ tools with unified callback resolution
+
+### Changed
+- Removed callback URL validation requirements from schemas in `types.ts`
+- Updated all tool handlers to use centralized `getCallbackUrl()` method
+- Modified configuration initialization to include fallback URL setup
+
 ## [1.9.7] - 2025-10-17
 
 ### Fixed

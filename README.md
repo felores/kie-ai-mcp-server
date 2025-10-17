@@ -15,8 +15,7 @@ The easiest way to use this server is to add it to your MCP client configuration
       "command": "npx",
       "args": ["-y", "@felores/kie-ai-mcp-server"],
       "env": {
-        "KIE_AI_API_KEY": "your-api-key-here",
-        "KIE_AI_CALLBACK_URL": "https://example.com/api/callback"
+        "KIE_AI_API_KEY": "your-api-key-here"
       }
     }
   }
@@ -25,7 +24,7 @@ The easiest way to use this server is to add it to your MCP client configuration
 
 **Get your free API key:** [kie.ai/api-key](https://kie.ai/api-key)
 
-You can keep the CALLBACK URL as is. You don't need to change it.
+**That's it!** No callback URL setup required - the server handles it automatically.
 
 **For Claude Desktop:** Add this to `~/Library/Application Support/Claude/claude_desktop_config.json` (Mac) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows)
 
@@ -400,7 +399,8 @@ export KIE_AI_API_KEY="your_api_key_here"
 export KIE_AI_BASE_URL="https://api.kie.ai/api/v1"  # Default
 export KIE_AI_TIMEOUT="60000"                        # Default: 60 seconds
 export KIE_AI_DB_PATH="./tasks.db"                   # Default: local database
-export KIE_AI_CALLBACK_URL="https://your-domain.com/webhook"  # For notifications
+export KIE_AI_CALLBACK_URL="https://your-domain.com/webhook"  # Optional: Custom callback
+export KIE_AI_CALLBACK_URL_FALLBACK="https://your-proxy.com/callback"  # Optional: Admin fallback
 ```
 
 ### 🚀 Start Generating
@@ -422,7 +422,8 @@ export KIE_AI_API_KEY="your-api-key-here"
 export KIE_AI_BASE_URL="https://api.kie.ai/api/v1"  # Default
 export KIE_AI_TIMEOUT="60000"                      # Default: 60 seconds
 export KIE_AI_DB_PATH="./tasks.db"                 # Default: ./tasks.db
-export KIE_AI_CALLBACK_URL="https://your-domain.com/api/callback"  # Default callback URL for video generation
+export KIE_AI_CALLBACK_URL="https://your-domain.com/api/callback"  # Optional: Custom callback
+export KIE_AI_CALLBACK_URL_FALLBACK="https://your-proxy.com/callback"  # Optional: Admin fallback
 ```
 
 ### MCP Configuration
@@ -435,8 +436,7 @@ Add to your Claude Desktop or MCP client configuration:
     "command": "node",
     "args": ["/path/to/kie-ai-mcp-server/dist/index.js"],
     "env": {
-      "KIE_AI_API_KEY": "your-api-key-here",
-      "KIE_AI_CALLBACK_URL": "https://your-domain.com/api/callback"
+      "KIE_AI_API_KEY": "your-api-key-here"
     }
   }
 }
@@ -450,12 +450,23 @@ Or if installed globally:
     "command": "npx",
     "args": ["-y", "@felores/kie-ai-mcp-server"],
     "env": {
-      "KIE_AI_API_KEY": "your-api-key-here",
-      "KIE_AI_CALLBACK_URL": "https://your-domain.com/api/callback"
+      "KIE_AI_API_KEY": "your-api-key-here"
     }
   }
 }
 ```
+
+## 🎯 Zero-Configuration Callback URLs
+
+**New in v1.9.8:** No callback URL setup required! The server automatically handles task completion notifications with intelligent fallback:
+
+1. **User Parameter** - If you provide `callBackUrl` in a tool request, it uses that
+2. **Environment Variable** - Uses `KIE_AI_CALLBACK_URL` if set (existing setups keep working)
+3. **Admin Fallback** - Uses `KIE_AI_CALLBACK_URL_FALLBACK` for deployment-wide defaults
+4. **Hardcoded Default** - Falls back to `https://proxy.kie.ai/mcp-callback` automatically
+
+**For Users:** Just provide your API key - everything else is handled automatically!
+**For Administrators:** Set `KIE_AI_CALLBACK_URL_FALLBACK` for custom proxy configurations
 
 ## Available Tools
 
@@ -576,7 +587,7 @@ Generate music with AI using Suno models.
 - `customMode` (boolean, required): Enable advanced parameter customization
 - `instrumental` (boolean, required): Generate instrumental music (no lyrics)
 - `model` (enum, optional): AI model version - "V3_5", "V4", "V4_5", "V4_5PLUS", or "V5" (default: "V5")
-- `callBackUrl` (string, optional): URL to receive task completion updates (uses KIE_AI_CALLBACK_URL environment variable if not provided)
+- `callBackUrl` (string, optional): URL to receive task completion updates (automatic fallback if not provided)
 - `style` (string, optional): Music style/genre (required in custom mode, max 1000 chars for V4_5+, V5; 200 for V3_5, V4)
 - `title` (string, optional): Track title (required in custom mode, max 80 chars)
 - `negativeTags` (string, optional): Music styles to exclude (max 200 chars)
@@ -600,7 +611,7 @@ With explicit callback URL:
 }
 ```
 
-Using environment variable (KIE_AI_CALLBACK_URL):
+Using automatic callback (no setup required):
 ```json
 {
   "prompt": "A relaxing electronic music track",
@@ -619,7 +630,7 @@ Using explicit model (overrides default V5):
 }
 ```
 
-**Note**: In custom mode, `style` and `title` are required. If `instrumental` is false, `prompt` is used as exact lyrics. The `callBackUrl` is optional and will use the `KIE_AI_CALLBACK_URL` environment variable if not provided. The `model` parameter defaults to "V5" but can be explicitly set to any available version.
+**Note**: In custom mode, `style` and `title` are required. If `instrumental` is false, `prompt` is used as exact lyrics. The `callBackUrl` is optional and uses automatic fallback if not provided. The `model` parameter defaults to "V5" but can be explicitly set to any available version.
 
 ### 7. `elevenlabs_tts`
 Generate speech from text using ElevenLabs TTS models (Turbo 2.5 by default, with optional Multilingual v2 support).
@@ -636,7 +647,7 @@ Generate speech from text using ElevenLabs TTS models (Turbo 2.5 by default, wit
 - `previous_text` (string, optional): Text that came before current request (multilingual model only, max 5000 chars)
 - `next_text` (string, optional): Text that comes after current request (multilingual model only, max 5000 chars)
 - `language_code` (string, optional): ISO 639-1 language code for language enforcement (turbo model only, max 500 chars)
-- `callBackUrl` (string, optional): URL to receive task completion updates (uses KIE_AI_CALLBACK_URL environment variable if not provided)
+- `callBackUrl` (string, optional): URL to receive task completion updates (automatic fallback if not provided)
 
 **Examples:**
 
@@ -675,7 +686,7 @@ Advanced voice controls with context (Multilingual model):
 - **Turbo 2.5** (default): Faster generation (15-60 seconds), supports language enforcement with `language_code`
 - **Multilingual v2**: Supports context with `previous_text`/`next_text`, generation takes 30-120 seconds
 
-**Note**: The `callBackUrl` is optional and will use the `KIE_AI_CALLBACK_URL` environment variable if not provided. Choose Turbo model for speed and language enforcement, or Multilingual model for context-aware speech generation.
+**Note**: The `callBackUrl` is optional and uses automatic fallback if not provided. Choose Turbo model for speed and language enforcement, or Multilingual model for context-aware speech generation.
 
 ### 8. `elevenlabs_ttsfx`
 Generate sound effects from text descriptions using ElevenLabs Sound Effects v2 model.
@@ -727,7 +738,7 @@ Looping ambient sound:
 - **Multiple Formats**: Support for MP3, PCM, Opus, and telephony formats
 - **Prompt Control**: Adjust how closely to follow your description
 
-**Note**: The `callBackUrl` is optional and will use the `KIE_AI_CALLBACK_URL` environment variable if not provided. Sound effects generation typically takes 30-90 seconds depending on complexity.
+**Note**: The `callBackUrl` is optional and uses automatic fallback if not provided. Sound effects generation typically takes 30-90 seconds depending on complexity.
 
 ### 9. `bytedance_seedance_video`
 Generate videos using ByteDance Seedance models (unified tool for both text-to-video and image-to-video).
@@ -795,7 +806,7 @@ Video with specific ending frame:
 - **Reproducible Results**: Seed control for consistent output
 - **Safety Features**: Built-in content safety checking
 
-**Note**: The `callBackUrl` is optional and will use the `KIE_AI_CALLBACK_URL` environment variable if not provided. Video generation typically takes 2-5 minutes depending on quality and complexity.
+**Note**: The `callBackUrl` is optional and uses automatic fallback if not provided. Video generation typically takes 2-5 minutes depending on quality and complexity.
 
 ### 10. `bytedance_seedream_image`
 Generate and edit images using ByteDance Seedream V4 models (unified tool for both text-to-image and image editing).
@@ -859,7 +870,7 @@ Multiple image editing:
 - **Batch Editing**: Edit up to 10 images simultaneously with consistent style
 - **Reproducible Results**: Seed control for consistent output
 
-**Note**: The `callBackUrl` is optional and will use the `KIE_AI_CALLBACK_URL` environment variable if not provided. Image generation typically takes 30-120 seconds depending on resolution and complexity.
+**Note**: The `callBackUrl` is optional and uses automatic fallback if not provided. Image generation typically takes 30-120 seconds depending on resolution and complexity.
 
 ### 11. `qwen_image`
 Generate and edit images using Qwen models (unified tool for both text-to-image and image editing).
@@ -931,7 +942,7 @@ High-acceleration generation:
 - **Batch Generation**: Generate multiple images in edit mode
 - **Reproducible Results**: Seed control for consistent output
 
-**Note**: The `callBackUrl` is optional and will use the `KIE_AI_CALLBACK_URL` environment variable if not provided. Image generation typically takes 10-60 seconds depending on settings and acceleration level.
+**Note**: The `callBackUrl` is optional and uses automatic fallback if not provided. Image generation typically takes 10-60 seconds depending on settings and acceleration level.
 
 ### 12. `runway_aleph_video`
 Transform videos using Runway Aleph video-to-video generation with AI-powered editing.
@@ -987,7 +998,7 @@ Vertical video for social media:
 - **Watermark Support**: Add custom watermarks to transformed videos
 - **Reference Guidance**: Use reference images to guide the transformation style
 
-**Note**: The `callBackUrl` is optional and will use the `KIE_AI_CALLBACK_URL` environment variable if not provided. Video-to-video transformation typically takes 3-8 minutes depending on complexity and length.
+**Note**: The `callBackUrl` is optional and uses automatic fallback if not provided. Video-to-video transformation typically takes 3-8 minutes depending on complexity and length.
 
 ### 13. `midjourney_generate`
 Generate images and videos using Midjourney AI models (unified tool for text-to-image, image-to-image, style reference, omni reference, and video generation).
@@ -1105,7 +1116,7 @@ Style reference generation:
 - If `fileUrl`/`fileUrls` present → `mj_img2img`
 - Otherwise → `mj_txt2img`
 
-**Note**: The `callBackUrl` is optional and will use the `KIE_AI_CALLBACK_URL` environment variable if not provided. Generation times vary: text-to-image (1-3 minutes), image-to-image (2-4 minutes), video generation (3-8 minutes), reference modes (2-5 minutes).
+**Note**: The `callBackUrl` is optional and uses automatic fallback if not provided. Generation times vary: text-to-image (1-3 minutes), image-to-image (2-4 minutes), video generation (3-8 minutes), reference modes (2-5 minutes).
 
 ### 14. `wan_video`
 Generate videos using Alibaba Wan 2.5 models (unified tool for both text-to-video and image-to-video).
@@ -1160,7 +1171,7 @@ Image-to-video generation:
 - **Negative Prompts**: Fine-tune results by specifying what to avoid
 - **Reproducible Results**: Seed control for consistent output
 
-**Note**: The `callBackUrl` is optional and will use the `KIE_AI_CALLBACK_URL` environment variable if not provided. Video generation typically takes 2-6 minutes depending on resolution and complexity.
+**Note**: The `callBackUrl` is optional and uses automatic fallback if not provided. Video generation typically takes 2-6 minutes depending on resolution and complexity.
 
 ### 15. `kling_video`
 
@@ -1227,7 +1238,7 @@ V2.1-pro with start and end frames:
 - If `image_url` provided → `kling/v2-5-turbo-image-to-video-pro` (image animation)
 - Otherwise → `kling/v2-5-turbo-text-to-video-pro` (text-to-video)
 
-**Note**: The `callBackUrl` is optional and will use the `KIE_AI_CALLBACK_URL` environment variable if not provided. Video generation typically takes 2-5 minutes depending on duration and complexity.
+**Note**: The `callBackUrl` is optional and uses automatic fallback if not provided. Video generation typically takes 2-5 minutes depending on duration and complexity.
 
 ### 17. `openai_4o_image`
 Generate, edit, and create image variants using OpenAI's GPT-4o image models (unified tool for text-to-image, image editing, and image variants).
@@ -1316,7 +1327,7 @@ High-quality generation with fallback:
 - If `filesUrl` provided but no `maskUrl` → Image Variants mode
 - If no `filesUrl` provided → Text-to-Image mode
 
-**Note**: The `callBackUrl` is optional and will use the `KIE_AI_CALLBACK_URL` environment variable if not provided. Image generation typically takes 30-120 seconds depending on complexity and quality settings. The fallback mechanism uses FLUX_MAX model when GPT-4o fails, ensuring reliable generation.
+**Note**: The `callBackUrl` is optional and uses automatic fallback if not provided. Image generation typically takes 30-120 seconds depending on complexity and quality settings. The fallback mechanism uses FLUX_MAX model when GPT-4o fails, ensuring reliable generation.
 
 ### 16. `flux_kontext_image`
 Generate or edit images using Flux Kontext AI models (unified tool for text-to-image generation and image editing with advanced features).
@@ -1394,7 +1405,7 @@ Mobile portrait generation:
 - Image editing: 1-3 minutes
 - Enhanced model (flux-kontext-max): May take longer but provides higher quality
 
-**Note**: The `callBackUrl` is optional and will use the `KIE_AI_CALLBACK_URL` environment variable if not provided. Safety tolerance levels are automatically validated based on the generation mode (0-2 for editing, 0-6 for generation).
+**Note**: The `callBackUrl` is optional and uses automatic fallback if not provided. Safety tolerance levels are automatically validated based on the generation mode (0-2 for editing, 0-6 for generation).
 
 ### 19. `ideogram_reframe`
 Reframe images to different aspect ratios and sizes using Ideogram V3 Reframe model with intelligent content adaptation.
@@ -1478,7 +1489,7 @@ Multiple variants for social media:
 - **Mobile Optimization**: Create mobile-friendly versions of desktop content
 - **Batch Processing**: Generate multiple format variants efficiently
 
-**Note**: The `callBackUrl` is optional and will use the `KIE_AI_CALLBACK_URL` environment variable if not provided. Image reframing typically takes 30-120 seconds depending on complexity, rendering speed, and output settings.
+**Note**: The `callBackUrl` is optional and uses automatic fallback if not provided. Image reframing typically takes 30-120 seconds depending on complexity, rendering speed, and output settings.
 
 ### 18. `recraft_remove_background`
 Remove backgrounds from images using Recraft AI background removal model with professional-quality edge detection.
@@ -1525,7 +1536,7 @@ With callback URL:
 - **Minimum Resolution**: 256px min dimension
 - **Output Format**: PNG with transparent background
 
-**Note**: The `callBackUrl` is optional and will use the `KIE_AI_CALLBACK_URL` environment variable if not provided. Background removal typically takes 10-30 seconds depending on image complexity and size.
+**Note**: The `callBackUrl` is optional and uses automatic fallback if not provided. Background removal typically takes 10-30 seconds depending on image complexity and size.
 
 ## Why Developers Choose Kie.ai Over Alternatives
 

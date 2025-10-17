@@ -40,28 +40,36 @@ class KieAiMcpServer {
   private server: Server;
   private client: KieAiClient;
   private db: TaskDatabase;
+  private config: KieAiConfig;
 
   constructor() {
     this.server = new Server({
       name: "kie-ai-mcp-server",
-      version: "1.9.7",
+      version: "1.9.8",
     });
 
     // Initialize client with config from environment
-    const config: KieAiConfig = {
+    this.config = {
       apiKey: process.env.KIE_AI_API_KEY || "",
       baseUrl: process.env.KIE_AI_BASE_URL || "https://api.kie.ai/api/v1",
       timeout: parseInt(process.env.KIE_AI_TIMEOUT || "60000"),
+      callbackUrlFallback: process.env.KIE_AI_CALLBACK_URL_FALLBACK || "https://proxy.kie.ai/mcp-callback",
     };
 
-    if (!config.apiKey) {
+    if (!this.config.apiKey) {
       throw new Error("KIE_AI_API_KEY environment variable is required");
     }
 
-    this.client = new KieAiClient(config);
+    this.client = new KieAiClient(this.config);
     this.db = new TaskDatabase(process.env.KIE_AI_DB_PATH);
 
     this.setupHandlers();
+  }
+
+  private getCallbackUrl(userUrl?: string): string {
+    return userUrl || 
+           process.env.KIE_AI_CALLBACK_URL || 
+           this.config.callbackUrlFallback;
   }
 
   private formatError(
@@ -1956,10 +1964,8 @@ class KieAiMcpServer {
     try {
       const request = Veo3GenerateSchema.parse(args);
 
-      // Use environment variable as fallback if callBackUrl not provided
-      if (!request.callBackUrl && process.env.KIE_AI_CALLBACK_URL) {
-        request.callBackUrl = process.env.KIE_AI_CALLBACK_URL;
-      }
+      // Use intelligent callback URL resolution
+      request.callBackUrl = this.getCallbackUrl(request.callBackUrl);
 
       const response = await this.client.generateVeo3Video(request);
 
@@ -2410,10 +2416,8 @@ class KieAiMcpServer {
     try {
       const request = SunoGenerateSchema.parse(args);
 
-      // Use environment variable as fallback if callBackUrl not provided
-      if (!request.callBackUrl && process.env.KIE_AI_CALLBACK_URL) {
-        request.callBackUrl = process.env.KIE_AI_CALLBACK_URL;
-      }
+      // Use intelligent callback URL fallback
+      request.callBackUrl = this.getCallbackUrl(request.callBackUrl);
 
       const response = await this.client.generateSunoMusic(request);
 
@@ -2483,10 +2487,8 @@ class KieAiMcpServer {
     try {
       const request = ElevenLabsTTSSchema.parse(args);
 
-      // Use environment variable as fallback if callBackUrl not provided
-      if (!request.callBackUrl && process.env.KIE_AI_CALLBACK_URL) {
-        request.callBackUrl = process.env.KIE_AI_CALLBACK_URL;
-      }
+      // Use intelligent callback URL fallback
+      request.callBackUrl = this.getCallbackUrl(request.callBackUrl);
 
       const response = await this.client.generateElevenLabsTTS(request);
 
@@ -2581,10 +2583,8 @@ class KieAiMcpServer {
     try {
       const request = ElevenLabsSoundEffectsSchema.parse(args);
 
-      // Use environment variable as fallback if callBackUrl not provided
-      if (!request.callBackUrl && process.env.KIE_AI_CALLBACK_URL) {
-        request.callBackUrl = process.env.KIE_AI_CALLBACK_URL;
-      }
+      // Use intelligent callback URL fallback
+      request.callBackUrl = this.getCallbackUrl(request.callBackUrl);
 
       const response =
         await this.client.generateElevenLabsSoundEffects(request);
@@ -2662,10 +2662,8 @@ class KieAiMcpServer {
     try {
       const request = ByteDanceSeedanceVideoSchema.parse(args);
 
-      // Use environment variable as fallback if callBackUrl not provided
-      if (!request.callBackUrl && process.env.KIE_AI_CALLBACK_URL) {
-        request.callBackUrl = process.env.KIE_AI_CALLBACK_URL;
-      }
+      // Use intelligent callback URL fallback
+      request.callBackUrl = this.getCallbackUrl(request.callBackUrl);
 
       const response =
         await this.client.generateByteDanceSeedanceVideo(request);
@@ -2763,10 +2761,8 @@ class KieAiMcpServer {
     try {
       const request = ByteDanceSeedreamImageSchema.parse(args);
 
-      // Use environment variable as fallback if callBackUrl not provided
-      if (!request.callBackUrl && process.env.KIE_AI_CALLBACK_URL) {
-        request.callBackUrl = process.env.KIE_AI_CALLBACK_URL;
-      }
+      // Use intelligent callback URL fallback
+      request.callBackUrl = this.getCallbackUrl(request.callBackUrl);
 
       const response =
         await this.client.generateByteDanceSeedreamImage(request);
@@ -2862,10 +2858,8 @@ class KieAiMcpServer {
     try {
       const request = QwenImageSchema.parse(args);
 
-      // Use environment variable as fallback if callBackUrl not provided
-      if (!request.callBackUrl && process.env.KIE_AI_CALLBACK_URL) {
-        request.callBackUrl = process.env.KIE_AI_CALLBACK_URL;
-      }
+      // Use intelligent callback URL fallback
+      request.callBackUrl = this.getCallbackUrl(request.callBackUrl);
 
       const response = await this.client.generateQwenImage(request);
 
@@ -2985,10 +2979,8 @@ class KieAiMcpServer {
     try {
       const request = MidjourneyGenerateSchema.parse(args);
 
-      // Use environment variable as fallback if callBackUrl not provided
-      if (!request.callBackUrl && process.env.KIE_AI_CALLBACK_URL) {
-        request.callBackUrl = process.env.KIE_AI_CALLBACK_URL;
-      }
+      // Use intelligent callback URL fallback
+      request.callBackUrl = this.getCallbackUrl(request.callBackUrl);
 
       const response = await this.client.generateMidjourney(request);
 
@@ -3154,10 +3146,8 @@ class KieAiMcpServer {
     try {
       const request = OpenAI4oImageSchema.parse(args);
 
-      // Use environment variable as fallback if callBackUrl not provided
-      if (!request.callBackUrl && process.env.KIE_AI_CALLBACK_URL) {
-        request.callBackUrl = process.env.KIE_AI_CALLBACK_URL;
-      }
+      // Use intelligent callback URL fallback
+      request.callBackUrl = this.getCallbackUrl(request.callBackUrl);
 
       const response = await this.client.generateOpenAI4oImage(request);
 
@@ -3283,10 +3273,8 @@ class KieAiMcpServer {
         ? "Image Editing"
         : "Text-to-Image Generation";
 
-      // Use environment variable as fallback if callBackUrl not provided
-      if (!request.callBackUrl && process.env.KIE_AI_CALLBACK_URL) {
-        request.callBackUrl = process.env.KIE_AI_CALLBACK_URL;
-      }
+      // Use intelligent callback URL fallback
+      request.callBackUrl = this.getCallbackUrl(request.callBackUrl);
 
       const response = await this.client.generateFluxKontextImage(request);
 
@@ -3401,10 +3389,8 @@ class KieAiMcpServer {
     try {
       const request = RunwayAlephVideoSchema.parse(args);
 
-      // Use environment variable as fallback if callBackUrl not provided
-      if (!request.callBackUrl && process.env.KIE_AI_CALLBACK_URL) {
-        request.callBackUrl = process.env.KIE_AI_CALLBACK_URL;
-      }
+      // Use intelligent callback URL fallback
+      request.callBackUrl = this.getCallbackUrl(request.callBackUrl);
 
       const response = await this.client.generateRunwayAlephVideo(request);
 
@@ -3488,10 +3474,8 @@ class KieAiMcpServer {
     try {
       const request = WanVideoSchema.parse(args);
 
-      // Use environment variable as fallback if callBackUrl not provided
-      if (!request.callBackUrl && process.env.KIE_AI_CALLBACK_URL) {
-        request.callBackUrl = process.env.KIE_AI_CALLBACK_URL;
-      }
+      // Use intelligent callback URL fallback
+      request.callBackUrl = this.getCallbackUrl(request.callBackUrl);
 
       const response = await this.client.generateWanVideo(request);
 
@@ -3588,10 +3572,8 @@ class KieAiMcpServer {
     try {
       const request = RecraftRemoveBackgroundSchema.parse(args);
 
-      // Use environment variable as fallback if callBackUrl not provided
-      if (!request.callBackUrl && process.env.KIE_AI_CALLBACK_URL) {
-        request.callBackUrl = process.env.KIE_AI_CALLBACK_URL;
-      }
+      // Use intelligent callback URL fallback
+      request.callBackUrl = this.getCallbackUrl(request.callBackUrl);
 
       const response =
         await this.client.generateRecraftRemoveBackground(request);
@@ -3656,10 +3638,8 @@ class KieAiMcpServer {
     try {
       const request = IdeogramReframeSchema.parse(args);
 
-      // Use environment variable as fallback if callBackUrl not provided
-      if (!request.callBackUrl && process.env.KIE_AI_CALLBACK_URL) {
-        request.callBackUrl = process.env.KIE_AI_CALLBACK_URL;
-      }
+      // Use intelligent callback URL fallback
+      request.callBackUrl = this.getCallbackUrl(request.callBackUrl);
 
       const response = await this.client.generateIdeogramReframe(request);
 
@@ -3740,10 +3720,8 @@ class KieAiMcpServer {
     try {
       const request = KlingVideoSchema.parse(args);
 
-      // Use environment variable as fallback if callBackUrl not provided
-      if (!request.callBackUrl && process.env.KIE_AI_CALLBACK_URL) {
-        request.callBackUrl = process.env.KIE_AI_CALLBACK_URL;
-      }
+      // Use intelligent callback URL fallback
+      request.callBackUrl = this.getCallbackUrl(request.callBackUrl);
 
       const response = await this.client.generateKlingVideo(request);
 

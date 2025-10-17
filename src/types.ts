@@ -99,13 +99,7 @@ export const SunoGenerateSchema = z
   })
   .refine(
     (data) => {
-      // Check if callBackUrl is provided directly or via environment variable
-      const hasCallBackUrl =
-        data.callBackUrl || process.env.KIE_AI_CALLBACK_URL;
-      if (!hasCallBackUrl) {
-        return false;
-      }
-
+      // Callback URL is now optional - validation removed
       if (data.customMode) {
         if (data.instrumental) {
           return data.style && data.title;
@@ -117,8 +111,8 @@ export const SunoGenerateSchema = z
     },
     {
       message:
-        "callBackUrl is required (either directly or via KIE_AI_CALLBACK_URL environment variable). In customMode: style and title are always required, prompt is required when instrumental is false",
-      path: ["callBackUrl"],
+        "In customMode: style and title are always required, prompt is required when instrumental is false",
+      path: [],
     },
   );
 
@@ -237,22 +231,6 @@ export const ByteDanceSeedanceVideoSchema = z
   })
   .refine(
     (data) => {
-      // Check if callBackUrl is provided directly or via environment variable
-      const hasCallBackUrl =
-        data.callBackUrl || process.env.KIE_AI_CALLBACK_URL;
-      if (!hasCallBackUrl) {
-        return false;
-      }
-      return true;
-    },
-    {
-      message:
-        "callBackUrl is required (either directly or via KIE_AI_CALLBACK_URL environment variable)",
-      path: ["callBackUrl"],
-    },
-  )
-  .refine(
-    (data) => {
       // If image_url is provided, aspect_ratio should be limited to options supported by image-to-video models
       if (data.image_url) {
         const validRatios = ["1:1", "9:16", "16:9", "4:3", "3:4", "21:9"];
@@ -280,23 +258,7 @@ export const RunwayAlephVideoSchema = z
     seed: z.number().int().min(1).max(999999).optional(),
     referenceImage: z.string().url().optional(),
     callBackUrl: z.string().url().optional(),
-  })
-  .refine(
-    (data) => {
-      // Check if callBackUrl is provided directly or via environment variable
-      const hasCallBackUrl =
-        data.callBackUrl || process.env.KIE_AI_CALLBACK_URL;
-      if (!hasCallBackUrl) {
-        return false;
-      }
-      return true;
-    },
-    {
-      message:
-        "callBackUrl is required (either directly or via KIE_AI_CALLBACK_URL environment variable)",
-      path: ["callBackUrl"],
-    },
-  );
+  });
 
 export const WanVideoSchema = z
   .object({
@@ -310,22 +272,6 @@ export const WanVideoSchema = z
     seed: z.number().optional(),
     callBackUrl: z.string().url().optional(),
   })
-  .refine(
-    (data) => {
-      // Check if callBackUrl is provided directly or via environment variable
-      const hasCallBackUrl =
-        data.callBackUrl || process.env.KIE_AI_CALLBACK_URL;
-      if (!hasCallBackUrl) {
-        return false;
-      }
-      return true;
-    },
-    {
-      message:
-        "callBackUrl is required (either directly or via KIE_AI_CALLBACK_URL environment variable)",
-      path: ["callBackUrl"],
-    },
-  )
   .refine(
     (data) => {
       // If image_url is provided, duration should be limited to options supported by image-to-video model
@@ -366,23 +312,7 @@ export const ByteDanceSeedreamImageSchema = z
     max_images: z.number().int().min(1).max(6).default(1).optional(),
     seed: z.number().optional(),
     callBackUrl: z.string().url().optional(),
-  })
-  .refine(
-    (data) => {
-      // Check if callBackUrl is provided directly or via environment variable
-      const hasCallBackUrl =
-        data.callBackUrl || process.env.KIE_AI_CALLBACK_URL;
-      if (!hasCallBackUrl) {
-        return false;
-      }
-      return true;
-    },
-    {
-      message:
-        "callBackUrl is required (either directly or via KIE_AI_CALLBACK_URL environment variable)",
-      path: ["callBackUrl"],
-    },
-  );
+  });
 
 export const QwenImageSchema = z
   .object({
@@ -414,22 +344,6 @@ export const QwenImageSchema = z
     sync_mode: z.boolean().default(false).optional(),
     callBackUrl: z.string().url().optional(),
   })
-  .refine(
-    (data) => {
-      // Check if callBackUrl is provided directly or via environment variable
-      const hasCallBackUrl =
-        data.callBackUrl || process.env.KIE_AI_CALLBACK_URL;
-      if (!hasCallBackUrl) {
-        return false;
-      }
-      return true;
-    },
-    {
-      message:
-        "callBackUrl is required (either directly or via KIE_AI_CALLBACK_URL environment variable)",
-      path: ["callBackUrl"],
-    },
-  )
   .refine(
     (data) => {
       // Validate edit mode requirements
@@ -509,22 +423,6 @@ export const MidjourneyGenerateSchema = z
   })
   .refine(
     (data) => {
-      // Check if callBackUrl is provided directly or via environment variable
-      const hasCallBackUrl =
-        data.callBackUrl || process.env.KIE_AI_CALLBACK_URL;
-      if (!hasCallBackUrl) {
-        return false;
-      }
-      return true;
-    },
-    {
-      message:
-        "callBackUrl is required (either directly or via KIE_AI_CALLBACK_URL environment variable)",
-      path: ["callBackUrl"],
-    },
-  )
-  .refine(
-    (data) => {
       // Auto-detect and validate task type based on parameters
       const hasImage =
         data.fileUrl || (data.fileUrls && data.fileUrls.length > 0);
@@ -592,22 +490,6 @@ export const OpenAI4oImageSchema = z
       .default("FLUX_MAX")
       .optional(),
   })
-  .refine(
-    (data) => {
-      // Check if callBackUrl is provided directly or via environment variable
-      const hasCallBackUrl =
-        data.callBackUrl || process.env.KIE_AI_CALLBACK_URL;
-      if (!hasCallBackUrl) {
-        return false;
-      }
-      return true;
-    },
-    {
-      message:
-        "callBackUrl is required (either directly or via KIE_AI_CALLBACK_URL environment variable)",
-      path: ["callBackUrl"],
-    },
-  )
   .refine(
     (data) => {
       // Validate mode detection and requirements
@@ -680,22 +562,6 @@ export const FluxKontextImageSchema = z
     safetyTolerance: z.number().int().min(0).max(6).default(6),
     watermark: z.string().optional(),
   })
-  .refine(
-    (data) => {
-      // Check if callBackUrl is provided directly or via environment variable
-      const hasCallBackUrl =
-        data.callBackUrl || process.env.KIE_AI_CALLBACK_URL;
-      if (!hasCallBackUrl) {
-        return false;
-      }
-      return true;
-    },
-    {
-      message:
-        "callBackUrl is required (either directly or via KIE_AI_CALLBACK_URL environment variable)",
-      path: ["callBackUrl"],
-    },
-  )
   .refine(
     (data) => {
       // Validate safetyTolerance range based on mode
@@ -780,22 +646,6 @@ export const KlingVideoSchema = z
     cfg_scale: z.number().min(0).max(1).multipleOf(0.1).default(0.5).optional(),
     callBackUrl: z.string().url().optional(),
   })
-  .refine(
-    (data) => {
-      // Check if callBackUrl is provided directly or via environment variable
-      const hasCallBackUrl =
-        data.callBackUrl || process.env.KIE_AI_CALLBACK_URL;
-      if (!hasCallBackUrl) {
-        return false;
-      }
-      return true;
-    },
-    {
-      message:
-        "callBackUrl is required (either directly or via KIE_AI_CALLBACK_URL environment variable)",
-      path: ["callBackUrl"],
-    },
-  )
   .refine(
     (data) => {
       // Validate mode requirements
@@ -883,4 +733,5 @@ export interface KieAiConfig {
   apiKey: string;
   baseUrl: string;
   timeout: number;
+  callbackUrlFallback: string;
 }

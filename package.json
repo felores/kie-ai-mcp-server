@@ -1,6 +1,6 @@
 {
   "name": "@felores/kie-ai-mcp-server",
-  "version": "1.9.7",
+  "version": "1.9.8",
   "description": "MCP server for Kie.ai APIs (20 AI tools: Nano Banana image generation/editing/upscaling, Veo3 video generation, Suno music generation, ElevenLabs TTS/sound effects, ByteDance Seedance/Seedream video/image, Qwen image generation/editing, Runway Aleph video transformation, Midjourney AI generation, Wan video generation, Kling video generation, OpenAI 4o image generation/editing/variants, Flux Kontext image generation/editing, Recraft background removal, Ideogram image reframing)",
   "main": "dist/index.js",
   "bin": {
