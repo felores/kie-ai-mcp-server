@@ -682,6 +682,50 @@ export const KlingVideoSchema = z
 
 export type KlingVideoRequest = z.infer<typeof KlingVideoSchema>;
 
+// Hailuo Video - Unified tool for text-to-video and image-to-video (standard/pro quality)
+export const HailuoVideoSchema = z
+  .object({
+    prompt: z.string().min(1).max(1500),
+    imageUrl: z.string().url().optional(),
+    endImageUrl: z.string().url().optional(),
+    quality: z.enum(["standard", "pro"]).default("standard").optional(),
+    // Standard quality only parameters
+    duration: z.enum(["6", "10"]).default("6").optional(),
+    resolution: z.enum(["512P", "768P"]).default("768P").optional(),
+    // Common parameters
+    promptOptimizer: z.boolean().default(true).optional(),
+    callBackUrl: z.string().url().optional(),
+  })
+  .refine(
+    (data) => {
+      const hasImageUrl = !!data.imageUrl;
+
+      // At least prompt is always required
+      if (!data.prompt) {
+        return false;
+      }
+
+      // Image-to-video mode requires imageUrl
+      if (hasImageUrl && !data.prompt) {
+        return false;
+      }
+
+      // Text-to-video mode requires only prompt
+      if (!hasImageUrl && data.endImageUrl) {
+        return false; // endImageUrl only valid with imageUrl
+      }
+
+      return true;
+    },
+    {
+      message:
+        "Invalid parameter combination. Choose mode: 1) prompt only (text-to-video), or 2) prompt + imageUrl (image-to-video). endImageUrl is only valid with imageUrl.",
+      path: [],
+    },
+  );
+
+export type HailuoVideoRequest = z.infer<typeof HailuoVideoSchema>;
+
 export interface KieAiResponse<T = any> {
   code: number;
   msg: string;
@@ -721,7 +765,8 @@ export interface TaskRecord {
     | "ideogram-reframe"
     | "kling-v2-1-pro"
     | "kling-v2-5-turbo-text-to-video"
-    | "kling-v2-5-turbo-image-to-video";
+    | "kling-v2-5-turbo-image-to-video"
+    | "hailuo";
   status: "pending" | "processing" | "completed" | "failed";
   created_at: string;
   updated_at: string;

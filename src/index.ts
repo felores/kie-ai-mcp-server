@@ -33,6 +33,7 @@ import {
   RecraftRemoveBackgroundSchema,
   IdeogramReframeSchema,
   KlingVideoSchema,
+  HailuoVideoSchema,
   KieAiConfig,
 } from "./types.js";
 
@@ -45,7 +46,7 @@ class KieAiMcpServer {
   constructor() {
     this.server = new Server({
       name: "kie-ai-mcp-server",
-      version: "1.9.8",
+      version: "1.9.9",
     });
 
     // Initialize client with config from environment
@@ -1405,6 +1406,69 @@ class KieAiMcpServer {
                   format: "uri",
                 },
               },
+               required: ["prompt"],
+            },
+          },
+          {
+            name: "hailuo_video",
+            description:
+              "Generate videos using Hailuo AI models (unified tool for text-to-video and image-to-video with standard/pro quality)",
+            inputSchema: {
+              type: "object",
+              properties: {
+                prompt: {
+                  type: "string",
+                  description:
+                    "Text prompt describing the desired video content (max 1500 characters)",
+                  minLength: 1,
+                  maxLength: 1500,
+                },
+                imageUrl: {
+                  type: "string",
+                  description:
+                    "URL of input image for image-to-video mode (optional - if not provided, uses text-to-video)",
+                  format: "uri",
+                },
+                endImageUrl: {
+                  type: "string",
+                  description:
+                    "URL of end frame image for image-to-video (optional - requires imageUrl)",
+                  format: "uri",
+                },
+                quality: {
+                  type: "string",
+                  description:
+                    "Quality level of video generation (standard for faster, pro for higher quality)",
+                  enum: ["standard", "pro"],
+                  default: "standard",
+                },
+                duration: {
+                  type: "string",
+                  description:
+                    "Duration of video in seconds (standard quality only)",
+                  enum: ["6", "10"],
+                  default: "6",
+                },
+                resolution: {
+                  type: "string",
+                  description:
+                    "Resolution of video (standard quality only)",
+                  enum: ["512P", "768P"],
+                  default: "768P",
+                },
+                promptOptimizer: {
+                  type: "boolean",
+                  description:
+                    "Whether to use the model's prompt optimizer for better results",
+                  default: true,
+                },
+                callBackUrl: {
+                  type: "string",
+                  description:
+                    "Optional: URL for task completion notifications (uses KIE_AI_CALLBACK_URL env var if not provided)",
+                  format: "uri",
+                },
+              },
               required: ["prompt"],
             },
           },
@@ -1473,6 +1537,9 @@ class KieAiMcpServer {
 
           case "kling_video":
             return await this.handleKlingVideo(args);
+
+          case "hailuo_video":
+            return await this.handleHailuoVideo(args);
 
           default:
             throw new McpError(
@@ -3808,6 +3875,93 @@ class KieAiMcpServer {
         aspect_ratio: "Optional: aspect ratio (16:9, 9:16, 1:1)",
         negative_prompt: "Optional: content to avoid in generation",
         cfg_scale: "Optional: guidance scale for prompt adherence",
+        callBackUrl: "Optional: URL for task completion notifications",
+      });
+    }
+  }
+
+  private async handleHailuoVideo(args: any) {
+    try {
+      const request = HailuoVideoSchema.parse(args);
+
+      request.callBackUrl = this.getCallbackUrl(request.callBackUrl);
+
+      const response = await this.client.generateHailuoVideo(request);
+
+      let modeDescription: string;
+      if (request.imageUrl) {
+        modeDescription = `image-to-video (${request.quality || 'standard'} quality)`;
+      } else {
+        modeDescription = `text-to-video (${request.quality || 'standard'} quality)`;
+      }
+
+      if (response.data?.taskId) {
+        await this.db.createTask({
+          task_id: response.data.taskId,
+          api_type: "hailuo",
+          status: "pending",
+        });
+      }
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify(
+              {
+                success: true,
+                task_id: response.data?.taskId,
+                mode: modeDescription,
+                message: `Hailuo video generation task created successfully (${modeDescription})`,
+                parameters: {
+                  prompt: request.prompt,
+                  imageUrl: request.imageUrl,
+                  endImageUrl: request.endImageUrl,
+                  quality: request.quality || "standard",
+                  duration: request.duration || "6",
+                  resolution: request.resolution || "768P",
+                  promptOptimizer: request.promptOptimizer !== false,
+                  callBackUrl: request.callBackUrl,
+                },
+                next_steps: [
+                  "Use get_task_status to check generation progress",
+                  "Task completion will be sent to the provided callback URL",
+                  "Video generation typically takes 1-3 minutes for standard, 3-5 minutes for pro quality",
+                ],
+              },
+              null,
+              2,
+            ),
+          },
+        ],
+      };
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return this.formatError("hailuo_video", error, {
+          prompt: "Required: video description (max 1500 chars)",
+          imageUrl:
+            "Optional: image URL for image-to-video mode",
+          endImageUrl:
+            "Optional: end frame image URL for image-to-video (requires imageUrl)",
+          quality: 'Optional: quality level "standard" (default) or "pro"',
+          duration:
+            'Optional: video duration "6" (default) or "10" for standard quality only',
+          resolution:
+            'Optional: resolution "512P" or "768P" (default) for standard quality only',
+          promptOptimizer: "Optional: enable prompt optimization (default: true)",
+          callBackUrl:
+            "Optional: callback URL for notifications (uses KIE_AI_CALLBACK_URL env var if not provided)",
+        });
+      }
+
+      return this.formatError("hailuo_video", error, {
+        prompt: "Required: text description for video generation",
+        imageUrl: "Optional: image URL for image-to-video mode",
+        endImageUrl: "Optional: end frame image for image-to-video",
+        quality: "Optional: quality level (standard or pro)",
+        duration: "Optional: video duration in seconds (6 or 10 for standard only)",
+        resolution: "Optional: video resolution (512P or 768P for standard only)",
+        promptOptimizer: "Optional: enable prompt optimization",
         callBackUrl: "Optional: URL for task completion notifications",
       });
     }

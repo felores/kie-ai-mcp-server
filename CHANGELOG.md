@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.9] - 2025-10-17
+
+### Added
+- **Hailuo Video Tool**: New unified `hailuo_video` tool for professional video generation
+  - Text-to-video and image-to-video modes with automatic smart mode detection
+  - Quality levels: `standard` (default, faster) and `pro` (higher quality)
+  - Standard quality supports configurable duration (6/10s) and resolution (512P/768P)
+  - Pro quality optimized for maximum visual fidelity without resolution/duration constraints
+  - Optional end frame reference for smooth video transitions in image-to-video mode
+  - Integrated with task database for status tracking and persistence
+  - Full prompt optimization support for better results
+
+### Changed
+- Updated tool count from 19 to 20 unified tools
+- Video tools increased from 6 to 7 with Hailuo addition
+
 ## [1.9.8] - 2025-10-17
 
 ### Added

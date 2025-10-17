@@ -17,6 +17,7 @@ import {
   RecraftRemoveBackgroundRequest,
   IdeogramReframeRequest,
   KlingVideoRequest,
+  HailuoVideoRequest,
   ImageResponse,
   TaskResponse 
 } from './types.js';
@@ -122,7 +123,7 @@ export class KieAiClient {
       return this.makeRequest<any>(`/jobs/recordInfo?taskId=${taskId}`, 'GET');
     } else if (apiType === 'suno') {
       return this.makeRequest<any>(`/generate/record-info?taskId=${taskId}`, 'GET');
-    } else if (apiType === 'elevenlabs-tts' || apiType === 'elevenlabs-sound-effects' || apiType === 'bytedance-seedance-video' || apiType === 'bytedance-seedream-image' || apiType === 'qwen-image' || apiType === 'wan-video' || apiType === 'recraft-remove-background' || apiType === 'ideogram-reframe' || apiType === 'kling-v2-1-pro' || apiType === 'kling-v2-5-turbo-text-to-video' || apiType === 'kling-v2-5-turbo-image-to-video') {
+    } else if (apiType === 'elevenlabs-tts' || apiType === 'elevenlabs-sound-effects' || apiType === 'bytedance-seedance-video' || apiType === 'bytedance-seedream-image' || apiType === 'qwen-image' || apiType === 'wan-video' || apiType === 'recraft-remove-background' || apiType === 'ideogram-reframe' || apiType === 'kling-v2-1-pro' || apiType === 'kling-v2-5-turbo-text-to-video' || apiType === 'kling-v2-5-turbo-image-to-video' || apiType === 'hailuo') {
       return this.makeRequest<any>(`/jobs/recordInfo?taskId=${taskId}`, 'GET');
     } else if (apiType === 'runway-aleph-video') {
       return this.makeRequest<any>(`/api/v1/aleph/record-info?taskId=${taskId}`, 'GET');
@@ -592,6 +593,49 @@ export class KieAiClient {
        callBackUrl: request.callBackUrl || process.env.KIE_AI_CALLBACK_URL
      };
 
-     return this.makeRequest<TaskResponse>('/jobs/createTask', 'POST', jobRequest);
-   }
+      return this.makeRequest<TaskResponse>('/jobs/createTask', 'POST', jobRequest);
+    }
+
+    async generateHailuoVideo(request: HailuoVideoRequest): Promise<KieAiResponse<TaskResponse>> {
+      const isImageToVideo = !!request.imageUrl;
+      const quality = request.quality || 'standard';
+      
+      let model: string;
+      if (isImageToVideo) {
+        model = quality === 'pro' ? 'hailuo/02-image-to-video-pro' : 'hailuo/02-image-to-video-standard';
+      } else {
+        model = quality === 'pro' ? 'hailuo/02-text-to-video-pro' : 'hailuo/02-text-to-video-standard';
+      }
+
+      const input: any = {
+        prompt: request.prompt,
+        prompt_optimizer: request.promptOptimizer !== false
+      };
+
+      // Add image-to-video specific parameters
+      if (isImageToVideo) {
+        input.image_url = request.imageUrl;
+        if (request.endImageUrl) {
+          input.end_image_url = request.endImageUrl;
+        }
+        // Standard quality only: duration and resolution
+        if (quality === 'standard') {
+          input.duration = request.duration || '6';
+          input.resolution = request.resolution || '768P';
+        }
+      } else {
+        // Text-to-video standard quality only: duration
+        if (quality === 'standard') {
+          input.duration = request.duration || '6';
+        }
+      }
+
+      const jobRequest = {
+        model,
+        input,
+        callBackUrl: request.callBackUrl || process.env.KIE_AI_CALLBACK_URL
+      };
+
+      return this.makeRequest<TaskResponse>('/jobs/createTask', 'POST', jobRequest);
+    }
 }

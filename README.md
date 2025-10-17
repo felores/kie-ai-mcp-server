@@ -51,6 +51,7 @@ The easiest way to use this server is to add it to your MCP client configuration
 - **OpenAI 4o Image**: Advanced image generation, editing, and variant creation with GPT-4o (unified)
 - **Flux Kontext**: Professional image generation and editing with advanced features (unified)
 - **Alibaba Wan 2.5**: High-quality video generation with text-to-video and image-to-video (unified)
+- **Hailuo 02**: Professional video generation with text-to-video and image-to-video modes (unified, standard/pro quality)
 - **Midjourney AI**: Industry-leading image and video generation with multiple modes (unified)
 - **Recraft Remove Background**: Professional AI-powered background removal with clean edge detection
 - **Ideogram V3 Reframe**: Intelligent image reframing and aspect ratio conversion with content-aware adaptation
@@ -139,7 +140,7 @@ Your AI assistant can research and learn about available models before using the
 - `kie://tasks/active` - Real-time task monitoring
 - `kie://stats/usage` - Usage statistics
 
-### 🛠️ 19 Unified AI Tools
+### 🛠️ 20 Unified AI Tools
 
 All tools feature **smart mode detection** - one tool does multiple things:
 
@@ -152,10 +153,11 @@ All tools feature **smart mode detection** - one tool does multiple things:
 - `recraft_remove_background` - Professional background removal
 - `ideogram_reframe` - Intelligent aspect ratio conversion
 
-**Video Tools (6):**
+**Video Tools (7):**
 - `veo3_generate_video` - Premium cinematic video (text OR image input)
 - `bytedance_seedance_video` - Professional video (text OR image input, lite OR pro)
 - `wan_video` - Fast social media video (text OR image input)
+- `hailuo_video` - Professional video (text-to-video OR image-to-video, standard OR pro quality)
 - `kling_video` - High-quality video (text, image-to-video, OR v2.1-pro with start+end frames)
 - `runway_aleph_video` - Video-to-video transformation
 - `midjourney_generate` - Images AND videos with multiple modes
@@ -168,7 +170,7 @@ All tools feature **smart mode detection** - one tool does multiple things:
 **Utility Tools (3):**
 - `list_tasks` - View all generation tasks
 - `get_task_status` - Check task progress
-- `veo3_get_1080p_video` - Upgrade to 1080p
+- `veo3_get_1080p_video` - Upgrade to 1080p (Veo3 only)
 
 ## Key Features
 
@@ -1261,7 +1263,76 @@ Image-to-video generation:
 
 **Note**: The `callBackUrl` is optional and uses automatic fallback if not provided. Video generation typically takes 2-6 minutes depending on resolution and complexity.
 
-### 15. `kling_video`
+### 15. `hailuo_video`
+
+Generate professional videos using Hailuo 02 models (unified tool for text-to-video and image-to-video with standard/pro quality).
+
+**Parameters:**
+- `prompt` (string, required): Text prompt describing the video content (max 1500 chars)
+- `imageUrl` (string, optional): URL of input image for image-to-video mode (if not provided, uses text-to-video)
+- `endImageUrl` (string, optional): URL of end frame image for image-to-video (optional, requires imageUrl)
+- `quality` (string, optional): Quality level of generation (default: "standard")
+  - Options: `standard`, `pro`
+- `duration` (string, optional): Duration of video in seconds - standard quality only (default: "6")
+  - Options: `6`, `10`
+- `resolution` (string, optional): Video resolution - standard quality only (default: "768P")
+  - Options: `512P`, `768P`
+- `promptOptimizer` (boolean, optional): Enable prompt optimization (default: true)
+- `callBackUrl` (string, optional): URL for task completion notifications
+
+**Examples:**
+
+Text-to-video generation:
+```json
+{
+  "prompt": "A cinematic shot of a futuristic city at night with flying vehicles and holographic billboards. Camera pans across the skyline.",
+  "quality": "pro",
+  "promptOptimizer": true
+}
+```
+
+Image-to-video generation (standard quality):
+```json
+{
+  "prompt": "The person in the image stands up and walks towards the window, looking out at the scenic view",
+  "imageUrl": "https://example.com/portrait.jpg",
+  "quality": "standard",
+  "duration": "10",
+  "resolution": "768P"
+}
+```
+
+Image-to-video with end frame:
+```json
+{
+  "prompt": "A smooth transition from the morning scene to sunset over the mountains",
+  "imageUrl": "https://example.com/start-frame.jpg",
+  "endImageUrl": "https://example.com/end-frame.jpg",
+  "quality": "standard"
+}
+```
+
+**Key Features:**
+- **Two Intelligent Modes**:
+  - Text-to-video: Create videos from text descriptions
+  - Image-to-video: Animate static images with optional end frame reference
+- **Quality Selection**: Choose between standard (faster) and pro (higher quality) modes
+- **Smart Mode Detection**: Automatically selects the best model based on parameters and quality setting
+- **Standard Quality Options**: Flexible duration (6/10 seconds) and resolution (512P/768P)
+- **Pro Quality**: Optimized for maximum visual fidelity (no resolution/duration constraints)
+- **Prompt Optimization**: AI-powered prompt enhancement for better results
+
+**Model Selection Logic:**
+- If `imageUrl` provided:
+  - `quality === 'pro'` → `hailuo/02-image-to-video-pro`
+  - Otherwise → `hailuo/02-image-to-video-standard`
+- Otherwise (text-to-video):
+  - `quality === 'pro'` → `hailuo/02-text-to-video-pro`
+  - Otherwise → `hailuo/02-text-to-video-standard`
+
+**Note**: The `callBackUrl` is optional and uses automatic fallback if not provided. Video generation typically takes 1-5 minutes depending on quality setting and complexity.
+
+### 16. `kling_video`
 
 Generate high-quality videos using Kling AI models (unified tool for text-to-video, image-to-video, and v2.1-pro with start+end frames).
 
@@ -1417,7 +1488,7 @@ High-quality generation with fallback:
 
 **Note**: The `callBackUrl` is optional and uses automatic fallback if not provided. Image generation typically takes 30-120 seconds depending on complexity and quality settings. The fallback mechanism uses FLUX_MAX model when GPT-4o fails, ensuring reliable generation.
 
-### 16. `flux_kontext_image`
+### 18. `flux_kontext_image`
 Generate or edit images using Flux Kontext AI models (unified tool for text-to-image generation and image editing with advanced features).
 
 **Parameters:**
@@ -1579,7 +1650,7 @@ Multiple variants for social media:
 
 **Note**: The `callBackUrl` is optional and uses automatic fallback if not provided. Image reframing typically takes 30-120 seconds depending on complexity, rendering speed, and output settings.
 
-### 18. `recraft_remove_background`
+### 20. `recraft_remove_background`
 Remove backgrounds from images using Recraft AI background removal model with professional-quality edge detection.
 
 **Parameters:**
