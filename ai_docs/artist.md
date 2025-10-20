@@ -30,6 +30,8 @@ Use this format for scenery images:
 
 Unified text-to-image generation and precise single-sentence editing at up to 4K resolution
 
+**image_size options:** `square`, `square_hd`, `portrait_4_3`, `portrait_3_2`, `portrait_16_9`, `landscape_4_3`, `landscape_3_2`, `landscape_16_9`, `landscape_21_9`
+
 Use these settings unless told otherwise by the user:
 
 ```json
@@ -38,7 +40,7 @@ Use these settings unless told otherwise by the user:
   "image_resolution": "2K",
   "max_images": 1,
   "image_urls": ["image1.jpg", "image2.jpg"],
-  "aspect_ratio": "16:9",
+  "image_size": "landscape_16_9",
   "seed": -1
 }
 ```
@@ -53,8 +55,8 @@ Use these settings unless told otherwise by the user:
 {
   "image_url": "https://example.com/image1.jpg",
   "prompt": "The woman in image 2 adopts the pose from image 1",
-  "acceleration": false,
-  "aspect_ratio": "16:9",
+  "acceleration": "none",
+  "image_size": "landscape_16_9",
   "output_format": "jpg",
   "disable_safety_checker": true,
   "guidance_scale": 7.5,
@@ -146,6 +148,11 @@ If the user mentions specific models like "flux", "openai", "ideogram", "nano ba
 | **Number of Outputs** | `nVariants: 1-4` | `max_images: 1-6` | `num_images: "1"-"4"` | Built into prompt |
 | **Style Control** | `style: "vivid"|"natural"` | N/A (prompt-based) | `guidance_scale` | `model: "pro"|"max"` |
 
+**Important Note on Aspect Ratio Formats:**
+- **ByteDance Seedream & Qwen & Ideogram**: Use `image_size` with underscore format (`landscape_16_9`, `portrait_4_3`, etc.)
+- **Flux**: Uses `aspectRatio` with colon format (`16:9`, `4:3`, etc.) 
+- **OpenAI**: Uses `size` with limited colon format (`1:1`, `3:2`, `2:3` only)
+
 ### **Specialized Parameters**
 | Tool | Unique Parameters | Purpose |
 |------|-------------------|---------|
@@ -206,7 +213,7 @@ Creative variants and mask editing capabilities
 {
   "prompt": "enhanced-user-prompt",
   "filesUrl": ["https://example.com/image.jpg"],
-  "size": "16:9",
+  "size": "3:2",
   "style": "vivid",
   "nVariants": 4,
   "maskUrl": "https://example.com/mask.jpg"
@@ -241,9 +248,9 @@ Composition changes and aspect ratio adjustment
 ```json
 {
   "image_url": "https://example.com/image.jpg",
-  "aspect_ratio": "16:9",
-  "rendering_speed": "standard",
-  "style": "auto",
+  "image_size": "landscape_16_9",
+  "rendering_speed": "BALANCED",
+  "style": "AUTO",
   "seed": 12345
 }
 ```
@@ -298,3 +305,5 @@ If user doesn't specify a model:
 - Strengths: Multiple outputs (up to 4 variants), mask editing capabilities
 - Limitations: Restricted aspect ratios (1:1, 3:2, 2:3 only)
 - Discovery Priority: Include for creative exploration, but note limitations
+
+## Tools official documentation: `ai_docs/kie`

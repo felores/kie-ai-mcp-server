@@ -41,6 +41,7 @@ The easiest way to use this server is to add it to your MCP client configuration
 
 ### 🚀 **All AI Models in One API**
 - **Google Veo 3**: Cinematic video generation with synchronized audio and 1080p output
+- **OpenAI Sora 2**: Advanced video generation with text/image/storyboard modes (unified)
 - **Runway Aleph**: Advanced video editing with object removal and style transfer
 - **Suno V5**: Professional music generation with realistic vocals up to 8 minutes
 - **Nano Banana**: Lightning-fast image generation, editing, and upscaling (unified tool)
@@ -140,7 +141,7 @@ Your AI assistant can research and learn about available models before using the
 - `kie://tasks/active` - Real-time task monitoring
 - `kie://stats/usage` - Usage statistics
 
-### 🛠️ 20 Unified AI Tools
+### 🛠️ 21 Unified AI Tools
 
 All tools feature **smart mode detection** - one tool does multiple things:
 
@@ -153,8 +154,9 @@ All tools feature **smart mode detection** - one tool does multiple things:
 - `recraft_remove_background` - Professional background removal
 - `ideogram_reframe` - Intelligent aspect ratio conversion
 
-**Video Tools (7):**
+**Video Tools (8):**
 - `veo3_generate_video` - Premium cinematic video (text OR image input)
+- `sora_video` - OpenAI's advanced video model (text/image/storyboard modes, standard/pro)
 - `bytedance_seedance_video` - Professional video (text OR image input, lite OR pro)
 - `wan_video` - Fast social media video (text OR image input)
 - `hailuo_video` - Professional video (text-to-video OR image-to-video, standard OR pro quality)
@@ -635,7 +637,89 @@ Generate, edit, and upscale images using Google's Gemini 2.5 Flash Image Preview
 }
 ```
 
-### 4. `veo3_generate_video`
+### 4. `sora_video`
+Generate videos using OpenAI's Sora 2 models (unified tool for text-to-video, image-to-video, and storyboard modes).
+
+**Parameters:**
+- `prompt` (string, optional): Text prompt for video generation (max 4000 chars, required for text-to-video and image-to-video modes)
+- `image_url` (string, optional): URL of input image for image-to-video mode (if not provided, uses text-to-video)
+- `storyboard_image_url` (string, optional): URL of storyboard image for storyboard mode (if not provided, uses text-to-video)
+- `storyboard_prompt` (string, optional): Text prompt for storyboard mode (max 4000 chars, if not provided, uses text-to-video)
+- `model` (string, optional): Model version (default: "sora-2")
+  - Options: `sora-2` (standard), `sora-2-pro` (premium quality)
+- `aspect_ratio` (string, optional): Video aspect ratio (default: "16:9")
+  - Options: `16:9`, `9:16`, `1:1`
+- `resolution` (string, optional): Video resolution (default: "720p")
+  - `480p`: Faster generation
+  - `720p`: Balanced quality and speed
+  - `1080p`: Highest quality (pro model only)
+- `duration` (string, optional): Video duration in seconds (default: "5")
+  - Standard: 5-20 seconds
+  - Pro: 5-20 seconds
+- `seed` (integer, optional): Random seed for reproducible results (default: -1 for random)
+- `watermark` (string, optional): Watermark text to add to the video (max 100 chars)
+- `enable_translation` (boolean, optional): Auto-translate non-English prompts to English (default: true)
+- `callBackUrl` (string, optional): URL for task completion notifications
+
+**Examples:**
+
+Text-to-video generation:
+```json
+{
+  "prompt": "A serene Japanese garden with cherry blossoms falling gently around a tranquil koi pond. Soft morning light filters through the trees. No dialogue. Peaceful ambient audio with gentle water sounds and bird songs.",
+  "model": "sora-2",
+  "aspect_ratio": "16:9",
+  "resolution": "1080p",
+  "duration": "10",
+  "seed": 42
+}
+```
+
+Image-to-video generation:
+```json
+{
+  "prompt": "The person in the portrait smiles warmly and looks around, then speaks with enthusiasm: 'Welcome to the future of AI video generation!'",
+  "image_url": "https://example.com/portrait.jpg",
+  "model": "sora-2-pro",
+  "resolution": "1080p",
+  "duration": "8"
+}
+```
+
+Storyboard mode (no prompt required):
+```json
+{
+  "storyboard_image_url": "https://example.com/storyboard-frame.jpg",
+  "storyboard_prompt": "A cinematic tracking shot through a futuristic city with flying vehicles",
+  "model": "sora-2-pro",
+  "aspect_ratio": "16:9",
+  "resolution": "1080p",
+  "duration": "15"
+}
+```
+
+**Key Features:**
+- **Unified Interface**: Single tool for text-to-video, image-to-video, and storyboard modes
+- **Smart Mode Detection**: Automatically detects mode based on provided parameters
+  - Text-to-Video: `prompt` provided, no `image_url` or `storyboard_image_url`
+  - Image-to-Video: `prompt` + `image_url` provided
+  - Storyboard: `storyboard_image_url` provided (prompt optional)
+- **Quality Tiers**: Standard for speed, Pro for premium quality
+- **Flexible Resolutions**: 480p for speed, 720p for balance, 1080p for maximum quality
+- **Aspect Ratio Control**: Support for horizontal, vertical, and square formats
+- **Storyboard Mode**: Unique feature for creating videos from storyboard frames without prompts
+- **Reproducible Results**: Seed control for consistent output
+- **Translation Support**: Automatic translation for non-English prompts
+
+**Model Selection Logic:**
+- If `storyboard_image_url` provided → Storyboard mode
+- If `image_url` provided → Image-to-video mode
+- If `prompt` provided → Text-to-video mode
+- Quality automatically determined by `model` parameter (`sora-2` vs `sora-2-pro`)
+
+**Note**: The `callBackUrl` is optional and uses automatic fallback if not provided. Video generation typically takes 2-8 minutes depending on model quality, resolution, and duration.
+
+### 5. `veo3_generate_video`
 Generate videos using Veo3.
 
 **Parameters:**
@@ -660,7 +744,7 @@ Generate videos using Veo3.
 }
 ```
 
-### 5. `veo3_get_1080p_video`
+### 6. `veo3_get_1080p_video`
 Get 1080P high-definition version of a Veo3 video.
 
 **Parameters:**
@@ -669,7 +753,7 @@ Get 1080P high-definition version of a Veo3 video.
 
 **Note**: Not available for videos generated with fallback mode.
 
-### 6. `suno_generate_music`
+### 7. `suno_generate_music`
 Generate music with AI using Suno models.
 
 **Parameters:**
@@ -722,7 +806,7 @@ Using explicit model (overrides default V5):
 
 **Note**: In custom mode, `style` and `title` are required. If `instrumental` is false, `prompt` is used as exact lyrics. The `callBackUrl` is optional and uses automatic fallback if not provided. The `model` parameter defaults to "V5" but can be explicitly set to any available version.
 
-### 7. `elevenlabs_tts`
+### 8. `elevenlabs_tts`
 Generate speech from text using ElevenLabs TTS models (Turbo 2.5 by default, with optional Multilingual v2 support).
 
 **Parameters:**
@@ -778,7 +862,7 @@ Advanced voice controls with context (Multilingual model):
 
 **Note**: The `callBackUrl` is optional and uses automatic fallback if not provided. Choose Turbo model for speed and language enforcement, or Multilingual model for context-aware speech generation.
 
-### 8. `elevenlabs_ttsfx`
+### 9. `elevenlabs_ttsfx`
 Generate sound effects from text descriptions using ElevenLabs Sound Effects v2 model.
 
 **Parameters:**
@@ -830,7 +914,7 @@ Looping ambient sound:
 
 **Note**: The `callBackUrl` is optional and uses automatic fallback if not provided. Sound effects generation typically takes 30-90 seconds depending on complexity.
 
-### 9. `bytedance_seedance_video`
+### 10. `bytedance_seedance_video`
 Generate videos using ByteDance Seedance models (unified tool for both text-to-video and image-to-video).
 
 **Parameters:**
@@ -898,7 +982,7 @@ Video with specific ending frame:
 
 **Note**: The `callBackUrl` is optional and uses automatic fallback if not provided. Video generation typically takes 2-5 minutes depending on quality and complexity.
 
-### 10. `bytedance_seedream_image`
+### 11. `bytedance_seedream_image`
 Generate and edit images using ByteDance Seedream V4 models (unified tool for both text-to-image and image editing).
 
 **Parameters:**
@@ -962,7 +1046,7 @@ Multiple image editing:
 
 **Note**: The `callBackUrl` is optional and uses automatic fallback if not provided. Image generation typically takes 30-120 seconds depending on resolution and complexity.
 
-### 11. `qwen_image`
+### 12. `qwen_image`
 Generate and edit images using Qwen models (unified tool for both text-to-image and image editing).
 
 **Parameters:**
@@ -1034,7 +1118,7 @@ High-acceleration generation:
 
 **Note**: The `callBackUrl` is optional and uses automatic fallback if not provided. Image generation typically takes 10-60 seconds depending on settings and acceleration level.
 
-### 12. `runway_aleph_video`
+### 13. `runway_aleph_video`
 Transform videos using Runway Aleph video-to-video generation with AI-powered editing.
 
 **Parameters:**
@@ -1090,7 +1174,7 @@ Vertical video for social media:
 
 **Note**: The `callBackUrl` is optional and uses automatic fallback if not provided. Video-to-video transformation typically takes 3-8 minutes depending on complexity and length.
 
-### 13. `midjourney_generate`
+### 14. `midjourney_generate`
 Generate images and videos using Midjourney AI models (unified tool for text-to-image, image-to-image, style reference, omni reference, and video generation).
 
 **Parameters:**
@@ -1208,7 +1292,7 @@ Style reference generation:
 
 **Note**: The `callBackUrl` is optional and uses automatic fallback if not provided. Generation times vary: text-to-image (1-3 minutes), image-to-image (2-4 minutes), video generation (3-8 minutes), reference modes (2-5 minutes).
 
-### 14. `wan_video`
+### 15. `wan_video`
 Generate videos using Alibaba Wan 2.5 models (unified tool for both text-to-video and image-to-video).
 
 **Parameters:**
@@ -1263,7 +1347,7 @@ Image-to-video generation:
 
 **Note**: The `callBackUrl` is optional and uses automatic fallback if not provided. Video generation typically takes 2-6 minutes depending on resolution and complexity.
 
-### 15. `hailuo_video`
+### 16. `hailuo_video`
 
 Generate professional videos using Hailuo 02 models (unified tool for text-to-video and image-to-video with standard/pro quality).
 
@@ -1332,7 +1416,7 @@ Image-to-video with end frame:
 
 **Note**: The `callBackUrl` is optional and uses automatic fallback if not provided. Video generation typically takes 1-5 minutes depending on quality setting and complexity.
 
-### 16. `kling_video`
+### 17. `kling_video`
 
 Generate high-quality videos using Kling AI models (unified tool for text-to-video, image-to-video, and v2.1-pro with start+end frames).
 
@@ -1399,7 +1483,7 @@ V2.1-pro with start and end frames:
 
 **Note**: The `callBackUrl` is optional and uses automatic fallback if not provided. Video generation typically takes 2-5 minutes depending on duration and complexity.
 
-### 17. `openai_4o_image`
+### 18. `openai_4o_image`
 Generate, edit, and create image variants using OpenAI's GPT-4o image models (unified tool for text-to-image, image editing, and image variants).
 
 **Parameters:**
@@ -1488,7 +1572,7 @@ High-quality generation with fallback:
 
 **Note**: The `callBackUrl` is optional and uses automatic fallback if not provided. Image generation typically takes 30-120 seconds depending on complexity and quality settings. The fallback mechanism uses FLUX_MAX model when GPT-4o fails, ensuring reliable generation.
 
-### 18. `flux_kontext_image`
+### 19. `flux_kontext_image`
 Generate or edit images using Flux Kontext AI models (unified tool for text-to-image generation and image editing with advanced features).
 
 **Parameters:**
@@ -1566,7 +1650,7 @@ Mobile portrait generation:
 
 **Note**: The `callBackUrl` is optional and uses automatic fallback if not provided. Safety tolerance levels are automatically validated based on the generation mode (0-2 for editing, 0-6 for generation).
 
-### 19. `ideogram_reframe`
+### 20. `ideogram_reframe`
 Reframe images to different aspect ratios and sizes using Ideogram V3 Reframe model with intelligent content adaptation.
 
 **Parameters:**
@@ -1650,7 +1734,7 @@ Multiple variants for social media:
 
 **Note**: The `callBackUrl` is optional and uses automatic fallback if not provided. Image reframing typically takes 30-120 seconds depending on complexity, rendering speed, and output settings.
 
-### 20. `recraft_remove_background`
+### 21. `recraft_remove_background`
 Remove backgrounds from images using Recraft AI background removal model with professional-quality edge detection.
 
 **Parameters:**

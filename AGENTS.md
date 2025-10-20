@@ -54,6 +54,65 @@ For tools requiring callback URLs (like Veo3, Suno):
 - Task persistence via TaskDatabase (database.ts)
 - Smart endpoint routing based on api_type (veo vs playground)
 
+## Agent Overview
+
+### **Artist Agent** (`ai_docs/artist.md`)
+**Purpose**: Static image generation and editing workflows
+
+**Primary Models**:
+- **Nano Banana**: Google's Gemini 2.5 Flash - unified generation/editing/upscaling
+- **Seedream**: ByteDance's advanced image model - text-to-image + editing
+- **Qwen**: Alibaba's image model - text-to-image + editing  
+- **OpenAI 4o**: GPT-4o image capabilities - generation + editing + variants
+- **Midjourney**: Artistic image generation (6 modes)
+- **Flux Kontext**: Context-aware image generation + editing
+- **Ideogram**: Typography-focused image generation + reframing
+- **Recraft**: Specialized background removal
+
+**Key Capabilities**:
+- Unified tools that auto-detect mode (generate vs edit vs upscale)
+- Smart parameter validation and mode switching
+- Professional image editing with mask-based modifications
+- Multiple aspect ratios and quality tiers
+- Batch processing and variant generation
+
+### **Filmographer Agent** (`ai_docs/filmographer.md`)  
+**Purpose**: Video generation, editing, and motion workflows
+
+**Primary Models**:
+- **Veo3**: Google's premium cinematic video (text + optional images)
+- **Sora 2**: OpenAI's advanced video model (text/image/storyboard modes)
+- **Kling**: Multi-tier video generation (v2.1-pro control, v2.5-turbo speed)
+- **ByteDance Seedance**: Professional video (lite/pro quality tiers)
+- **Hailuo**: Fast video generation (standard/pro quality)
+- **Wan**: Quick video creation with prompt expansion
+- **Midjourney Video**: Image-to-video with motion control
+- **Runway Aleph**: Video editing and enhancement
+
+**Key Capabilities**:
+- Decision tree model selection based on user input
+- Start/end frame control for precise transitions
+- Multiple quality tiers and aspect ratios
+- Text-to-video, image-to-video, and storyboard modes
+- CFG fine-tuning and motion parameter control
+
+### **Agent-Model Relationships**
+
+**Unified Tool Design**: Both agents use unified tools that consolidate multiple capabilities:
+- Single interface handles generation, editing, and transformation modes
+- Smart parameter detection automatically routes to correct API endpoint
+- Reduces cognitive load while maintaining full functionality
+
+**Workflow Integration**:
+- **Artist**: Focuses on static visual creation with editing workflows
+- **Filmographer**: Handles motion, timing, and sequential visual narratives
+- **Cross-over**: Models like Midjourney serve both agents (image generation vs video)
+
+**Quality Tiers**: Both agents provide tiered quality options:
+- **Standard**: Fast generation for prototyping and casual use
+- **Pro/Premium**: High-fidelity output for professional work
+- **Turbo/Lite**: Optimized for speed and cost efficiency
+
 ## Database & Task Management
 
 ### **Database Architecture**

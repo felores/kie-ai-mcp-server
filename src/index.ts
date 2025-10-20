@@ -34,6 +34,7 @@ import {
   IdeogramReframeSchema,
   KlingVideoSchema,
   HailuoVideoSchema,
+  SoraVideoSchema,
   KieAiConfig,
 } from "./types.js";
 
@@ -46,7 +47,7 @@ class KieAiMcpServer {
   constructor() {
     this.server = new Server({
       name: "kie-ai-mcp-server",
-      version: "1.9.9",
+      version: "2.0.0",
     });
 
     // Initialize client with config from environment
@@ -1472,6 +1473,64 @@ class KieAiMcpServer {
               required: ["prompt"],
             },
           },
+          {
+            name: "sora_video",
+            description:
+              "Generate videos using OpenAI's Sora 2 models (unified tool for text-to-video, image-to-video, and storyboard generation with standard/high quality)",
+            inputSchema: {
+              type: "object",
+              properties: {
+                prompt: {
+                  type: "string",
+                  description:
+                    "Text prompt describing the desired video content (max 5000 characters). Required for text-to-video and image-to-video modes, optional for storyboard mode.",
+                  maxLength: 5000,
+                },
+                image_urls: {
+                  type: "array",
+                  description:
+                    "Array of image URLs for image-to-video or storyboard modes (1-10 URLs). For storyboard mode: provide images without prompt. For image-to-video: provide with prompt.",
+                  items: { type: "string", format: "uri" },
+                  minItems: 1,
+                  maxItems: 10,
+                },
+                aspect_ratio: {
+                  type: "string",
+                  description:
+                    "Aspect ratio of the generated video",
+                  enum: ["portrait", "landscape"],
+                  default: "landscape",
+                },
+                n_frames: {
+                  type: "string",
+                  description:
+                    "Number of frames/duration: 10s (5fps), 15s (5fps), or 25s (5fps). Storyboard mode supports 15s and 25s only.",
+                  enum: ["10", "15", "25"],
+                  default: "10",
+                },
+                size: {
+                  type: "string",
+                  description:
+                    "Quality tier: standard (480p) or high (1080p). High quality uses pro endpoints.",
+                  enum: ["standard", "high"],
+                  default: "standard",
+                },
+                remove_watermark: {
+                  type: "boolean",
+                  description:
+                    "Whether to remove the Sora watermark from the generated video",
+                  default: true,
+                },
+                callBackUrl: {
+                  type: "string",
+                  description:
+                    "Optional: URL for task completion notifications (uses KIE_AI_CALLBACK_URL env var if not provided)",
+                  format: "uri",
+                },
+              },
+              required: [],
+            },
+          },
         ],
       };
     });
@@ -1540,6 +1599,9 @@ class KieAiMcpServer {
 
           case "hailuo_video":
             return await this.handleHailuoVideo(args);
+
+          case "sora_video":
+            return await this.handleSoraVideo(args);
 
           default:
             throw new McpError(
@@ -3962,6 +4024,89 @@ class KieAiMcpServer {
         duration: "Optional: video duration in seconds (6 or 10 for standard only)",
         resolution: "Optional: video resolution (512P or 768P for standard only)",
         promptOptimizer: "Optional: enable prompt optimization",
+        callBackUrl: "Optional: URL for task completion notifications",
+      });
+    }
+  }
+
+  private async handleSoraVideo(args: any) {
+    try {
+      const request = SoraVideoSchema.parse(args);
+
+      request.callBackUrl = this.getCallbackUrl(request.callBackUrl);
+
+      const response = await this.client.generateSoraVideo(request);
+
+      let modeDescription: string;
+      if (!request.prompt && request.image_urls?.length) {
+        modeDescription = `storyboard (${request.size || 'standard'} quality)`;
+      } else if (request.prompt && !request.image_urls?.length) {
+        modeDescription = `text-to-video (${request.size || 'standard'} quality)`;
+      } else if (request.prompt && request.image_urls?.length) {
+        modeDescription = `image-to-video (${request.size || 'standard'} quality)`;
+      } else {
+        modeDescription = `unknown mode`;
+      }
+
+      if (response.data?.taskId) {
+        await this.db.createTask({
+          task_id: response.data.taskId,
+          api_type: "sora-video",
+          status: "pending",
+        });
+      }
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify(
+              {
+                success: true,
+                task_id: response.data?.taskId,
+                mode: modeDescription,
+                message: `Sora video generation task created successfully (${modeDescription})`,
+                parameters: {
+                  prompt: request.prompt,
+                  image_urls: request.image_urls,
+                  aspect_ratio: request.aspect_ratio || "landscape",
+                  n_frames: request.n_frames || "10",
+                  size: request.size || "standard",
+                  remove_watermark: request.remove_watermark !== false,
+                  callBackUrl: request.callBackUrl,
+                },
+                next_steps: [
+                  "Use get_task_status to check generation progress",
+                  "Task completion will be sent to the provided callback URL",
+                  "Video generation typically takes 2-5 minutes for standard, 5-10 minutes for high quality",
+                ],
+              },
+              null,
+              2,
+            ),
+          },
+        ],
+      };
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return this.formatError("sora_video", error, {
+          prompt: "Optional: text description for video generation (max 5000 chars). Required for text-to-video and image-to-video modes.",
+          image_urls: "Optional: array of image URLs for image-to-video or storyboard modes (1-10 URLs)",
+          aspect_ratio: 'Optional: aspect ratio "portrait" or "landscape" (default: landscape)',
+          n_frames: 'Optional: number of frames "10" (default), "15", or "25". Storyboard mode supports 15s and 25s only.',
+          size: 'Optional: quality tier "standard" (default) or "high"',
+          remove_watermark: "Optional: remove Sora watermark (default: true)",
+          callBackUrl: "Optional: callback URL for notifications (uses KIE_AI_CALLBACK_URL env var if not provided)",
+        });
+      }
+
+      return this.formatError("sora_video", error, {
+        prompt: "Optional: text description for video generation",
+        image_urls: "Optional: array of image URLs for image-to-video or storyboard modes",
+        aspect_ratio: "Optional: aspect ratio (portrait or landscape)",
+        n_frames: "Optional: video duration in frames (10, 15, or 25)",
+        size: "Optional: quality tier (standard or high)",
+        remove_watermark: "Optional: remove Sora watermark",
         callBackUrl: "Optional: URL for task completion notifications",
       });
     }

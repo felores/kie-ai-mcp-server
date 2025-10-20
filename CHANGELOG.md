@@ -5,6 +5,49 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2025-10-20
+
+### Added
+- **Sora 2 Video Tool**: New unified `sora_video` tool for OpenAI's Sora 2 video generation
+  - **5-in-1 Unified Interface**: Single tool handles all Sora 2 endpoints with smart mode detection
+  - **Text-to-Video Mode**: Generate videos from text prompts with standard/high quality tiers
+  - **Image-to-Video Mode**: Create videos from text + images with intelligent motion synthesis
+  - **Storyboard Mode**: Generate videos from images only (no prompt required) - unique Sora capability
+  - **Quality Tiers**: `standard` (480p) and `high` (1080p) with automatic endpoint routing
+  - **Flexible Duration**: `n_frames` parameter supports 10s, 15s, and 25s video lengths at 5fps
+  - **Aspect Ratio Control**: Portrait and landscape orientations for different use cases
+  - **Watermark Control**: Optional watermark removal for clean output
+  - **Smart Parameter Detection**: Automatically routes to correct Sora 2 endpoint based on input combination
+
+### Models Added
+- `openai/sora-2-text-to-video` - Standard quality text-to-video
+- `openai/sora-2-pro-text-to-video` - High quality text-to-video  
+- `openai/sora-2-image-to-video` - Standard quality image-to-video
+- `openai/sora-2-pro-image-to-video` - High quality image-to-video
+- `openai/sora-2-storyboard` - Images-only video generation
+
+### Integration
+- **Filmographer Agent Updated**: Added Sora 2 to decision tree and capabilities matrix
+- **Database Support**: Added `sora-video` api_type for task tracking and status polling
+- **Parameter Validation**: Comprehensive Zod schema with mode-specific validation rules
+- **Error Handling**: Detailed error messages for invalid parameter combinations
+- **Documentation**: Complete parameter reference and usage examples in filmographer.md
+
+### Changed
+- **Tool Count**: Increased from 20 to 21 unified tools
+- **Video Tools**: Expanded from 7 to 8 with Sora 2 addition
+- **Package Description**: Updated to reflect 21 AI tools including Sora 2
+- **Version**: Major version bump to 2.0.0 for significant new AI model capability
+
+### Technical
+- **Smart Mode Detection Logic**: 
+  - `prompt` only → Text-to-video mode
+  - `prompt` + `image_urls` → Image-to-video mode  
+  - `image_urls` only → Storyboard mode
+- **Endpoint Routing**: Automatic selection between standard/pro endpoints based on `size` parameter
+- **Callback Support**: Full integration with existing callback URL infrastructure
+- **Task Management**: Complete integration with database task tracking system
+
 ## [1.9.9] - 2025-10-17
 
 ### Added
