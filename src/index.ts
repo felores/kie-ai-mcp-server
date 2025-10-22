@@ -88,7 +88,7 @@ class KieAiMcpServer {
   constructor() {
     this.server = new Server({
       name: "kie-ai-mcp-server",
-      version: "2.0.2",
+      version: "2.0.3",
     });
 
     // Initialize client with config from environment
@@ -1758,29 +1758,6 @@ class KieAiMcpServer {
     this.server.setRequestHandler(ListResourcesRequestSchema, async () => {
       return {
         resources: [
-          // Agent Instructions
-          {
-            uri: "kie://agents/artist",
-            name: "Artist Agent Instructions",
-            description:
-              "Complete system instructions for image generation and editing agent",
-            mimeType: "text/markdown",
-            annotations: {
-              audience: ["assistant"],
-              priority: 0.9,
-            },
-          },
-          {
-            uri: "kie://agents/filmographer",
-            name: "Filmographer Agent Instructions",
-            description:
-              "Complete system instructions for video generation agent",
-            mimeType: "text/markdown",
-            annotations: {
-              audience: ["assistant"],
-              priority: 0.9,
-            },
-          },
 
           // Model Documentation - Images
           {
@@ -2031,30 +2008,7 @@ class KieAiMcpServer {
       async (request) => {
         const { uri } = request.params;
 
-        // Agent Instructions
-        if (uri === "kie://agents/artist") {
-          return {
-            contents: [
-              {
-                uri,
-                mimeType: "text/markdown",
-                text: await this.getAgentInstructions("artist"),
-              },
-            ],
-          };
-        }
 
-        if (uri === "kie://agents/filmographer") {
-          return {
-            contents: [
-              {
-                uri,
-                mimeType: "text/markdown",
-                text: await this.getAgentInstructions("filmographer"),
-              },
-            ],
-          };
-        }
 
         // Model Documentation
         const modelMatch = uri.match(/^kie:\/\/models\/(.+)$/);
@@ -2146,13 +2100,13 @@ class KieAiMcpServer {
       return {
         prompts: [
           {
-            name: "artist",
+            name: "image",
             title: "🎨 Create Images",
             description:
               "Generate, edit, or enhance images using AI models. Just describe what you want and include any image URLs in your message.",
           },
           {
-            name: "filmographer",
+            name: "video",
             title: "🎬 Create Videos",
             description:
               "Generate videos from text or images. Describe what you want and include any image URLs to animate.",
@@ -2165,8 +2119,8 @@ class KieAiMcpServer {
       const { name, arguments: args } = request.params;
 
       switch (name) {
-        case "artist": {
-          const agentInstructions = await this.getAgentInstructions("artist");
+        case "image": {
+          const agentInstructions = await this.getAgentInstructions("image");
 
           return {
             description: "Generate, edit, or enhance images using AI models",
@@ -2176,8 +2130,8 @@ class KieAiMcpServer {
                 content: {
                   type: "resource" as const,
                   resource: {
-                    uri: "kie://agents/artist",
-                    name: "artist",
+                    uri: "kie://agents/image",
+                    name: "image",
                     mimeType: "text/markdown",
                     text: agentInstructions,
                   },
@@ -2187,9 +2141,9 @@ class KieAiMcpServer {
           };
         }
 
-        case "filmographer": {
+        case "video": {
           const agentInstructions =
-            await this.getAgentInstructions("filmographer");
+            await this.getAgentInstructions("video");
 
           return {
             description: "Generate videos from text or images",
@@ -2199,8 +2153,8 @@ class KieAiMcpServer {
                 content: {
                   type: "resource" as const,
                   resource: {
-                    uri: "kie://agents/filmographer",
-                    name: "filmographer",
+                    uri: "kie://agents/video",
+                    name: "video",
                     mimeType: "text/markdown",
                     text: agentInstructions,
                   },

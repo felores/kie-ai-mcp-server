@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.3] - 2025-10-22
+
+### Fixed
+- **Automatic Generation Loop**: Resolved issue where MCP server resources and prompts were causing automatic tool execution in clients
+- **Removed Auto-Triggering Content**: Eliminated imperative commands and decision trees from agent instruction files that could be interpreted as execution instructions
+- **Safe Documentation Format**: Converted from instructional format to reference documentation format
+
+### Changed
+- **Renamed Agent Files**: 
+  - `artist.md` → `image.md` 
+  - `filmographer.md` → `video.md`
+- **Updated Prompt Names**: 
+  - "artist" prompt → "image" prompt
+  - "filmographer" prompt → "video" prompt
+- **Removed Agent Resources**: Agent instructions are no longer exposed as automatically-loaded resources, only available as explicit prompts
+- **Cleaned Frontmatter**: Removed `mode` property from documentation files to prevent client interpretation
+
+### Improved
+- **Safer MCP Integration**: Documentation now informs users without triggering automatic execution
+- **Better User Experience**: Clear separation between reference documentation and executable tools
+- **Maintained Functionality**: All essential information preserved in safe, descriptive format
+
 ## [2.0.1] - 2025-10-22
 ## [2.0.2] - 2025-10-22
 
