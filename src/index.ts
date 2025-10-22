@@ -47,7 +47,7 @@ class KieAiMcpServer {
   constructor() {
     this.server = new Server({
       name: "kie-ai-mcp-server",
-      version: "2.0.0",
+      version: "2.0.1",
     });
 
     // Initialize client with config from environment
@@ -1696,11 +1696,11 @@ class KieAiMcpServer {
           {
             uri: "kie://models/nano-banana",
             name: "Nano Banana (Gemini 2.5)",
-            description: "Bulk simple edits, fastest processing, 4x upscaling",
+            description: "Text-to-image, bulk editing (up to 10 images), and UPSCALING (1x-4x with face enhancement)",
             mimeType: "text/markdown",
             annotations: {
               audience: ["assistant"],
-              priority: 0.5,
+              priority: 0.6,
             },
           },
 
@@ -1741,6 +1741,66 @@ class KieAiMcpServer {
             uri: "kie://models/runway-aleph",
             name: "Runway Aleph",
             description: "Video-to-video editing and transformation",
+            mimeType: "text/markdown",
+            annotations: {
+              audience: ["assistant"],
+              priority: 0.6,
+            },
+          },
+          {
+            uri: "kie://models/kling-v2-1",
+            name: "Kling v2.1 Pro",
+            description: "Controlled motion video with CFG control and 2-image transitions",
+            mimeType: "text/markdown",
+            annotations: {
+              audience: ["assistant"],
+              priority: 0.6,
+            },
+          },
+          {
+            uri: "kie://models/kling-v2-5",
+            name: "Kling v2.5 Turbo",
+            description: "Fast video generation with turbo speed (5-10s)",
+            mimeType: "text/markdown",
+            annotations: {
+              audience: ["assistant"],
+              priority: 0.6,
+            },
+          },
+          {
+            uri: "kie://models/hailuo",
+            name: "Hailuo 02",
+            description: "Fast video generation with built-in prompt optimizer",
+            mimeType: "text/markdown",
+            annotations: {
+              audience: ["assistant"],
+              priority: 0.6,
+            },
+          },
+          {
+            uri: "kie://models/sora-2",
+            name: "Sora 2 Standard",
+            description: "OpenAI Sora 2 text/image/storyboard video (480p, secondary option)",
+            mimeType: "text/markdown",
+            annotations: {
+              audience: ["assistant"],
+              priority: 0.7,
+            },
+          },
+          {
+            uri: "kie://models/sora-2-pro",
+            name: "Sora 2 Pro",
+            description: "OpenAI Sora 2 premium quality video (1080p, secondary option)",
+            mimeType: "text/markdown",
+            annotations: {
+              audience: ["assistant"],
+              priority: 0.7,
+            },
+          },
+          {
+            uri: "kie://models/midjourney",
+            name: "Midjourney",
+            description: "6 generation modes: text/image-to-image, style/omni reference, video (SD/HD)",
             mimeType: "text/markdown",
             annotations: {
               audience: ["assistant"],
@@ -4791,16 +4851,26 @@ These guidelines ensure optimal balance between quality requirements and cost ma
 
     // Map URI keys to file names
     const modelFiles: Record<string, string> = {
+      // Image models
       "bytedance-seedream": "bytedance_seedream-v4-text-to-image.md",
       "qwen-image": "qwen_text-to-image.md",
       "flux-kontext": "flux_kontext_image.md",
       "openai-4o-image": "openai_4o-image.md",
-      veo3: "bytedance_seedance-v1-lite-text-to-video.md", // placeholder, needs actual veo3 doc
+      "nano-banana": "google_nano-banana.md",
+      "recraft-bg-removal": "recraft_remove_background.md",
+      "ideogram-reframe": "ideogram_reframe_image.md",
+      
+      // Video models
+      veo3: "google_veo3-text-to-image.md",
       "bytedance-seedance": "bytedance_seedance-v1-lite-text-to-video.md",
       "wan-video": "wan_2-5-text-to-video.md",
       "runway-aleph": "runway_aleph_video.md",
-      "recraft-bg-removal": "recraft_remove_background.md",
-      "ideogram-reframe": "ideogram_reframe_image.md",
+      "kling-v2-1": "kling_v2-1-pro.md",
+      "kling-v2-5": "kling_v2-5-turbo-text-to-video-pro.md",
+      "midjourney": "midjourney_generate.md",
+      "hailuo": "hailuo_02-text-to-video-pro.md",
+      "sora-2": "sora-2-text-to-video.md",
+      "sora-2-pro": "sora-2-pro-text-to-video.md",
     };
 
     const fileName = modelFiles[modelKey];

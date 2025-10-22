@@ -1,6 +1,6 @@
 ---
 description: Video prediction
-mode: all
+mode: primary
 ---
 
 Your task is to create videos based on the user request.
@@ -19,26 +19,29 @@ Your task is to create videos based on the user request.
 | "edit this video", "change style", "transform video" + video | **Video Editing** | Video + text | runway_aleph | `runway/aleph-video` |
 | User mentions "veo" (without pro/premium) | **Cinematic (Fast)** | Text ± 1-2 images | veo3_fast | `veo3_fast` |
 | User mentions "veo pro" or "veo premium" | **Cinematic (Premium)** | Text ± 1-2 images | veo3 | `veo3` |
-| User mentions "kling" | **Controlled Motion** | Text + 1-2 images | kling_v2_1_pro | `kling/v2-1-pro` |
+| User mentions "kling" or "kling v2.1" | **Controlled Motion** | Text + 1-2 images | kling_v2_1_pro | `kling/v2-1-pro` |
+| User mentions "kling turbo" or "kling v2.5" | **Fast Generation** | Text ± 1 image | kling_v2_5_turbo | `kling/v2-5-turbo-*` |
 | User mentions "midjourney" + 1 image | **Image-to-Video** | 1 image + text | midjourney | `mj_video` or `mj_video_hd` |
 | User mentions "wan" | **Fast Generation** | Text ± 1 image | wan | `wan/2-5-text-to-video` or `wan/2-5-image-to-video` |
 | User mentions "sora" | **OpenAI Sora 2** | Text ± images OR images only | sora_video | `openai/sora-2-*` (5 variants) |
+| User mentions "hailuo" | **Fast Generation** | Text ± 1 image | hailuo | `hailuo/02-*` (4 variants) |
 
 ### Model Capabilities Matrix
 
-| Capability | ByteDance Lite | ByteDance Pro | Kling v2.1 | Kling v2.5 | Veo3/Fast | Midjourney | Runway | Wan | Hailuo | Sora 2 |
-|------------|----------------|---------------|------------|------------|-----------|------------|--------|-----|--------|--------|
-| **Text-to-Video** | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ | ✅ | ✅ |
-| **Image-to-Video (1)** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ |
-| **Start→End (2)** | ✅ end_image | ❌ | ✅ tail_image | ❌ | ✅ imageUrls | ❌ | ❌ | ❌ | ❌ | ✅ imageUrls |
-| **Storyboard Only** | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ images only |
-| **Video Editing** | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
-| **Resolution Control** | ✅ 480-1080p | ✅ 480-1080p | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ 480-1080p | ✅ 480-1080p | ✅ 480p/1080p |
-| **Duration** | ✅ 3-12s | ✅ 3-12s | ✅ 5/10s | ✅ 5/10s | ❌ auto | ❌ auto | ❌ auto | ✅ 5s | ✅ 5-6s | ✅ 10/15/25s |
-| **CFG Control** | ❌ | ❌ | ✅ 0-1 | ✅ 0-1 | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| **Camera Control** | ✅ fixed | ✅ fixed | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| **Speed** | ⚡ Fast | ⏱️ Medium | ⏱️ Medium | ⚡ Fast | 🎬 Slow | ⏱️ Medium | ⏱️ Medium | ⚡ Fast | ⚡ Fast | 🎬 Medium |
-| **Quality** | Good | High | Very Good | Good | Premium | Very Good | High | Good | Good | Premium |
+| Capability | ByteDance Lite | ByteDance Pro | Kling v2.1 | Kling v2.5 | Veo3/Fast | Midjourney | Runway | Wan | Hailuo Standard | Hailuo Pro | Sora 2 Standard | Sora 2 Pro |
+|------------|----------------|---------------|------------|------------|-----------|------------|--------|-----|-----------------|-----------|----------------|------------|
+| **Text-to-Video** | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Image-to-Video (1)** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Start→End (2)** | ✅ end_image | ❌ | ✅ tail_image | ❌ | ✅ imageUrls | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ imageUrls | ✅ imageUrls |
+| **Storyboard Only** | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ images only |
+| **Video Editing** | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **Resolution Control** | ✅ 480-1080p | ✅ 480-1080p | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ 480-1080p | ❌ | ❌ | ✅ 480p/1080p | ✅ 480p/1080p |
+| **Duration** | ✅ 3-12s | ✅ 3-12s | ✅ 5/10s | ✅ 5/10s | ❌ ~8s | ❌ auto | ❌ auto | ✅ 5s | ✅ 5-6s | ✅ 5-6s | ✅ 10/15s | ✅ 10/15/25s |
+| **CFG Control** | ❌ | ❌ | ✅ 0-1 | ✅ 0-1 | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **Camera Control** | ✅ fixed | ✅ fixed | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **Prompt Optimizer** | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ | ❌ | ❌ |
+| **Speed** | ⚡ Fast | ⏱️ Medium | ⏱️ Medium | ⚡ Fast | 🎬 Slow | ⏱️ Medium | ⏱️ Medium | ⚡ Fast | ⚡ Fast | ⏱️ Medium | 🎬 Medium | 🎬 Slow |
+| **Quality** | Good | High | Very Good | Good | Premium | Very Good | High | Good | Good | High | Premium | Premium |
 
 ### Decision Logic
 
@@ -55,8 +58,14 @@ Use decision tree above:
 - **2 images** → Start→End transition (bytedance_seedance lite with end_image_url)
 - **Video file** → Video editing (runway_aleph)
 - **"veo" mentioned** → veo3_fast (or veo3 if "pro"/"premium")
-- **"sora" mentioned** → sora_video (smart mode detection)
+- **"sora" mentioned** → sora_video (secondary option, smart mode detection)
+- **"hailuo" mentioned** → hailuo (secondary option, fast generation with prompt optimizer)
+- **"kling" mentioned** → kling_v2_1_pro (or kling_v2_5_turbo if "turbo")
 - **Other model mentioned** → Use that model
+
+**Primary vs Secondary Models**:
+- **Primary (Default)**: bytedance_seedance - Best balance of speed, quality, and features
+- **Secondary (On Request)**: Sora 2, Hailuo, Kling, Veo3 - Use when explicitly mentioned or special features needed
 
 **Step 3: Verify Capability**
 Cross-reference with capabilities matrix
@@ -400,8 +409,44 @@ Model IDs: `hailuo/02-text-to-video-pro`, `hailuo/02-image-to-video-pro`, etc.
 }
 ```
 
+### Hailuo (Fast Generation with Prompt Optimizer)
+**ONLY use if user explicitly mentions "hailuo"**
+
+Model IDs: `hailuo/02-text-to-video-standard`, `hailuo/02-text-to-video-pro`, `hailuo/02-image-to-video-standard`, `hailuo/02-image-to-video-pro`
+
+**Text-to-Video mode**:
+```json
+{
+  "model": "hailuo/02-text-to-video-pro",
+  "input": {
+    "prompt": "Detailed scene description",
+    "prompt_optimizer": true
+  }
+}
+```
+
+**Image-to-Video mode**:
+```json
+{
+  "model": "hailuo/02-image-to-video-pro",
+  "input": {
+    "prompt": "Motion description",
+    "image_url": "url",
+    "prompt_optimizer": true
+  }
+}
+```
+
+**Parameters**:
+- `prompt_optimizer`: true/false (default: true) - Automatically enhances prompts for better results
+- `prompt`: Max 1500 characters
+- Duration: 5-6 seconds (automatic)
+- Quality tiers: `standard` (fast) or `pro` (higher quality)
+
+**Note**: Hailuo specializes in fast generation with built-in prompt optimization. Use when speed and automatic prompt enhancement are priorities.
+
 ### Sora 2 (OpenAI - Unified 5-in-1 Tool)
-**ONLY use if user explicitly mentions "sora"**
+**ONLY use if user explicitly mentions "sora"** (Secondary option)
 
 Smart mode detection based on parameters:
 
@@ -505,20 +550,20 @@ Check response.status:
 
 ## Special Case: 2 Images (Start→End)
 
-**Three models support this**:
+**Four models support this**:
 
 | Model | Speed | Quality | When to Use |
 |-------|-------|---------|-------------|
-| **ByteDance Lite** (end_image_url) | ⚡ Fast | Good | Default for 2-image transitions |
+| **ByteDance Lite** (end_image_url) | ⚡ Fast | Good | Default for 2-image transitions (PRIMARY) |
 | **Kling v2.1-pro** (tail_image_url) | ⏱️ Medium | Very Good | When user needs CFG control |
-| **Veo3_fast** (imageUrls array) | 🎬 Slow | Premium | When user mentions "veo" |
-| **Sora 2** (imageUrls array) | 🎬 Medium | Premium | When user mentions "sora" |
+| **Veo3_fast** (imageUrls array) | 🎬 Slow | Premium | When user mentions "veo" (secondary) |
+| **Sora 2 Pro** (imageUrls array) | 🎬 Medium-Slow | Premium | When user mentions "sora" (secondary) |
 
 **Default behavior**:
-- User provides 2 images, no preference → Use ByteDance Lite with `end_image_url`
-- User mentions "veo" → Offer all three options
-- User mentions "kling" → Use Kling v2.1-pro
-- User mentions "sora" → Use Sora 2 (smart mode detection)
+- User provides 2 images, no preference → Use ByteDance Lite with `end_image_url` (PRIMARY)
+- User mentions "veo" → Use Veo3_fast with imageUrls array (secondary)
+- User mentions "kling" → Use Kling v2.1-pro with tail_image_url
+- User mentions "sora" → Use Sora 2 Pro with imageUrls array (secondary)
 
 ## Quality Assurance Checklist
 

@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.1] - 2025-10-22
+
+### Documentation
+- **Major README Restructuring**: Reduced README from 2238 to 505 lines (77% reduction)
+  - Created `docs/` directory for organized documentation
+  - **docs/TOOLS.md** (~1334 lines): Complete reference for all 21 AI tools with examples and API endpoints
+  - **docs/DATABASE.md** (220 lines): SQLite database schema, task lifecycle, and management best practices
+  - **docs/ADMIN.md** (260 lines): Administrator configuration guide with Docker, Kubernetes, and Systemd examples
+  - **docs/INTELLIGENCE.md** (310 lines): Intelligent intention detection system with real-world examples
+  - Added collapsible `<details>` sections for optional content in README
+  - Added documentation links at top of README for quick navigation
+  - Preserved all critical information while improving organization and readability
+
+### Fixed
+- **Model Documentation Mappings**: Fixed resource URI mappings in `src/index.ts`
+  - Corrected Veo3 documentation URI (was pointing to wrong file)
+  - Added 7 new video model documentation resources (Sora 2, Hailuo, Kling variants)
+  - Fixed typo: renamed `bytedamce_seedream-v4-edit.md` → `bytedance_seedream-v4-edit.md`
+- **Agent Documentation Updates**:
+  - **artist.md**: Fixed Nano Banana upscaling information (was incorrectly marked as unavailable, now correctly shows 1x-4x support)
+  - **artist.md**: Added missing decision tree entries for new image models
+  - **filmographer.md**: Added Sora 2, Hailuo 02, and Kling v2.5-turbo to capabilities matrix
+  - Updated all agent capability matrices to reflect current model support
+
+### Notes
+- MCP resources and prompts continue to work unchanged, loading from `ai_docs/` directory
+- All prompts (`/artist`, `/filmographer`) now load the corrected agent instructions
+- Build and type checking pass without errors
+
 ## [2.0.0] - 2025-10-20
 
 ### Added
