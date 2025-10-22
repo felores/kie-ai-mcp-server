@@ -203,6 +203,36 @@ export KIE_AI_CALLBACK_URL_FALLBACK="https://your-proxy.com/callback"  # Admin f
 **→ [See administrator configuration guide](docs/ADMIN.md)** for Docker, Kubernetes, Systemd examples
 </details>
 
+### Tool Filtering (v2.0.2+)
+
+**Filter which AI tools are available** to reduce cognitive load and focus your workflow:
+
+```bash
+# Whitelist: Enable only specific tools (highest priority)
+# Note: Utility tools (list_tasks, get_task_status) are always included automatically
+export KIE_AI_ENABLED_TOOLS="nano_banana_image,veo3_generate_video,suno_generate_music"
+
+# Category filter: Enable by category (medium priority)
+export KIE_AI_TOOL_CATEGORIES="image,video"  # Categories: image, video, audio
+
+# Blacklist: Disable specific tools (lowest priority)
+# Note: Utility tools cannot be disabled
+export KIE_AI_DISABLED_TOOLS="midjourney_generate,runway_aleph_video"
+```
+
+**Priority Logic**: `ENABLED_TOOLS` > `TOOL_CATEGORIES` > `DISABLED_TOOLS` > All tools (default)
+
+**Tool Categories**:
+- **image** (8): nano_banana, seedream, qwen, openai_4o, flux, recraft, ideogram, midjourney*
+- **video** (9): veo3, veo3_1080p, sora, seedance, wan, hailuo, kling, runway, midjourney*
+- **audio** (3): suno, elevenlabs_tts, elevenlabs_ttsfx
+- **utility** (2): list_tasks, get_task_status ⭐ **Always enabled**
+
+_* midjourney appears in both image and video categories (supports both)_
+- ⭐ **Utility tools are always enabled** for server monitoring and task management
+- When using whitelist mode, utility tools are automatically added to your selection
+- When using blacklist mode, utility tools cannot be disabled (warning shown if attempted)
+
 <details>
 <summary><strong>🔧 MCP Client Configuration (click to expand)</strong></summary>
 

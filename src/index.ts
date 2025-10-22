@@ -43,11 +43,52 @@ class KieAiMcpServer {
   private client: KieAiClient;
   private db: TaskDatabase;
   private config: KieAiConfig;
+  private enabledTools: Set<string>;
+
+  private static readonly TOOL_CATEGORIES: Record<string, string[]> = {
+    image: [
+      'nano_banana_image',
+      'bytedance_seedream_image',
+      'qwen_image',
+      'openai_4o_image',
+      'flux_kontext_image',
+      'recraft_remove_background',
+      'ideogram_reframe',
+      'midjourney_generate'  // Also generates images (6 modes: txt2img, img2img, style ref, omni ref, video SD/HD)
+    ],
+    video: [
+      'veo3_generate_video',
+      'veo3_get_1080p_video',
+      'sora_video',
+      'bytedance_seedance_video',
+      'wan_video',
+      'hailuo_video',
+      'kling_video',
+      'runway_aleph_video',
+      'midjourney_generate'  // Also generates videos (mj_video, mj_video_hd modes)
+    ],
+    audio: [
+      'suno_generate_music',
+      'elevenlabs_tts',
+      'elevenlabs_ttsfx'
+    ],
+    utility: [
+      'list_tasks',
+      'get_task_status'
+    ]
+  };
+
+  private static readonly ALL_TOOLS = Array.from(new Set([
+    ...KieAiMcpServer.TOOL_CATEGORIES.image,
+    ...KieAiMcpServer.TOOL_CATEGORIES.video,
+    ...KieAiMcpServer.TOOL_CATEGORIES.audio,
+    ...KieAiMcpServer.TOOL_CATEGORIES.utility
+  ]));
 
   constructor() {
     this.server = new Server({
       name: "kie-ai-mcp-server",
-      version: "2.0.1",
+      version: "2.0.2",
     });
 
     // Initialize client with config from environment
@@ -64,8 +105,91 @@ class KieAiMcpServer {
 
     this.client = new KieAiClient(this.config);
     this.db = new TaskDatabase(process.env.KIE_AI_DB_PATH);
+    this.enabledTools = this.getEnabledTools();
 
     this.setupHandlers();
+  }
+
+  private validateToolNames(tools: string[]): void {
+    const invalidTools = tools.filter(tool => !KieAiMcpServer.ALL_TOOLS.includes(tool));
+    if (invalidTools.length > 0) {
+      throw new Error(
+        `Invalid tool names: ${invalidTools.join(', ')}. ` +
+        `Valid tools are: ${KieAiMcpServer.ALL_TOOLS.join(', ')}`
+      );
+    }
+  }
+
+  private validateCategories(categories: string[]): void {
+    const validCategories = Object.keys(KieAiMcpServer.TOOL_CATEGORIES);
+    const invalidCategories = categories.filter(cat => !validCategories.includes(cat));
+    if (invalidCategories.length > 0) {
+      throw new Error(
+        `Invalid categories: ${invalidCategories.join(', ')}. ` +
+        `Valid categories are: ${validCategories.join(', ')}`
+      );
+    }
+  }
+
+  private getEnabledTools(): Set<string> {
+    const enabledToolsEnv = process.env.KIE_AI_ENABLED_TOOLS;
+    const categoriesEnv = process.env.KIE_AI_TOOL_CATEGORIES;
+    const disabledToolsEnv = process.env.KIE_AI_DISABLED_TOOLS;
+
+    if (enabledToolsEnv) {
+      const tools = enabledToolsEnv.split(',').map(t => t.trim()).filter(Boolean);
+      this.validateToolNames(tools);
+      
+      // Always include utility tools
+      const allTools = [...new Set([...tools, ...KieAiMcpServer.TOOL_CATEGORIES.utility])];
+      
+      console.error(`[Kie.ai MCP] Tool filtering enabled: whitelist mode (${tools.length} specified + ${KieAiMcpServer.TOOL_CATEGORIES.utility.length} utility = ${allTools.length} tools)`);
+      return new Set(allTools);
+    }
+
+    if (categoriesEnv) {
+      const categories = categoriesEnv.split(',').map(c => c.trim()).filter(Boolean);
+      this.validateCategories(categories);
+      
+      const tools: string[] = [];
+      for (const category of categories) {
+        const categoryTools = KieAiMcpServer.TOOL_CATEGORIES[category];
+        tools.push(...categoryTools);
+      }
+      
+      // Always include utility tools
+      tools.push(...KieAiMcpServer.TOOL_CATEGORIES.utility);
+      const uniqueTools = [...new Set(tools)];
+      
+      console.error(`[Kie.ai MCP] Tool filtering enabled: category mode (${categories.join(', ')}) - ${uniqueTools.length} tools (includes utility)`);
+      return new Set(uniqueTools);
+    }
+
+    if (disabledToolsEnv) {
+      const disabledTools = disabledToolsEnv.split(',').map(t => t.trim()).filter(Boolean);
+      this.validateToolNames(disabledTools);
+      
+      // Check if user is trying to disable utility tools
+      const disabledUtilityTools = disabledTools.filter(t => 
+        KieAiMcpServer.TOOL_CATEGORIES.utility.includes(t)
+      );
+      
+      if (disabledUtilityTools.length > 0) {
+        console.error(`[Kie.ai MCP] Warning: Cannot disable utility tools (${disabledUtilityTools.join(', ')}). These tools are always enabled for server monitoring.`);
+      }
+      
+      // Filter out utility tools from disabled list
+      const nonUtilityDisabled = disabledTools.filter(t => 
+        !KieAiMcpServer.TOOL_CATEGORIES.utility.includes(t)
+      );
+      
+      const tools = KieAiMcpServer.ALL_TOOLS.filter(t => !nonUtilityDisabled.includes(t));
+      console.error(`[Kie.ai MCP] Tool filtering enabled: blacklist mode (${nonUtilityDisabled.length} tools disabled, ${tools.length} enabled, utility always on)`);
+      return new Set(tools);
+    }
+
+    console.error(`[Kie.ai MCP] Tool filtering: all tools enabled (${KieAiMcpServer.ALL_TOOLS.length} tools)`);
+    return new Set(KieAiMcpServer.ALL_TOOLS);
   }
 
   private getCallbackUrl(userUrl?: string): string {
@@ -129,10 +253,9 @@ class KieAiMcpServer {
 
   private setupHandlers(): void {
     this.server.setRequestHandler(ListToolsRequestSchema, async () => {
-      return {
-        tools: [
-          {
-            name: "nano_banana_image",
+      const allTools = [
+        {
+          name: "nano_banana_image",
             description:
               "Generate, edit, and upscale images using Google's Gemini 2.5 Flash Image Preview (Nano Banana) - unified tool for all image operations",
             inputSchema: {
@@ -1521,7 +1644,7 @@ class KieAiMcpServer {
                     "Whether to remove the Sora watermark from the generated video",
                   default: true,
                 },
-                callBackUrl: {
+                 callBackUrl: {
                   type: "string",
                   description:
                     "Optional: URL for task completion notifications (uses KIE_AI_CALLBACK_URL env var if not provided)",
@@ -1531,13 +1654,24 @@ class KieAiMcpServer {
               required: [],
             },
           },
-        ],
-      };
+        ];
+        
+      const filteredTools = allTools.filter(tool => this.enabledTools.has(tool.name));
+      
+      return { tools: filteredTools };
     });
 
     this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
       try {
         const { name, arguments: args } = request.params;
+        
+        if (!this.enabledTools.has(name)) {
+          throw new McpError(
+            ErrorCode.InvalidRequest,
+            `Tool '${name}' is not enabled. This tool has been disabled by server configuration. ` +
+            `Please check KIE_AI_ENABLED_TOOLS, KIE_AI_TOOL_CATEGORIES, or KIE_AI_DISABLED_TOOLS environment variables.`
+          );
+        }
 
         switch (name) {
           case "nano_banana_image":

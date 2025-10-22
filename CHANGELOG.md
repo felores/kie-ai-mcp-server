@@ -6,6 +6,42 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [2.0.1] - 2025-10-22
+## [2.0.2] - 2025-10-22
+
+### Added
+- **Tool Filtering Feature**: Optional environment variable-based tool filtering to reduce cognitive load
+  - **Whitelist Mode**: `KIE_AI_ENABLED_TOOLS` - Enable only specific tools (highest priority)
+  - **Category Filter**: `KIE_AI_TOOL_CATEGORIES` - Enable tools by category (image, video, audio)
+  - **Blacklist Mode**: `KIE_AI_DISABLED_TOOLS` - Disable specific tools (lowest priority)
+  - **Priority Logic**: ENABLED_TOOLS > TOOL_CATEGORIES > DISABLED_TOOLS > All tools (default)
+  - **Tool Categories**: 
+    - `image` (8 tools): nano_banana, seedream, qwen, openai_4o, flux, recraft, ideogram, midjourney*
+    - `video` (9 tools): veo3, veo3_1080p, sora, seedance, wan, hailuo, kling, runway, midjourney*
+    - `audio` (3 tools): suno, elevenlabs_tts, elevenlabs_ttsfx
+    - `utility` (2 tools): list_tasks, get_task_status ⭐ **Always enabled**
+  - **Multi-category tools**: midjourney appears in both image and video (supports both modalities)
+
+  - **Smart Defaults**: Utility tools (list_tasks, get_task_status) are always enabled for server monitoring
+  - **Protection**: Utility tools cannot be disabled - warning shown if attempted in blacklist mode
+  - **Auto-inclusion**: Utility tools automatically added in whitelist and category modes
+  - **Error Handling**: Clear error messages when disabled tools are accessed
+  - **Validation**: Server startup validation for invalid tool names and categories
+
+### Documentation
+- Added tool filtering section to README.md with examples and use cases
+- Updated .env.example with tool filtering environment variables
+- Added server logs showing enabled tool count on startup
+- Documented utility tools always-on behavior and rationale
+
+### Technical
+- Added static `TOOL_CATEGORIES` and `ALL_TOOLS` constants to KieAiMcpServer class
+- Added `enabledTools: Set<string>` property initialized in constructor
+- Added validation methods: `validateToolNames()`, `validateCategories()`, `getEnabledTools()`
+- Modified ListToolsRequestSchema handler to filter tools based on enabled set
+- Modified CallToolRequestSchema handler to validate tool access before execution
+- Implemented utility tools protection logic in all filtering modes
+- 100% backwards compatible - no env vars = all 21 tools enabled (default behavior)
+
 
 ### Documentation
 - **Major README Restructuring**: Reduced README from 2238 to 505 lines (77% reduction)
