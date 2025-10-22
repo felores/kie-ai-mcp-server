@@ -88,7 +88,7 @@ class KieAiMcpServer {
   constructor() {
     this.server = new Server({
       name: "kie-ai-mcp-server",
-      version: "2.0.3",
+      version: "2.0.4",
     });
 
     // Initialize client with config from environment
@@ -393,7 +393,7 @@ class KieAiMcpServer {
           },
           {
             name: "get_task_status",
-            description: "Get the status of a generation task",
+            description: "Get the status of a generation task with intelligent polling guidance. Returns task status, results, and recommended polling strategy (interval, timing, next steps) based on task type (image/video/audio).",
             inputSchema: {
               type: "object",
               properties: {
@@ -2505,6 +2505,70 @@ class KieAiMcpServer {
       // Fetch updated local task
       const updatedTask = await this.db.getTask(task_id);
 
+      // Determine polling strategy based on task type
+      const getPollingStrategy = (apiType?: string) => {
+        // Image generation models
+        const imageModels = [
+          'nano-banana', 'nano-banana-edit', 'nano-banana-upscale', 'nano-banana-image',
+          'bytedance-seedream-image', 'qwen-image', 'openai-4o-image', 
+          'flux-kontext-image', 'recraft-remove-background', 'ideogram-reframe',
+          'midjourney'
+        ];
+        
+        // Video generation models  
+        const videoModels = [
+          'veo3', 'veo3-fast', 'veo3-1080p', 'sora-video', 'sora-2', 'sora-2-pro',
+          'kling-v2-1-pro', 'kling-v2-5-turbo-text-to-video', 'kling-v2-5-turbo-image-to-video',
+          'bytedance-seedance-video', 'wan-video', 'hailuo', 'runway-aleph-video'
+        ];
+        
+        // Audio generation models
+        const audioModels = ['suno', 'elevenlabs-tts', 'elevenlabs-sound-effects'];
+        
+        let taskType: 'image' | 'video' | 'audio' = 'image';
+        let recommendedInterval = 15; // Default for images
+        let maxWaitTime = 300; // 5 minutes default
+        
+        if (apiType) {
+          if (imageModels.some(model => apiType.includes(model))) {
+            taskType = 'image';
+            recommendedInterval = 15;
+            maxWaitTime = 180; // 3 minutes for images
+          } else if (videoModels.some(model => apiType.includes(model))) {
+            taskType = 'video';
+            recommendedInterval = 45;
+            maxWaitTime = 600; // 10 minutes for videos
+          } else if (audioModels.some(model => apiType.includes(model))) {
+            taskType = 'audio';
+            recommendedInterval = 20;
+            maxWaitTime = 240; // 4 minutes for audio
+          }
+        }
+        
+        const status = updatedTask?.status;
+        let nextAction: 'continue_polling' | 'task_complete' | 'task_failed' = 'continue_polling';
+        
+        if (status === 'completed') {
+          nextAction = 'task_complete';
+        } else if (status === 'failed') {
+          nextAction = 'task_failed';
+        }
+        
+        return {
+          task_type: taskType,
+          recommended_interval_seconds: recommendedInterval,
+          max_wait_time_seconds: maxWaitTime,
+          backoff_strategy: 'fixed' as const,
+          next_action: nextAction,
+          current_status: status,
+          polling_instructions: {
+            continue_polling: `Continue polling every ${recommendedInterval} seconds until status changes to 'completed' or 'failed'`,
+            task_complete: 'Task completed successfully - no further polling needed',
+            task_failed: 'Task failed - check error message and consider retrying'
+          }
+        };
+      };
+
       // Prepare response based on API type
       let responseData: any = {
         success: true,
@@ -2516,6 +2580,8 @@ class KieAiMcpServer {
         message: updatedTask
           ? "Task found"
           : "Task not found in local database",
+        // Add self-documenting polling strategy
+        polling_strategy: getPollingStrategy(localTask?.api_type),
       };
 
       // Add Suno-specific information if applicable

@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.4] - 2025-10-22
+
+### Added
+- **Intelligent Polling Strategy**: Enhanced `get_task_status` tool with self-documenting polling guidance
+- **Task Type Detection**: Automatic classification of tasks into image/video/audio with optimal polling intervals
+- **Dynamic Polling Intervals**: 
+  - Image tasks: 15 seconds (3-minute max wait)
+  - Video tasks: 45 seconds (10-minute max wait)
+  - Audio tasks: 20 seconds (4-minute max wait)
+- **Status-Aware Instructions**: Contextual guidance based on current task status (continue_polling/task_complete/task_failed)
+- **Self-Documenting Responses**: Every `get_task_status` response includes `polling_strategy` object with timing and next steps
+
+### Enhanced
+- **Client Experience**: Eliminates need for hardcoded polling intervals in MCP clients
+- **API Efficiency**: Reduces unnecessary API calls through intelligent timing recommendations
+- **Comprehensive Model Coverage**: Supports all 21 AI models with appropriate polling strategies
+
 ## [2.0.3] - 2025-10-22
 
 ### Fixed
