@@ -1,37 +1,40 @@
 import { z } from "zod";
 
 // Zod schemas for request validation
+// Nano Banana Pro - powered by Gemini 3.0 Pro Image
 export const NanoBananaImageSchema = z
   .object({
     // Text-to-image parameters
     prompt: z.string().min(1).max(5000).optional(),
 
-    // Edit mode parameters
-    image_urls: z.array(z.string().url()).min(1).max(10).optional(),
+    // Edit mode parameters - up to 8 reference images for multi-reference
+    image_urls: z.array(z.string().url()).min(1).max(8).optional(),
 
-    // Upscale mode parameters
+    // Upscale mode parameters (legacy, still supported)
     image: z.string().url().optional(),
     scale: z.number().int().min(1).max(4).default(2).optional(),
     face_enhance: z.boolean().default(false).optional(),
 
     // Common parameters for generate/edit modes
-    output_format: z.enum(["png", "jpeg"]).default("png").optional(),
-    image_size: z
+    output_format: z.enum(["png", "jpg"]).default("png").optional(),
+    aspect_ratio: z
       .enum([
         "1:1",
-        "9:16",
-        "16:9",
+        "2:3",
+        "3:2",
         "3:4",
         "4:3",
-        "3:2",
-        "2:3",
-        "5:4",
         "4:5",
+        "5:4",
+        "9:16",
+        "16:9",
         "21:9",
         "auto",
       ])
       .default("1:1")
       .optional(),
+    // New: Resolution support for Pro (1K, 2K, 4K)
+    resolution: z.enum(["1K", "2K", "4K"]).default("1K").optional(),
   })
   .refine(
     (data) => {
@@ -245,20 +248,19 @@ export const ByteDanceSeedanceVideoSchema = z
     },
   );
 
-export const RunwayAlephVideoSchema = z
-  .object({
-    prompt: z.string().min(1).max(1000),
-    videoUrl: z.string().url(),
-    waterMark: z.string().max(100).default("").optional(),
-    uploadCn: z.boolean().default(false).optional(),
-    aspectRatio: z
-      .enum(["16:9", "9:16", "4:3", "3:4", "1:1", "21:9"])
-      .default("16:9")
-      .optional(),
-    seed: z.number().int().min(1).max(999999).optional(),
-    referenceImage: z.string().url().optional(),
-    callBackUrl: z.string().url().optional(),
-  });
+export const RunwayAlephVideoSchema = z.object({
+  prompt: z.string().min(1).max(1000),
+  videoUrl: z.string().url(),
+  waterMark: z.string().max(100).default("").optional(),
+  uploadCn: z.boolean().default(false).optional(),
+  aspectRatio: z
+    .enum(["16:9", "9:16", "4:3", "3:4", "1:1", "21:9"])
+    .default("16:9")
+    .optional(),
+  seed: z.number().int().min(1).max(999999).optional(),
+  referenceImage: z.string().url().optional(),
+  callBackUrl: z.string().url().optional(),
+});
 
 export const WanVideoSchema = z
   .object({
@@ -290,29 +292,37 @@ export const WanVideoSchema = z
     },
   );
 
-export const ByteDanceSeedreamImageSchema = z
-  .object({
-    prompt: z.string().min(1).max(5000),
-    image_urls: z.array(z.string().url()).min(1).max(10).optional(),
-    image_size: z
-      .enum([
-        "square",
-        "square_hd",
-        "portrait_4_3",
-        "portrait_3_2",
-        "portrait_16_9",
-        "landscape_4_3",
-        "landscape_3_2",
-        "landscape_16_9",
-        "landscape_21_9",
-      ])
-      .default("square_hd")
-      .optional(),
-    image_resolution: z.enum(["1K", "2K", "4K"]).default("1K").optional(),
-    max_images: z.number().int().min(1).max(6).default(1).optional(),
-    seed: z.number().optional(),
-    callBackUrl: z.string().url().optional(),
-  });
+export const ByteDanceSeedreamImageSchema = z.object({
+  prompt: z.string().min(1).max(5000),
+  image_urls: z.array(z.string().url()).min(1).max(14).optional(),
+  // Version selection: "4" for Seedream V4, "4.5" for Seedream 4.5 with 4K support
+  version: z.enum(["4", "4.5"]).default("4").optional(),
+  // V4 parameters
+  image_size: z
+    .enum([
+      "square",
+      "square_hd",
+      "portrait_4_3",
+      "portrait_3_2",
+      "portrait_16_9",
+      "landscape_4_3",
+      "landscape_3_2",
+      "landscape_16_9",
+      "landscape_21_9",
+    ])
+    .default("square_hd")
+    .optional(),
+  image_resolution: z.enum(["1K", "2K", "4K"]).default("1K").optional(),
+  max_images: z.number().int().min(1).max(6).default(1).optional(),
+  seed: z.number().optional(),
+  // V4.5 parameters
+  aspect_ratio: z
+    .enum(["1:1", "4:3", "3:4", "16:9", "9:16", "2:3", "3:2", "21:9"])
+    .default("1:1")
+    .optional(),
+  quality: z.enum(["basic", "high"]).default("basic").optional(),
+  callBackUrl: z.string().url().optional(),
+});
 
 export const QwenImageSchema = z
   .object({
@@ -630,7 +640,7 @@ export const IdeogramReframeSchema = z
 
 export type IdeogramReframeRequest = z.infer<typeof IdeogramReframeSchema>;
 
-// Kling Video - Unified tool for text-to-video, image-to-video, and image-to-video with end frame
+// Kling Video - Unified tool for text-to-video, image-to-video (supports v2.5 and v2.6 with native audio)
 export const KlingVideoSchema = z
   .object({
     prompt: z.string().min(1).max(5000),
@@ -644,6 +654,9 @@ export const KlingVideoSchema = z
       .default("blur, distort, and low quality")
       .optional(),
     cfg_scale: z.number().min(0).max(1).multipleOf(0.1).default(0.5).optional(),
+    // Kling 2.6 specific parameters
+    version: z.enum(["2.5", "2.6"]).default("2.5").optional(),
+    sound: z.boolean().default(false).optional(),
     callBackUrl: z.string().url().optional(),
   })
   .refine(
@@ -651,8 +664,19 @@ export const KlingVideoSchema = z
       // Validate mode requirements
       const hasImageUrl = !!data.image_url;
       const hasTailImageUrl = !!data.tail_image_url;
+      const isV26 = data.version === "2.6";
 
-      // v2.1-pro mode: requires image_url, optional tail_image_url for start+end frame reference
+      // sound parameter is only valid for v2.6
+      if (data.sound && !isV26) {
+        return false;
+      }
+
+      // v2.6 doesn't support tail_image_url (start+end frame mode)
+      if (isV26 && hasTailImageUrl) {
+        return false;
+      }
+
+      // v2.1-pro mode: requires image_url, optional tail_image_url for start+end frame reference (v2.5 only)
       if (hasTailImageUrl) {
         return hasImageUrl; // tail_image_url requires image_url
       }
@@ -675,7 +699,7 @@ export const KlingVideoSchema = z
     },
     {
       message:
-        "Invalid parameter combination. Choose mode: 1) prompt only (text-to-video), 2) prompt + image_url (image-to-video), or 3) prompt + image_url + tail_image_url (v2.1-pro with start+end frames)",
+        "Invalid parameter combination. Choose mode: 1) prompt only (text-to-video), 2) prompt + image_url (image-to-video), or 3) prompt + image_url + tail_image_url (v2.1-pro with start+end frames, v2.5 only). Note: sound parameter requires version='2.6'",
       path: [],
     },
   );
@@ -731,44 +755,91 @@ export const SoraVideoSchema = z
   .object({
     prompt: z.string().min(1).max(5000).optional(),
     image_urls: z.array(z.string().url()).min(1).max(10).optional(),
-    aspect_ratio: z.enum(["portrait", "landscape"]).default("landscape").optional(),
+    aspect_ratio: z
+      .enum(["portrait", "landscape"])
+      .default("landscape")
+      .optional(),
     n_frames: z.enum(["10", "15", "25"]).default("10").optional(),
     size: z.enum(["standard", "high"]).default("standard").optional(),
     remove_watermark: z.boolean().default(true).optional(),
     callBackUrl: z.string().url().optional(),
   })
-  .refine((data) => {
-    // Smart mode validation based on input parameters
-    const hasPrompt = !!data.prompt;
-    const hasImages = !!data.image_urls?.length;
-    
-    // Storyboard mode: no prompt required, but images required
-    if (!hasPrompt && !hasImages) {
-      return false; // Need either prompt or images
-    }
-    
-    // Storyboard mode: images only, no prompt
-    if (!hasPrompt && hasImages) {
-      return data.n_frames !== "10"; // Storyboard supports 15s, 25s (not 10s)
-    }
-    
-    // Text-to-video mode: prompt only, no images
-    if (hasPrompt && !hasImages) {
-      return true; // All parameters valid
-    }
-    
-    // Image-to-video mode: prompt + images
-    if (hasPrompt && hasImages) {
-      return true; // All parameters valid
-    }
-    
-    return true;
-  }, {
-    message: "Invalid parameter combination. For storyboard mode: provide image_urls without prompt. For text-to-video: provide prompt only. For image-to-video: provide both prompt and image_urls.",
-    path: [],
-  });
+  .refine(
+    (data) => {
+      // Smart mode validation based on input parameters
+      const hasPrompt = !!data.prompt;
+      const hasImages = !!data.image_urls?.length;
+
+      // Storyboard mode: no prompt required, but images required
+      if (!hasPrompt && !hasImages) {
+        return false; // Need either prompt or images
+      }
+
+      // Storyboard mode: images only, no prompt
+      if (!hasPrompt && hasImages) {
+        return data.n_frames !== "10"; // Storyboard supports 15s, 25s (not 10s)
+      }
+
+      // Text-to-video mode: prompt only, no images
+      if (hasPrompt && !hasImages) {
+        return true; // All parameters valid
+      }
+
+      // Image-to-video mode: prompt + images
+      if (hasPrompt && hasImages) {
+        return true; // All parameters valid
+      }
+
+      return true;
+    },
+    {
+      message:
+        "Invalid parameter combination. For storyboard mode: provide image_urls without prompt. For text-to-video: provide prompt only. For image-to-video: provide both prompt and image_urls.",
+      path: [],
+    },
+  );
 
 export type SoraVideoRequest = z.infer<typeof SoraVideoSchema>;
+
+// Flux-2 Image - Unified text-to-image and image-to-image (Pro/Flex)
+export const Flux2ImageSchema = z
+  .object({
+    prompt: z.string().min(3).max(5000),
+    input_urls: z.array(z.string().url()).min(1).max(8).optional(),
+    aspect_ratio: z
+      .enum(["1:1", "4:3", "3:4", "16:9", "9:16", "3:2", "2:3", "auto"])
+      .default("1:1"),
+    resolution: z.enum(["1K", "2K"]).default("1K"),
+    model_type: z.enum(["pro", "flex"]).default("pro").optional(),
+    callBackUrl: z.string().url().optional(),
+  })
+  .refine(
+    (data) => {
+      // "auto" aspect_ratio only valid with input_urls (image-to-image mode)
+      if (data.aspect_ratio === "auto") {
+        return data.input_urls && data.input_urls.length > 0;
+      }
+      return true;
+    },
+    {
+      message:
+        "aspect_ratio 'auto' is only valid in image-to-image mode (requires input_urls)",
+      path: ["aspect_ratio"],
+    },
+  );
+
+export type Flux2ImageRequest = z.infer<typeof Flux2ImageSchema>;
+
+// Wan 2.2 Animate - Animation and character replacement
+export const WanAnimateSchema = z.object({
+  video_url: z.string().url(),
+  image_url: z.string().url(),
+  mode: z.enum(["animate", "replace"]).default("animate"),
+  resolution: z.enum(["480p", "580p", "720p"]).default("480p").optional(),
+  callBackUrl: z.string().url().optional(),
+});
+
+export type WanAnimateRequest = z.infer<typeof WanAnimateSchema>;
 
 export interface KieAiResponse<T = any> {
   code: number;
@@ -811,7 +882,9 @@ export interface TaskRecord {
     | "kling-v2-5-turbo-text-to-video"
     | "kling-v2-5-turbo-image-to-video"
     | "hailuo"
-    | "sora-video";
+    | "sora-video"
+    | "flux2-image"
+    | "wan-animate";
   status: "pending" | "processing" | "completed" | "failed";
   created_at: string;
   updated_at: string;

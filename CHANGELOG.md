@@ -5,6 +5,56 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.8] - 2025-12-08
+
+### Enhanced
+- **Kling 2.6 Native Audio Support**: Updated `kling_video` tool with Kling 2.6 models
+  - Added `version` parameter: "2.5" (default) or "2.6" for native audio
+  - Added `sound` parameter: Enable synchronized speech, sound effects, and ambient audio
+  - Text-to-video and image-to-video modes with audio
+  - Pricing: ~$0.28 (5s no-audio), ~$0.55 (5s with audio), 2x credits for audio
+  - Maintains full backward compatibility with v2.1-pro and v2.5-turbo
+
+- **Seedream 4.5 with 4K Output**: Updated `bytedance_seedream_image` tool
+  - Added `version` parameter: "4" (default) or "4.5" for 4K support
+  - Added `quality` parameter: "basic" (2K) or "high" (4K resolution)
+  - Added `aspect_ratio` parameter for V4.5: 1:1, 4:3, 3:4, 16:9, 9:16, 2:3, 3:2, 21:9
+  - Enhanced detail fidelity and aesthetic cohesion
+  - Multi-image fusion with up to 14 reference images (V4.5)
+  - Clear small-text and facial rendering
+  - Pricing: ~$0.032 per image
+  - Maintains full backward compatibility with V4
+
+## [2.0.7] - 2025-12-06
+
+### Added
+- **Wan 2.2 Animate**: New `wan_animate` tool from Alibaba Tongyi Lab
+  - Animation mode: Transfer motion/expressions from video to static image
+  - Character replacement mode: Swap characters in video while preserving lighting/tone
+  - Preserves original video audio
+  - Resolutions: 480p (~$0.03/sec), 580p (~$0.0475/sec), 720p (~$0.0625/sec)
+  - Max video length: 30 seconds
+
+## [2.0.6] - 2025-12-06
+
+### Added
+- **Flux-2 Image Generation**: New `flux2_image` tool from Black Forest Labs
+  - Text-to-image and image-to-image modes with smart detection
+  - Pro (fast) and Flex (more control) model variants
+  - Multi-reference consistency with up to 8 input images
+  - Photoreal detail, accurate text rendering
+  - Aspect ratios: 1:1, 4:3, 3:4, 16:9, 9:16, 3:2, 2:3, auto
+  - Resolutions: 1K (~$0.025-$0.07), 2K (~$0.035-$0.12)
+
+## [2.0.5] - 2025-12-06
+
+### Changed
+- **Nano Banana Pro Upgrade**: Updated `nano_banana_image` to use Gemini 3.0 Pro Image model
+  - Added `resolution` parameter (1K, 2K, 4K)
+  - Renamed `image_size` to `aspect_ratio`
+  - Changed max reference images from 10 to 8
+  - Changed `output_format` from "jpeg" to "jpg"
+
 ## [2.0.4] - 2025-10-22
 
 ### Added
@@ -80,7 +130,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Modified CallToolRequestSchema handler to validate tool access before execution
 - Implemented utility tools protection logic in all filtering modes
 - 100% backwards compatible - no env vars = all 21 tools enabled (default behavior)
-
 
 ### Documentation
 - **Major README Restructuring**: Reduced README from 2238 to 505 lines (77% reduction)

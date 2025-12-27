@@ -13,6 +13,7 @@ This document provides detailed documentation for all 21 AI tools available in t
   - [qwen_image](#12-qwen_image)
   - [openai_4o_image](#18-openai_4o_image)
   - [flux_kontext_image](#19-flux_kontext_image)
+  - [flux2_image](#22-flux2_image)
   - [ideogram_reframe](#20-ideogram_reframe)
   - [recraft_remove_background](#21-recraft_remove_background)
 - [Video Tools](#video-tools)
@@ -23,6 +24,7 @@ This document provides detailed documentation for all 21 AI tools available in t
   - [runway_aleph_video](#13-runway_aleph_video)
   - [midjourney_generate](#14-midjourney_generate)
   - [wan_video](#15-wan_video)
+  - [wan_animate](#23-wan_animate)
   - [hailuo_video](#16-hailuo_video)
   - [kling_video](#17-kling_video)
 - [Audio Tools](#audio-tools)
@@ -33,7 +35,6 @@ This document provides detailed documentation for all 21 AI tools available in t
 ---
 
 ## Utility Tools
-
 
 ### 1. `list_tasks`
 List recent tasks with their status.
@@ -68,44 +69,46 @@ Check the status of a generation task.
 ## Image Tools
 
 ### 3. `nano_banana_image`
-Generate, edit, and upscale images using Google's Gemini 2.5 Flash Image Preview (Nano Banana). This unified tool automatically detects the operation mode based on parameters.
+Generate, edit, and upscale images using Google's Gemini 3.0 Pro Image (Nano Banana Pro). Features 4K support, improved text rendering, and multi-reference consistency.
 
 **Smart Mode Detection:**
 - **Generate mode**: Provide `prompt` only
 - **Edit mode**: Provide `prompt` + `image_urls`
-- **Upscale mode**: Provide `image` (+ optional `scale`)
+- **Upscale mode**: Provide `image` (+ optional `scale`) - legacy
 
 **Parameters:**
 - `prompt` (string, optional): Text description for generate/edit modes (max 5000 chars)
-- `image_urls` (array, optional): URLs of images for edit mode (1-10 URLs)
+- `image_urls` (array, optional): Reference images for edit mode (1-8 URLs)
 - `image` (string, optional): URL of image for upscale mode (max 10MB, jpeg/png/webp)
 - `scale` (integer, optional): Upscale factor for upscale mode, 1-4 (default: 2)
 - `face_enhance` (boolean, optional): Enable face enhancement for upscale mode (default: false)
-- `output_format` (string, optional): "png" or "jpeg" for generate/edit modes (default: "png")
-- `image_size` (string, optional): Aspect ratio for generate/edit modes - "1:1", "9:16", "16:9", "3:4", "4:3", "3:2", "2:3", "5:4", "4:5", "21:9", "auto" (default: "1:1")
+- `output_format` (string, optional): "png" or "jpg" (default: "png")
+- `aspect_ratio` (string, optional): "1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9", "auto" (default: "1:1")
+- `resolution` (string, optional): "1K", "2K", "4K" (default: "1K")
+
+**Pricing:** 1K/2K: ~$0.09, 4K: ~$0.12
 
 **Examples:**
 
-*Generate mode:*
+*Generate mode (4K):*
 ```json
 {
   "prompt": "A surreal painting of a giant banana floating in space",
-  "output_format": "png",
-  "image_size": "16:9"
+  "resolution": "4K",
+  "aspect_ratio": "16:9"
 }
 ```
 
-*Edit mode:*
+*Edit mode with references:*
 ```json
 {
   "prompt": "Add a rainbow arching over the mountains",
-  "image_urls": ["https://example.com/image.jpg"],
-  "output_format": "png",
-  "image_size": "16:9"
+  "image_urls": ["https://example.com/ref1.jpg", "https://example.com/ref2.jpg"],
+  "resolution": "2K"
 }
 ```
 
-*Upscale mode:*
+*Upscale mode (legacy):*
 ```json
 {
   "image": "https://example.com/image.jpg",
@@ -143,44 +146,46 @@ Check the status of a generation task.
 ```
 
 ### 3. `nano_banana_image`
-Generate, edit, and upscale images using Google's Gemini 2.5 Flash Image Preview (Nano Banana). This unified tool automatically detects the operation mode based on parameters.
+Generate, edit, and upscale images using Google's Gemini 3.0 Pro Image (Nano Banana Pro). Features 4K support, improved text rendering, and multi-reference consistency.
 
 **Smart Mode Detection:**
 - **Generate mode**: Provide `prompt` only
 - **Edit mode**: Provide `prompt` + `image_urls`
-- **Upscale mode**: Provide `image` (+ optional `scale`)
+- **Upscale mode**: Provide `image` (+ optional `scale`) - legacy
 
 **Parameters:**
 - `prompt` (string, optional): Text description for generate/edit modes (max 5000 chars)
-- `image_urls` (array, optional): URLs of images for edit mode (1-10 URLs)
+- `image_urls` (array, optional): Reference images for edit mode (1-8 URLs)
 - `image` (string, optional): URL of image for upscale mode (max 10MB, jpeg/png/webp)
 - `scale` (integer, optional): Upscale factor for upscale mode, 1-4 (default: 2)
 - `face_enhance` (boolean, optional): Enable face enhancement for upscale mode (default: false)
-- `output_format` (string, optional): "png" or "jpeg" for generate/edit modes (default: "png")
-- `image_size` (string, optional): Aspect ratio for generate/edit modes - "1:1", "9:16", "16:9", "3:4", "4:3", "3:2", "2:3", "5:4", "4:5", "21:9", "auto" (default: "1:1")
+- `output_format` (string, optional): "png" or "jpg" (default: "png")
+- `aspect_ratio` (string, optional): "1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9", "auto" (default: "1:1")
+- `resolution` (string, optional): "1K", "2K", "4K" (default: "1K")
+
+**Pricing:** 1K/2K: ~$0.09, 4K: ~$0.12
 
 **Examples:**
 
-*Generate mode:*
+*Generate mode (4K):*
 ```json
 {
   "prompt": "A surreal painting of a giant banana floating in space",
-  "output_format": "png",
-  "image_size": "16:9"
+  "resolution": "4K",
+  "aspect_ratio": "16:9"
 }
 ```
 
-*Edit mode:*
+*Edit mode with references:*
 ```json
 {
   "prompt": "Add a rainbow arching over the mountains",
-  "image_urls": ["https://example.com/image.jpg"],
-  "output_format": "png",
-  "image_size": "16:9"
+  "image_urls": ["https://example.com/ref1.jpg", "https://example.com/ref2.jpg"],
+  "resolution": "2K"
 }
 ```
 
-*Upscale mode:*
+*Upscale mode (legacy):*
 ```json
 {
   "image": "https://example.com/image.jpg",
@@ -899,6 +904,70 @@ Image-to-video generation:
 
 **Note**: The `callBackUrl` is optional and uses automatic fallback if not provided. Video generation typically takes 2-6 minutes depending on resolution and complexity.
 
+### 23. `wan_animate`
+Animate static images or replace characters in videos using Alibaba's Wan 2.2 Animate models with motion transfer and seamless environmental integration.
+
+**Parameters:**
+- `video_url` (string, required): URL of the reference video (MP4, QUICKTIME, X-MATROSKA, max 10MB, max 30 seconds)
+- `image_url` (string, required): URL of the character image (JPEG, PNG, WEBP, max 10MB). Will be resized and center-cropped to match video aspect ratio.
+- `mode` (string, optional): Animation mode (default: "animate")
+  - `animate`: Transfer motion/expressions from video to static image
+  - `replace`: Swap the character in video with the image (preserves lighting/tone)
+- `resolution` (string, optional): Output video resolution (default: "480p")
+  - `480p`: ~$0.03/second
+  - `580p`: ~$0.0475/second
+  - `720p`: ~$0.0625/second
+- `callBackUrl` (string, optional): URL for task completion notifications
+
+**Pricing (2025-12-06):**
+| Resolution | Credits/second | USD/second |
+|------------|----------------|------------|
+| 720p | 12.5 | ~$0.0625 |
+| 580p | 9.5 | ~$0.0475 |
+| 480p | 6 | ~$0.0300 |
+
+**Examples:**
+
+Animation mode (transfer motion to static image):
+```json
+{
+  "video_url": "https://example.com/dance-reference.mp4",
+  "image_url": "https://example.com/portrait.png",
+  "mode": "animate",
+  "resolution": "720p"
+}
+```
+
+Character replacement (swap character in video):
+```json
+{
+  "video_url": "https://example.com/original-clip.mp4",
+  "image_url": "https://example.com/new-character.png",
+  "mode": "replace",
+  "resolution": "580p"
+}
+```
+
+**Key Features:**
+- **Unified Interface**: Single tool for both animation and character replacement modes
+- **Mode Selection**: Choose between transferring motion or replacing characters
+- **Motion Transfer**: Realistic body movement and facial expressions from reference video
+- **Character Replacement**: Seamless integration with automatic lighting/tone matching
+- **Audio Preservation**: Original video audio is retained in output
+- **Flexible Resolutions**: 480p for cost efficiency, 720p for higher quality
+- **Wide Character Support**: Works with portraits, illustrations, anime, and stylized art
+
+**Smart Mode Logic:**
+- `animate` mode: Drives static image with video motion/expressions
+- `replace` mode: Swaps video subject with new character image
+
+**Performance:**
+- Video generation time depends on input video length
+- Pricing is per-second of output video
+- Max input video length: 30 seconds
+
+**Note**: The `callBackUrl` is optional and uses automatic fallback if not provided.
+
 ### 16. `hailuo_video`
 
 Generate professional videos using Hailuo 02 models (unified tool for text-to-video and image-to-video with standard/pro quality).
@@ -1201,6 +1270,86 @@ Mobile portrait generation:
 - Enhanced model (flux-kontext-max): May take longer but provides higher quality
 
 **Note**: The `callBackUrl` is optional and uses automatic fallback if not provided. Safety tolerance levels are automatically validated based on the generation mode (0-2 for editing, 0-6 for generation).
+
+### 22. `flux2_image`
+Generate and edit images using Black Forest Labs' Flux 2 models (Pro/Flex) with multi-reference consistency, photoreal detail, and accurate text rendering.
+
+**Parameters:**
+- `prompt` (string, required): Text prompt describing the desired image (3-5000 characters)
+- `input_urls` (array, optional): Reference images for image-to-image mode (1-8 URLs). Omit for text-to-image mode.
+- `aspect_ratio` (string, optional): Aspect ratio for the generated image (default: "1:1")
+  - Options: `1:1` (square), `4:3` (landscape), `3:4` (portrait), `16:9` (widescreen), `9:16` (mobile), `3:2` (classic), `2:3` (classic portrait), `auto` (match first input)
+  - Note: `auto` only valid with `input_urls`
+- `resolution` (string, optional): Output resolution (default: "1K")
+  - Options: `1K`, `2K`
+- `model_type` (string, optional): Model variant (default: "pro")
+  - Options: `pro` (fast, reliable results), `flex` (more control, fine-tuning)
+- `callBackUrl` (string, optional): URL for task completion notifications
+
+**Pricing (2025-12-06):**
+| Model | 1K | 2K |
+|-------|----|----|
+| Flux 2 Pro | 5 credits (~$0.025) | 7 credits (~$0.035) |
+| Flux 2 Flex | 14 credits (~$0.07) | 24 credits (~$0.12) |
+
+**Examples:**
+
+Text-to-image (Pro):
+```json
+{
+  "prompt": "A hyperrealistic supermarket blister pack on clean olive green surface with pink 3D letters spelling FLUX.2",
+  "aspect_ratio": "1:1",
+  "resolution": "1K",
+  "model_type": "pro"
+}
+```
+
+Image-to-image with multi-reference (Pro):
+```json
+{
+  "prompt": "The jar in image 1 is filled with capsules exactly same as image 2 with the exact logo",
+  "input_urls": [
+    "https://example.com/jar-image.png",
+    "https://example.com/capsules-reference.png"
+  ],
+  "aspect_ratio": "1:1",
+  "resolution": "2K"
+}
+```
+
+Text-to-image with Flex (more control):
+```json
+{
+  "prompt": "A humanoid figure with a vintage television set for a head displaying Hello FLUX.2 in ASCII font, wearing a yellow raincoat",
+  "aspect_ratio": "16:9",
+  "resolution": "2K",
+  "model_type": "flex"
+}
+```
+
+**Key Features:**
+- **Unified Interface**: Single tool for both text-to-image and image-to-image modes
+- **Smart Mode Detection**: Automatically detects mode based on `input_urls` parameter
+  - Text-to-Image: No `input_urls` provided
+  - Image-to-Image: `input_urls` provided (1-8 reference images)
+- **Multi-Reference Consistency**: Up to 8 reference images for maintaining character/product/style consistency
+- **Photoreal Detail**: Higher fidelity with sharper textures, cleaner materials, and stable lighting
+- **Accurate Text Rendering**: Strong typography, infographics, UI layouts, and meme-style text
+- **Stronger Prompt Following**: Complex prompts with multi-part instructions and composition rules
+- **Real-World Knowledge**: Accurate spatial logic, materials, reflections, and object interactions
+- **4MP Resolution**: High resolution output with flexible aspect ratios
+
+**Smart Detection Logic:**
+- If `input_urls` provided → Image-to-Image mode
+- If no `input_urls` provided → Text-to-Image mode
+- Pro variant: Fast, reliable, production-ready
+- Flex variant: More control, adjustable steps and guidance
+
+**Performance:**
+- Image generation: 10-30 seconds
+- Pro variant is faster, Flex may take longer for higher quality
+
+**Note**: The `callBackUrl` is optional and uses automatic fallback if not provided. The `auto` aspect ratio only works when `input_urls` is provided.
 
 ### 20. `ideogram_reframe`
 Reframe images to different aspect ratios and sizes using Ideogram V3 Reframe model with intelligent content adaptation.

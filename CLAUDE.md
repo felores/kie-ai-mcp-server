@@ -41,6 +41,35 @@
 - Task persistence via TaskDatabase (database.ts)
 - Smart endpoint routing based on api_type (veo vs playground)
 
+## Adding New Tools
+
+When adding new Kie.ai endpoints to the MCP server:
+
+1. **Check endpoint status**: See `docs/ENDPOINTS.md` for current implementation status
+2. **Follow the workflow**: See `docs/ADD_TOOL_GUIDE.md` for step-by-step instructions
+3. **Research first**: Scrape the Kie.ai playground page and API docs
+4. **Save documentation**: Store endpoint docs in `docs/kie/{provider}_{model}.md`
+
+### Quick Workflow
+```bash
+1. Scrape https://kie.ai/{endpoint} for parameters and pricing
+2. Check https://docs.kie.ai/{api}/quickstart for API docs
+3. Define Zod schema in src/types.ts (use mode detection pattern)
+4. Add client method in src/kie-ai-client.ts
+5. Register tool in src/index.ts (listTools + handler)
+6. Build, test, update docs, bump version, publish
+```
+
+### Key Files
+| What | Where |
+|------|-------|
+| Endpoint tracking | `docs/ENDPOINTS.md` |
+| Add tool workflow | `docs/ADD_TOOL_GUIDE.md` |
+| Zod schemas | `src/types.ts` |
+| API client | `src/kie-ai-client.ts` |
+| Tool registration | `src/index.ts` |
+| Tool documentation | `docs/TOOLS.md` |
+
 ## Publishing to NPM
 
 ### Package Information
