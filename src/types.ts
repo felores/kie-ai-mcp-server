@@ -324,6 +324,96 @@ export const ByteDanceSeedreamImageSchema = z.object({
   callBackUrl: z.string().url().optional(),
 });
 
+// Z-Image - Tongyi-MAI fast text-to-image with bilingual text rendering
+export const ZImageSchema = z.object({
+  prompt: z.string().min(1).max(5000),
+  aspect_ratio: z.enum(["1:1", "4:3", "3:4", "16:9", "9:16"]).default("1:1"),
+  callBackUrl: z.string().url().optional(),
+});
+
+export type ZImageRequest = z.infer<typeof ZImageSchema>;
+
+// Grok Imagine - xAI multimodal image/video generation (text-to-image, text-to-video, image-to-video, upscale)
+export const GrokImagineSchema = z
+  .object({
+    prompt: z.string().max(5000).optional(),
+    // Image-to-video mode: use image_urls OR task_id+index
+    image_urls: z.array(z.string().url()).max(1).optional(),
+    task_id: z.string().optional(),
+    index: z.number().int().min(0).max(5).optional(),
+    // Common parameters
+    aspect_ratio: z.enum(["2:3", "3:2", "1:1"]).default("1:1").optional(),
+    mode: z.enum(["fun", "normal", "spicy"]).default("normal").optional(),
+    // Mode selection (auto-detected if not provided)
+    generation_mode: z
+      .enum(["text-to-image", "text-to-video", "image-to-video", "upscale"])
+      .optional(),
+    callBackUrl: z.string().url().optional(),
+  })
+  .refine(
+    (data) => {
+      // Upscale mode requires task_id only
+      if (data.generation_mode === "upscale") {
+        return !!data.task_id;
+      }
+      // Image-to-video needs image_urls OR task_id
+      if (data.generation_mode === "image-to-video") {
+        return (
+          (data.image_urls && data.image_urls.length > 0) || !!data.task_id
+        );
+      }
+      // Text modes require prompt
+      if (
+        data.generation_mode === "text-to-image" ||
+        data.generation_mode === "text-to-video"
+      ) {
+        return !!data.prompt;
+      }
+      // Auto-detect: if task_id without prompt = upscale, if image_urls = i2v, else text mode
+      if (data.task_id && !data.prompt && !data.image_urls) {
+        return true; // upscale
+      }
+      if (data.image_urls && data.image_urls.length > 0) {
+        return true; // image-to-video
+      }
+      if (data.prompt) {
+        return true; // text-to-image or text-to-video
+      }
+      return false;
+    },
+    {
+      message:
+        "Invalid parameters. Provide: 1) prompt for text-to-image/video, 2) image_urls or task_id+index for image-to-video, 3) task_id only for upscale",
+      path: [],
+    },
+  );
+
+export type GrokImagineRequest = z.infer<typeof GrokImagineSchema>;
+
+// InfiniTalk - MeiGen-AI lip sync video generator (image + audio to talking video)
+export const InfiniTalkSchema = z.object({
+  image_url: z.string().url(),
+  audio_url: z.string().url(),
+  prompt: z.string().min(1).max(1500),
+  resolution: z.enum(["480p", "720p"]).default("480p").optional(),
+  seed: z.number().int().min(10000).max(1000000).optional(),
+  callBackUrl: z.string().url().optional(),
+});
+
+export type InfiniTalkRequest = z.infer<typeof InfiniTalkSchema>;
+
+// Kling Avatar - Kuaishou talking avatar video generator (image + audio to avatar video)
+export const KlingAvatarSchema = z.object({
+  image_url: z.string().url(),
+  audio_url: z.string().url(),
+  prompt: z.string().min(1).max(1500),
+  // Quality: standard (720P) or pro (1080P)
+  quality: z.enum(["standard", "pro"]).default("standard").optional(),
+  callBackUrl: z.string().url().optional(),
+});
+
+export type KlingAvatarRequest = z.infer<typeof KlingAvatarSchema>;
+
 export const QwenImageSchema = z
   .object({
     prompt: z.string().min(1),
@@ -707,15 +797,19 @@ export const KlingVideoSchema = z
 export type KlingVideoRequest = z.infer<typeof KlingVideoSchema>;
 
 // Hailuo Video - Unified tool for text-to-video and image-to-video (standard/pro quality)
+// Supports Hailuo 02 and Hailuo 2.3 versions
 export const HailuoVideoSchema = z
   .object({
     prompt: z.string().min(1).max(1500),
     imageUrl: z.string().url().optional(),
     endImageUrl: z.string().url().optional(),
+    // Version selection: "02" (original) or "2.3" (new, better motion/expressions)
+    version: z.enum(["02", "2.3"]).default("02").optional(),
     quality: z.enum(["standard", "pro"]).default("standard").optional(),
     // Standard quality only parameters
     duration: z.enum(["6", "10"]).default("6").optional(),
-    resolution: z.enum(["512P", "768P"]).default("768P").optional(),
+    // Resolution: 512P/768P for 02, 768P/1080P for 2.3
+    resolution: z.enum(["512P", "768P", "1080P"]).default("768P").optional(),
     // Common parameters
     promptOptimizer: z.boolean().default(true).optional(),
     callBackUrl: z.string().url().optional(),
@@ -739,11 +833,30 @@ export const HailuoVideoSchema = z
         return false; // endImageUrl only valid with imageUrl
       }
 
+      // Hailuo 2.3 specific: 10s duration not supported with 1080P
+      if (
+        data.version === "2.3" &&
+        data.duration === "10" &&
+        data.resolution === "1080P"
+      ) {
+        return false;
+      }
+
+      // Hailuo 2.3 doesn't support 512P
+      if (data.version === "2.3" && data.resolution === "512P") {
+        return false;
+      }
+
+      // Hailuo 02 doesn't support 1080P
+      if (data.version === "02" && data.resolution === "1080P") {
+        return false;
+      }
+
       return true;
     },
     {
       message:
-        "Invalid parameter combination. Choose mode: 1) prompt only (text-to-video), or 2) prompt + imageUrl (image-to-video). endImageUrl is only valid with imageUrl.",
+        "Invalid parameter combination. Choose mode: 1) prompt only (text-to-video), or 2) prompt + imageUrl (image-to-video). endImageUrl is only valid with imageUrl. For 2.3: 10s+1080P not supported, 512P not available. For 02: 1080P not available.",
       path: [],
     },
   );
@@ -884,7 +997,11 @@ export interface TaskRecord {
     | "hailuo"
     | "sora-video"
     | "flux2-image"
-    | "wan-animate";
+    | "wan-animate"
+    | "z-image"
+    | "grok-imagine"
+    | "infinitalk"
+    | "kling-avatar";
   status: "pending" | "processing" | "completed" | "failed";
   created_at: string;
   updated_at: string;

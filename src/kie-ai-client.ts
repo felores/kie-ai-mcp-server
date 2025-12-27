@@ -21,6 +21,10 @@ import {
   SoraVideoRequest,
   Flux2ImageRequest,
   WanAnimateRequest,
+  ZImageRequest,
+  GrokImagineRequest,
+  InfiniTalkRequest,
+  KlingAvatarRequest,
   ImageResponse,
   TaskResponse,
 } from "./types.js";
@@ -815,18 +819,22 @@ export class KieAiClient {
   ): Promise<KieAiResponse<TaskResponse>> {
     const isImageToVideo = !!request.imageUrl;
     const quality = request.quality || "standard";
+    const version = request.version || "02";
+
+    // Model name varies by version: "02" or "2-3"
+    const versionPrefix = version === "2.3" ? "2-3" : "02";
 
     let model: string;
     if (isImageToVideo) {
       model =
         quality === "pro"
-          ? "hailuo/02-image-to-video-pro"
-          : "hailuo/02-image-to-video-standard";
+          ? `hailuo/${versionPrefix}-image-to-video-pro`
+          : `hailuo/${versionPrefix}-image-to-video-standard`;
     } else {
       model =
         quality === "pro"
-          ? "hailuo/02-text-to-video-pro"
-          : "hailuo/02-text-to-video-standard";
+          ? `hailuo/${versionPrefix}-text-to-video-pro`
+          : `hailuo/${versionPrefix}-text-to-video-standard`;
     }
 
     const input: any = {
@@ -990,6 +998,159 @@ export class KieAiClient {
       video_url: request.video_url,
       image_url: request.image_url,
       resolution: request.resolution || "480p",
+    };
+
+    const jobRequest = {
+      model,
+      input,
+      callBackUrl: request.callBackUrl || process.env.KIE_AI_CALLBACK_URL,
+    };
+
+    return this.makeRequest<TaskResponse>(
+      "/jobs/createTask",
+      "POST",
+      jobRequest,
+    );
+  }
+
+  async generateZImage(
+    request: ZImageRequest,
+  ): Promise<KieAiResponse<TaskResponse>> {
+    const input = {
+      prompt: request.prompt,
+      aspect_ratio: request.aspect_ratio || "1:1",
+    };
+
+    const jobRequest = {
+      model: "z-image",
+      input,
+      callBackUrl: request.callBackUrl || process.env.KIE_AI_CALLBACK_URL,
+    };
+
+    return this.makeRequest<TaskResponse>(
+      "/jobs/createTask",
+      "POST",
+      jobRequest,
+    );
+  }
+
+  async generateGrokImagine(
+    request: GrokImagineRequest,
+  ): Promise<KieAiResponse<TaskResponse>> {
+    // Detect generation mode
+    const hasImageUrls = request.image_urls && request.image_urls.length > 0;
+    const hasTaskId = !!request.task_id;
+    const hasPrompt = !!request.prompt;
+
+    let mode =
+      request.generation_mode ||
+      (hasTaskId && !hasPrompt && !hasImageUrls
+        ? "upscale"
+        : hasImageUrls || hasTaskId
+          ? "image-to-video"
+          : "text-to-video"); // Default to text-to-video if prompt provided
+
+    // If user explicitly wants text-to-image
+    if (request.generation_mode === "text-to-image") {
+      mode = "text-to-image";
+    }
+
+    let model: string;
+    let input: any = {};
+
+    switch (mode) {
+      case "upscale":
+        model = "grok-imagine/upscale";
+        input = { task_id: request.task_id };
+        break;
+
+      case "image-to-video":
+        model = "grok-imagine/image-to-video";
+        if (hasImageUrls) {
+          input.image_urls = request.image_urls;
+        }
+        if (hasTaskId) {
+          input.task_id = request.task_id;
+          if (request.index !== undefined) {
+            input.index = request.index;
+          }
+        }
+        if (hasPrompt) {
+          input.prompt = request.prompt;
+        }
+        input.mode = request.mode || "normal";
+        break;
+
+      case "text-to-video":
+        model = "grok-imagine/text-to-video";
+        input = {
+          prompt: request.prompt,
+          aspect_ratio: request.aspect_ratio || "1:1",
+          mode: request.mode || "normal",
+        };
+        break;
+
+      case "text-to-image":
+      default:
+        model = "grok-imagine/text-to-image";
+        input = {
+          prompt: request.prompt,
+          aspect_ratio: request.aspect_ratio || "1:1",
+        };
+        break;
+    }
+
+    const jobRequest = {
+      model,
+      input,
+      callBackUrl: request.callBackUrl || process.env.KIE_AI_CALLBACK_URL,
+    };
+
+    return this.makeRequest<TaskResponse>(
+      "/jobs/createTask",
+      "POST",
+      jobRequest,
+    );
+  }
+
+  async generateInfiniTalk(
+    request: InfiniTalkRequest,
+  ): Promise<KieAiResponse<TaskResponse>> {
+    const input: any = {
+      image_url: request.image_url,
+      audio_url: request.audio_url,
+      prompt: request.prompt,
+      resolution: request.resolution || "480p",
+    };
+
+    if (request.seed !== undefined) {
+      input.seed = request.seed;
+    }
+
+    const jobRequest = {
+      model: "infinitalk/from-audio",
+      input,
+      callBackUrl: request.callBackUrl || process.env.KIE_AI_CALLBACK_URL,
+    };
+
+    return this.makeRequest<TaskResponse>(
+      "/jobs/createTask",
+      "POST",
+      jobRequest,
+    );
+  }
+
+  async generateKlingAvatar(
+    request: KlingAvatarRequest,
+  ): Promise<KieAiResponse<TaskResponse>> {
+    const quality = request.quality || "standard";
+    const model =
+      quality === "pro" ? "kling/ai-avatar-v1-pro" : "kling/v1-avatar-standard";
+
+    const input = {
+      image_url: request.image_url,
+      audio_url: request.audio_url,
+      prompt: request.prompt,
     };
 
     const jobRequest = {

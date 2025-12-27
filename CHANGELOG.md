@@ -5,6 +5,45 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.9] - 2025-12-27
+
+### Added
+- **Z-Image Tool**: New `z_image` tool for Tongyi-MAI fast text-to-image
+  - Ultra-fast Turbo performance
+  - Accurate bilingual text rendering (Chinese/English)
+  - Strong semantic understanding
+  - Aspect ratios: 1:1, 4:3, 3:4, 16:9, 9:16
+  - Pricing: ~$0.004/image (0.8 credits)
+
+- **Grok Imagine Tool**: New `grok_imagine` tool for xAI multimodal generation
+  - 4 modes: text-to-image, text-to-video, image-to-video, upscale
+  - Smart mode auto-detection based on parameters
+  - Style modes: fun, normal, spicy
+  - Aspect ratios: 2:3, 3:2, 1:1
+  - Pricing: ~$0.02/image, ~$0.10/6s video
+
+- **InfiniTalk Lip-Sync Tool**: New `infinitalk_lip_sync` tool for MeiGen-AI
+  - Transforms portrait image + audio into talking avatar
+  - Synchronized lips, facial expressions, head movements
+  - Resolutions: 480p, 720p
+  - Max duration: 15 seconds
+  - Pricing: ~$0.015/s (480p), ~$0.06/s (720p)
+
+- **Kling Avatar Tool**: New `kling_avatar` tool for Kuaishou talking avatars
+  - Lifelike talking avatars from photo + audio
+  - Accurate lip-sync, emotions, identity preservation
+  - Quality levels: standard (720P), pro (1080P)
+  - Max duration: 15 seconds
+  - Pricing: ~$0.04/s (standard), ~$0.08/s (pro)
+
+### Enhanced
+- **Hailuo 2.3 Support**: Updated `hailuo_video` tool with version selection
+  - Added `version` parameter: "02" (original) or "2.3" (enhanced)
+  - Hailuo 2.3: Better motion, facial expressions, 1080P support
+  - Updated resolution options: 768P/1080P for v2.3, 512P/768P for v02
+  - 10s duration not supported with 1080P in v2.3
+  - Maintains full backward compatibility
+
 ## [2.0.8] - 2025-12-08
 
 ### Enhanced

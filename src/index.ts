@@ -37,6 +37,10 @@ import {
   SoraVideoSchema,
   Flux2ImageSchema,
   WanAnimateSchema,
+  ZImageSchema,
+  GrokImagineSchema,
+  InfiniTalkSchema,
+  KlingAvatarSchema,
   KieAiConfig,
 } from "./types.js";
 
@@ -55,6 +59,7 @@ class KieAiMcpServer {
       "openai_4o_image",
       "flux_kontext_image",
       "flux2_image",
+      "z_image",
       "recraft_remove_background",
       "ideogram_reframe",
       "midjourney_generate", // Also generates images (6 modes: txt2img, img2img, style ref, omni ref, video SD/HD)
@@ -69,6 +74,9 @@ class KieAiMcpServer {
       "hailuo_video",
       "kling_video",
       "runway_aleph_video",
+      "grok_imagine", // xAI multimodal: text-to-image/video, image-to-video, upscale
+      "infinitalk_lip_sync", // MeiGen-AI lip sync video generator
+      "kling_avatar", // Kuaishou talking avatar video generator
       "midjourney_generate", // Also generates videos (mj_video, mj_video_hd modes)
     ],
     audio: ["suno_generate_music", "elevenlabs_tts", "elevenlabs_ttsfx"],
@@ -87,7 +95,7 @@ class KieAiMcpServer {
   constructor() {
     this.server = new Server({
       name: "kie-ai-mcp-server",
-      version: "2.0.8",
+      version: "2.0.9",
     });
 
     // Initialize client with config from environment
@@ -1035,6 +1043,190 @@ class KieAiMcpServer {
           },
         },
         {
+          name: "z_image",
+          description:
+            "Generate photorealistic images using Tongyi-MAI Z-Image model. Ultra-fast Turbo performance, accurate bilingual text rendering (Chinese/English), strong semantic understanding. Pricing: ~$0.004/image",
+          inputSchema: {
+            type: "object",
+            properties: {
+              prompt: {
+                type: "string",
+                description:
+                  "Text prompt describing the desired image (max 5000 characters). Supports bilingual prompts.",
+                minLength: 1,
+                maxLength: 5000,
+              },
+              aspect_ratio: {
+                type: "string",
+                description: "Aspect ratio for the generated image",
+                enum: ["1:1", "4:3", "3:4", "16:9", "9:16"],
+                default: "1:1",
+              },
+              callBackUrl: {
+                type: "string",
+                description:
+                  "Optional: URL for task completion notifications (uses KIE_AI_CALLBACK_URL env var if not provided)",
+                format: "uri",
+              },
+            },
+            required: ["prompt"],
+          },
+        },
+        {
+          name: "grok_imagine",
+          description:
+            "Generate images and videos using xAI's Grok Imagine (4 modes: text-to-image, text-to-video, image-to-video, upscale). Supports synchronized audio with video. Pricing: ~$0.10 per 6-second video",
+          inputSchema: {
+            type: "object",
+            properties: {
+              prompt: {
+                type: "string",
+                description:
+                  "Text prompt describing the desired content (required for text modes, optional for image-to-video)",
+                maxLength: 5000,
+              },
+              image_urls: {
+                type: "array",
+                description:
+                  "Single image URL for image-to-video mode (alternative to task_id)",
+                items: { type: "string", format: "uri" },
+                maxItems: 1,
+              },
+              task_id: {
+                type: "string",
+                description:
+                  "Task ID from a previous Grok generation (for upscale or image-to-video from generated image)",
+              },
+              index: {
+                type: "integer",
+                description:
+                  "Image index from task_id (0-5, Grok generates 6 images per task)",
+                minimum: 0,
+                maximum: 5,
+              },
+              aspect_ratio: {
+                type: "string",
+                description: "Aspect ratio for generated content",
+                enum: ["2:3", "3:2", "1:1"],
+                default: "1:1",
+              },
+              mode: {
+                type: "string",
+                description:
+                  "Generation style: 'normal' (default), 'fun' (playful), 'spicy' (expressive, not available with external images)",
+                enum: ["fun", "normal", "spicy"],
+                default: "normal",
+              },
+              generation_mode: {
+                type: "string",
+                description:
+                  "Explicit mode selection (auto-detected if not provided): text-to-image, text-to-video, image-to-video, or upscale",
+                enum: [
+                  "text-to-image",
+                  "text-to-video",
+                  "image-to-video",
+                  "upscale",
+                ],
+              },
+              callBackUrl: {
+                type: "string",
+                description: "Optional: URL for task completion notifications",
+                format: "uri",
+              },
+            },
+          },
+        },
+        {
+          name: "infinitalk_lip_sync",
+          description:
+            "Generate AI lip-sync talking videos using MeiGen-AI InfiniTalk. Transforms portrait image + audio into natural talking avatar with synchronized lips, facial expressions, and head movements. Pricing: ~$0.015/s (480p), ~$0.06/s (720p), max 15s",
+          inputSchema: {
+            type: "object",
+            properties: {
+              image_url: {
+                type: "string",
+                description:
+                  "URL of the portrait image to animate (JPEG, PNG, WEBP, max 10MB)",
+                format: "uri",
+              },
+              audio_url: {
+                type: "string",
+                description:
+                  "URL of the audio file for lip sync (MPEG, WAV, AAC, MP4, OGG, max 10MB)",
+                format: "uri",
+              },
+              prompt: {
+                type: "string",
+                description:
+                  "Text prompt to guide video generation (e.g., 'A young woman talking on a podcast')",
+                minLength: 1,
+                maxLength: 1500,
+              },
+              resolution: {
+                type: "string",
+                description:
+                  "Video resolution: 480p (faster, cheaper) or 720p (higher quality)",
+                enum: ["480p", "720p"],
+                default: "480p",
+              },
+              seed: {
+                type: "integer",
+                description: "Random seed for reproducibility (10000-1000000)",
+                minimum: 10000,
+                maximum: 1000000,
+              },
+              callBackUrl: {
+                type: "string",
+                description: "Optional: URL for task completion notifications",
+                format: "uri",
+              },
+            },
+            required: ["image_url", "audio_url", "prompt"],
+          },
+        },
+        {
+          name: "kling_avatar",
+          description:
+            "Generate lifelike talking avatar videos using Kuaishou Kling AI. Transforms portrait photo + audio into realistic avatar with accurate lip-sync, emotions, and identity preservation. Pricing: ~$0.04/s (720P standard), ~$0.08/s (1080P pro), max 15s",
+          inputSchema: {
+            type: "object",
+            properties: {
+              image_url: {
+                type: "string",
+                description:
+                  "URL of the portrait image for avatar (JPEG, PNG, WEBP, max 10MB)",
+                format: "uri",
+              },
+              audio_url: {
+                type: "string",
+                description:
+                  "URL of the audio file for the avatar to speak (MPEG, WAV, AAC, MP4, OGG, max 10MB)",
+                format: "uri",
+              },
+              prompt: {
+                type: "string",
+                description:
+                  "Text prompt to guide video generation (emotions, expressions, scene settings)",
+                minLength: 1,
+                maxLength: 1500,
+              },
+              quality: {
+                type: "string",
+                description:
+                  "Video quality: standard (720P, faster) or pro (1080P, higher quality)",
+                enum: ["standard", "pro"],
+                default: "standard",
+              },
+              callBackUrl: {
+                type: "string",
+                description: "Optional: URL for task completion notifications",
+                format: "uri",
+              },
+            },
+            required: ["image_url", "audio_url", "prompt"],
+          },
+        },
+        {
           name: "midjourney_generate",
           description:
             "Generate images and videos using Midjourney AI models (unified tool for text-to-image, image-to-image, style reference, omni reference, and video generation)",
@@ -1615,7 +1807,7 @@ class KieAiMcpServer {
         {
           name: "hailuo_video",
           description:
-            "Generate videos using Hailuo AI models (unified tool for text-to-video and image-to-video with standard/pro quality)",
+            "Generate videos using Hailuo AI models (unified tool for text-to-video and image-to-video with standard/pro quality). Supports v02 (original) and v2.3 (enhanced motion/expressions, 1080P)",
           inputSchema: {
             type: "object",
             properties: {
@@ -1638,6 +1830,13 @@ class KieAiMcpServer {
                   "URL of end frame image for image-to-video (optional - requires imageUrl)",
                 format: "uri",
               },
+              version: {
+                type: "string",
+                description:
+                  "Hailuo model version: '02' (original) or '2.3' (better motion, expressions, 1080P support)",
+                enum: ["02", "2.3"],
+                default: "02",
+              },
               quality: {
                 type: "string",
                 description:
@@ -1648,14 +1847,15 @@ class KieAiMcpServer {
               duration: {
                 type: "string",
                 description:
-                  "Duration of video in seconds (standard quality only)",
+                  "Duration of video in seconds (standard quality only). Note: 10s not supported with 1080P in v2.3",
                 enum: ["6", "10"],
                 default: "6",
               },
               resolution: {
                 type: "string",
-                description: "Resolution of video (standard quality only)",
-                enum: ["512P", "768P"],
+                description:
+                  "Resolution of video (standard quality only). v02: 512P/768P, v2.3: 768P/1080P",
+                enum: ["512P", "768P", "1080P"],
                 default: "768P",
               },
               promptOptimizer: {
@@ -1890,6 +2090,18 @@ class KieAiMcpServer {
 
           case "qwen_image":
             return await this.handleQwenImage(args);
+
+          case "z_image":
+            return await this.handleZImage(args);
+
+          case "grok_imagine":
+            return await this.handleGrokImagine(args);
+
+          case "infinitalk_lip_sync":
+            return await this.handleInfiniTalkLipSync(args);
+
+          case "kling_avatar":
+            return await this.handleKlingAvatar(args);
 
           case "midjourney_generate":
             return await this.handleMidjourneyGenerate(args);
@@ -3533,6 +3745,312 @@ class KieAiMcpServer {
     }
   }
 
+  private async handleZImage(args: any) {
+    try {
+      const request = ZImageSchema.parse(args);
+
+      // Use intelligent callback URL fallback
+      request.callBackUrl = this.getCallbackUrl(request.callBackUrl);
+
+      const response = await this.client.generateZImage(request);
+
+      if (response.code === 200 && response.data?.taskId) {
+        // Store task in database
+        await this.db.createTask({
+          task_id: response.data.taskId,
+          api_type: "z-image",
+          status: "pending",
+        });
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(
+                {
+                  success: true,
+                  task_id: response.data.taskId,
+                  message: "Z-Image generation task created successfully",
+                  parameters: {
+                    prompt:
+                      request.prompt.substring(0, 100) +
+                      (request.prompt.length > 100 ? "..." : ""),
+                    aspect_ratio: request.aspect_ratio || "1:1",
+                  },
+                  pricing: "~$0.004 per image (0.8 credits)",
+                  next_steps: [
+                    `Use get_task_status with task_id: ${response.data.taskId} to check progress`,
+                    'Generated image will be available when status is "completed"',
+                  ],
+                },
+                null,
+                2,
+              ),
+            },
+          ],
+        };
+      } else {
+        throw new Error(response.msg || "Failed to create Z-Image task");
+      }
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return this.formatError("z_image", error, {
+          prompt:
+            "Required: Text prompt describing the desired image (max 5000 chars)",
+          aspect_ratio:
+            "Optional: Aspect ratio (1:1, 4:3, 3:4, 16:9, 9:16, default: 1:1)",
+          callBackUrl: "Optional: URL for task completion notifications",
+        });
+      }
+
+      return this.formatError("z_image", error, {
+        prompt:
+          "Required: Text prompt describing the desired image (max 5000 chars)",
+        aspect_ratio:
+          "Optional: Aspect ratio (1:1, 4:3, 3:4, 16:9, 9:16, default: 1:1)",
+        callBackUrl: "Optional: URL for task completion notifications",
+      });
+    }
+  }
+
+  private async handleGrokImagine(args: any) {
+    try {
+      const request = GrokImagineSchema.parse(args);
+
+      // Use intelligent callback URL fallback
+      request.callBackUrl = this.getCallbackUrl(request.callBackUrl);
+
+      const response = await this.client.generateGrokImagine(request);
+
+      if (response.code === 200 && response.data?.taskId) {
+        // Detect which mode was used for logging
+        const hasImageUrls =
+          request.image_urls && request.image_urls.length > 0;
+        const hasTaskId = !!request.task_id;
+        const hasPrompt = !!request.prompt;
+        const detectedMode =
+          request.generation_mode ||
+          (hasTaskId && !hasPrompt && !hasImageUrls
+            ? "upscale"
+            : hasImageUrls || hasTaskId
+              ? "image-to-video"
+              : request.generation_mode === "text-to-image"
+                ? "text-to-image"
+                : "text-to-video");
+
+        // Store task in database
+        await this.db.createTask({
+          task_id: response.data.taskId,
+          api_type: "grok-imagine",
+          status: "pending",
+        });
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(
+                {
+                  success: true,
+                  task_id: response.data.taskId,
+                  message: `Grok Imagine ${detectedMode} task created successfully`,
+                  parameters: {
+                    mode: detectedMode,
+                    prompt: request.prompt
+                      ? request.prompt.substring(0, 100) +
+                        (request.prompt.length > 100 ? "..." : "")
+                      : undefined,
+                    aspect_ratio: request.aspect_ratio || "1:1",
+                    style_mode: request.mode || "normal",
+                  },
+                  pricing:
+                    detectedMode === "text-to-image"
+                      ? "~$0.02 per image"
+                      : "~$0.10 per 6-second video",
+                  next_steps: [
+                    `Use get_task_status with task_id: ${response.data.taskId} to check progress`,
+                    'Generated content will be available when status is "completed"',
+                  ],
+                },
+                null,
+                2,
+              ),
+            },
+          ],
+        };
+      } else {
+        throw new Error(response.msg || "Failed to create Grok Imagine task");
+      }
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return this.formatError("grok_imagine", error, {
+          prompt:
+            "Text prompt (required for text modes, optional for image-to-video)",
+          image_urls: "Single image URL for image-to-video mode",
+          task_id: "Task ID for upscale or image-to-video from generated image",
+          index: "Image index (0-5) when using task_id",
+          aspect_ratio: "Aspect ratio: 2:3, 3:2, or 1:1 (default: 1:1)",
+          mode: "Style mode: fun, normal (default), or spicy",
+          generation_mode:
+            "Explicit mode: text-to-image, text-to-video, image-to-video, upscale",
+        });
+      }
+
+      return this.formatError("grok_imagine", error, {
+        prompt:
+          "Text prompt (required for text modes, optional for image-to-video)",
+        generation_mode:
+          "Explicit mode: text-to-image, text-to-video, image-to-video, upscale",
+      });
+    }
+  }
+
+  private async handleInfiniTalkLipSync(args: any) {
+    try {
+      const request = InfiniTalkSchema.parse(args);
+
+      // Use intelligent callback URL fallback
+      request.callBackUrl = this.getCallbackUrl(request.callBackUrl);
+
+      const response = await this.client.generateInfiniTalk(request);
+
+      if (response.code === 200 && response.data?.taskId) {
+        // Store task in database
+        await this.db.createTask({
+          task_id: response.data.taskId,
+          api_type: "infinitalk",
+          status: "pending",
+        });
+
+        const resolution = request.resolution || "480p";
+        const pricing = resolution === "720p" ? "~$0.06/s" : "~$0.015/s";
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(
+                {
+                  success: true,
+                  task_id: response.data.taskId,
+                  message:
+                    "InfiniTalk lip-sync video task created successfully",
+                  parameters: {
+                    prompt:
+                      request.prompt.substring(0, 100) +
+                      (request.prompt.length > 100 ? "..." : ""),
+                    resolution,
+                    seed: request.seed,
+                  },
+                  pricing: `${pricing} (max 15 seconds)`,
+                  next_steps: [
+                    `Use get_task_status with task_id: ${response.data.taskId} to check progress`,
+                    'Lip-synced video will be available when status is "completed"',
+                  ],
+                },
+                null,
+                2,
+              ),
+            },
+          ],
+        };
+      } else {
+        throw new Error(
+          response.msg || "Failed to create InfiniTalk lip-sync task",
+        );
+      }
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return this.formatError("infinitalk_lip_sync", error, {
+          image_url: "Required: URL of portrait image to animate",
+          audio_url: "Required: URL of audio file for lip sync",
+          prompt: "Required: Text prompt to guide video generation",
+          resolution:
+            "Optional: 480p (default, cheaper) or 720p (higher quality)",
+          seed: "Optional: Random seed for reproducibility (10000-1000000)",
+          callBackUrl: "Optional: URL for task completion notifications",
+        });
+      }
+
+      return this.formatError("infinitalk_lip_sync", error, {
+        image_url: "Required: URL of portrait image to animate",
+        audio_url: "Required: URL of audio file for lip sync",
+        prompt: "Required: Text prompt to guide video generation",
+      });
+    }
+  }
+
+  private async handleKlingAvatar(args: any) {
+    try {
+      const request = KlingAvatarSchema.parse(args);
+
+      // Use intelligent callback URL fallback
+      request.callBackUrl = this.getCallbackUrl(request.callBackUrl);
+
+      const response = await this.client.generateKlingAvatar(request);
+
+      if (response.code === 200 && response.data?.taskId) {
+        // Store task in database
+        await this.db.createTask({
+          task_id: response.data.taskId,
+          api_type: "kling-avatar",
+          status: "pending",
+        });
+
+        const quality = request.quality || "standard";
+        const resolution = quality === "pro" ? "1080P" : "720P";
+        const pricing = quality === "pro" ? "~$0.08/s" : "~$0.04/s";
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(
+                {
+                  success: true,
+                  task_id: response.data.taskId,
+                  message: "Kling Avatar video task created successfully",
+                  parameters: {
+                    quality,
+                    resolution,
+                    prompt:
+                      request.prompt.substring(0, 100) +
+                      (request.prompt.length > 100 ? "..." : ""),
+                  },
+                  pricing: `${pricing} (max 15 seconds)`,
+                  next_steps: [
+                    `Use get_task_status with task_id: ${response.data.taskId} to check progress`,
+                    'Avatar video will be available when status is "completed"',
+                  ],
+                },
+                null,
+                2,
+              ),
+            },
+          ],
+        };
+      } else {
+        throw new Error(response.msg || "Failed to create Kling Avatar task");
+      }
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return this.formatError("kling_avatar", error, {
+          image_url: "Required: URL of portrait image for avatar",
+          audio_url: "Required: URL of audio file for avatar to speak",
+          prompt: "Required: Text prompt to guide video generation",
+          quality: "Optional: standard (720P, default) or pro (1080P)",
+          callBackUrl: "Optional: URL for task completion notifications",
+        });
+      }
+
+      return this.formatError("kling_avatar", error, {
+        image_url: "Required: URL of portrait image for avatar",
+        audio_url: "Required: URL of audio file for avatar to speak",
+        prompt: "Required: Text prompt to guide video generation",
+      });
+    }
+  }
+
   private async handleMidjourneyGenerate(args: any) {
     try {
       const request = MidjourneyGenerateSchema.parse(args);
@@ -4379,11 +4897,12 @@ class KieAiMcpServer {
 
       const response = await this.client.generateHailuoVideo(request);
 
+      const version = request.version || "02";
       let modeDescription: string;
       if (request.imageUrl) {
-        modeDescription = `image-to-video (${request.quality || "standard"} quality)`;
+        modeDescription = `v${version} image-to-video (${request.quality || "standard"} quality)`;
       } else {
-        modeDescription = `text-to-video (${request.quality || "standard"} quality)`;
+        modeDescription = `v${version} text-to-video (${request.quality || "standard"} quality)`;
       }
 
       if (response.data?.taskId) {
@@ -4403,8 +4922,9 @@ class KieAiMcpServer {
                 success: true,
                 task_id: response.data?.taskId,
                 mode: modeDescription,
-                message: `Hailuo video generation task created successfully (${modeDescription})`,
+                message: `Hailuo ${modeDescription} task created successfully`,
                 parameters: {
+                  version,
                   prompt: request.prompt,
                   imageUrl: request.imageUrl,
                   endImageUrl: request.endImageUrl,
@@ -4433,11 +4953,13 @@ class KieAiMcpServer {
           imageUrl: "Optional: image URL for image-to-video mode",
           endImageUrl:
             "Optional: end frame image URL for image-to-video (requires imageUrl)",
+          version:
+            'Optional: model version "02" (default) or "2.3" (enhanced motion)',
           quality: 'Optional: quality level "standard" (default) or "pro"',
           duration:
-            'Optional: video duration "6" (default) or "10" for standard quality only',
+            'Optional: video duration "6" (default) or "10" (10s not supported with 1080P in v2.3)',
           resolution:
-            'Optional: resolution "512P" or "768P" (default) for standard quality only',
+            'Optional: resolution "512P"/"768P" for v02, "768P"/"1080P" for v2.3',
           promptOptimizer:
             "Optional: enable prompt optimization (default: true)",
           callBackUrl:
