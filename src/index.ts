@@ -2207,7 +2207,7 @@ class KieAiMcpServer {
           },
           {
             uri: "kie://models/nano-banana",
-            name: "Nano Banana (Gemini 2.5)",
+            name: "Nano Banana Pro (Gemini 3.0)",
             description:
               "Text-to-image, bulk editing (up to 10 images), and UPSCALING (1x-4x with face enhancement)",
             mimeType: "text/markdown",
@@ -2615,7 +2615,7 @@ class KieAiMcpServer {
                 success: true,
                 response: response,
                 mode: modeDescription,
-                message: `Nano Banana image ${modeDescription} initiated`,
+                message: `Nano Banana Pro image ${modeDescription} initiated`,
               },
               null,
               2,
@@ -2874,7 +2874,7 @@ class KieAiMcpServer {
               errorMessage = apiData.failMsg;
             }
           } else {
-            // Original logic for other APIs (Nano Banana, Veo3)
+            // Original logic for other APIs (Nano Banana Pro, Veo3)
             const { state, resultJson, failCode, failMsg } = apiData;
 
             if (state === "success") status = "completed";
@@ -5582,7 +5582,7 @@ The system automatically detects user intent:
 ### **Image Generation Costs**
 | Quality | Model | Features | Cost Multiplier |
 |---------|-------|----------|-----------------|
-| Standard | Nano Banana | Fast generation | 1x (baseline) |
+| Standard | Nano Banana Pro | Fast generation | 1x (baseline) |
 | Artistic | Qwen Image | High quality | ~1.5x |
 | Professional | OpenAI 4o | Advanced features | ~2x |
 | Premium | Flux Kontext | Professional grade | ~2.5x |
@@ -5612,7 +5612,7 @@ The system automatically detects user intent:
   - High Quality: \`resolution: "1080p"\`
 
 ### **Image Parameters**
-- **Nano Banana**: Automatic mode detection, cost-effective by default
+- **Nano Banana Pro**: Automatic mode detection, cost-effective by default
 - **OpenAI 4o**: Multiple variants (default 4) for cost efficiency
 - **Flux Kontext**: Professional quality with cost controls
 
@@ -5624,7 +5624,7 @@ The system automatically detects user intent:
 
 ### **Social Media Content**
 - **Video**: Wan Video, 720p, 5 seconds
-- **Images**: Nano Banana, lite quality
+- **Images**: Nano Banana Pro, lite quality
 - **Audio**: ElevenLabs Turbo for voiceovers
 - **Cost Strategy**: Lowest cost, fast generation
 
@@ -5642,7 +5642,7 @@ The system automatically detects user intent:
 
 ### **Internal Prototyping**
 - **Video**: Wan Video or ByteDance Lite, 720p
-- **Images**: Nano Banana, fast generation
+- **Images**: Nano Banana Pro, fast generation
 - **Audio**: ElevenLabs Turbo
 - **Cost Strategy**: Maximum cost efficiency
 
@@ -5711,7 +5711,7 @@ These guidelines ensure optimal balance between quality requirements and cost ma
 | **Qwen Image** | HD | 1-4 images | Fast | ✅ Yes (multi-image) | Fast processing, multi-image editing, pose transfer |
 | **Flux Kontext** | HD | Single | Medium | ✅ Yes | Advanced controls, technical precision, safety tolerance |
 | **OpenAI GPT-4o** | Limited AR | 1-4 variants | Medium | ✅ Yes (with mask) | Creative variants, mask editing, fallback support |
-| **Nano Banana** | Custom | 1-10 images | Fastest | ✅ Yes (simple) | Bulk edits, 4x upscaling, face enhancement |
+| **Nano Banana Pro** | Custom | 1-10 images | Fastest | ✅ Yes (simple) | Bulk edits, 4x upscaling, face enhancement |
 | **Recraft BG Removal** | Original | Single | Fast | N/A | Background removal only |
 | **Ideogram Reframe** | HD | 1-4 images | Medium | N/A | Aspect ratio changes, intelligent composition |
 
@@ -5721,17 +5721,17 @@ These guidelines ensure optimal balance between quality requirements and cost ma
 - **Multi-Image Editing**: Qwen Image (pose transfer, style consistency)  
 - **Technical Precision**: Flux Kontext (advanced controls, safety settings)
 - **Creative Exploration**: OpenAI GPT-4o (4 variants, creative prompts)
-- **Bulk Simple Edits**: Nano Banana (fastest, bulk processing)
-- **Product Photography**: Recraft BG Removal → Nano Banana upscale
+- **Bulk Simple Edits**: Nano Banana Pro (fastest, bulk processing)
+- **Product Photography**: Recraft BG Removal → Nano Banana Pro upscale
 - **Aspect Ratio Changes**: Ideogram Reframe (intelligent composition)
 
 ## Parameter Compatibility
 
 ### Image Input
-- **filesUrl/image_urls**: ByteDance, Qwen, OpenAI, Nano Banana
+- **filesUrl/image_urls**: ByteDance, Qwen, OpenAI, Nano Banana Pro
 - **inputImage**: Flux Kontext
 - **image_url**: Qwen, Ideogram, Recraft
-- **image**: Nano Banana (upscale mode)
+- **image**: Nano Banana Pro (upscale mode)
 
 ### Quality Control
 - **Resolution**: ByteDance (1K/2K/4K), Qwen (6 presets), Ideogram (6 presets)
@@ -5837,7 +5837,7 @@ These guidelines ensure optimal balance between quality requirements and cost ma
 ### **Image Generation**
 | Model | Resolution | Relative Cost |
 |-------|-----------|---------------|
-| Nano Banana | Standard | 1x |
+| Nano Banana Pro | Standard | 1x |
 | Qwen | HD | 1.5x |
 | ByteDance Seedream | 2K | 2x |
 | ByteDance Seedream | 4K | 3x |

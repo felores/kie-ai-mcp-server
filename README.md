@@ -52,7 +52,7 @@ The easiest way to use this server is to add it to your MCP client configuration
 - **OpenAI Sora 2**: Advanced video generation with text/image/storyboard modes (unified)
 - **Runway Aleph**: Advanced video editing with object removal and style transfer
 - **Suno V5**: Professional music generation with realistic vocals up to 8 minutes
-- **Nano Banana**: Lightning-fast image generation, editing, and upscaling (unified tool)
+- **Nano Banana Pro**: Lightning-fast image generation, editing, and upscaling (unified tool)
 - **ElevenLabs**: Studio-quality text-to-speech and sound effects
 - **ByteDance Seedance**: High-quality video with text-to-video and image-to-video (unified)
 - **ByteDance Seedream V4**: Advanced image generation and editing with unified interface
