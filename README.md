@@ -33,6 +33,63 @@ The easiest way to use this server is to add it to your MCP client configuration
 
 **That's it!** No callback URL setup required - the server handles it automatically.
 
+<details>
+<summary><strong>🎛️ Filter Tools (optional - click to expand)</strong></summary>
+
+Reduce cognitive load by enabling only the tools you need:
+
+**Whitelist (enable specific tools only):**
+```json
+{
+  "mcpServers": {
+    "kie-ai": {
+      "command": "npx",
+      "args": ["-y", "@felores/kie-ai-mcp-server"],
+      "env": {
+        "KIE_AI_API_KEY": "your-api-key-here",
+        "KIE_AI_ENABLED_TOOLS": "nano_banana_image,veo3_generate_video,suno_generate_music"
+      }
+    }
+  }
+}
+```
+
+**Category filter (enable by type):**
+```json
+{
+  "mcpServers": {
+    "kie-ai": {
+      "command": "npx",
+      "args": ["-y", "@felores/kie-ai-mcp-server"],
+      "env": {
+        "KIE_AI_API_KEY": "your-api-key-here",
+        "KIE_AI_TOOL_CATEGORIES": "image,video"
+      }
+    }
+  }
+}
+```
+
+**Blacklist (disable specific tools):**
+```json
+{
+  "mcpServers": {
+    "kie-ai": {
+      "command": "npx",
+      "args": ["-y", "@felores/kie-ai-mcp-server"],
+      "env": {
+        "KIE_AI_API_KEY": "your-api-key-here",
+        "KIE_AI_DISABLED_TOOLS": "midjourney_generate,runway_aleph_video"
+      }
+    }
+  }
+}
+```
+
+**Categories:** `image` | `video` | `audio` — Utility tools (list_tasks, get_task_status) are always enabled.
+
+</details>
+
 **For Claude Desktop:** Add this to `~/Library/Application Support/Claude/claude_desktop_config.json` (Mac) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows)
 
 **Works with Cursor, Windsurf, VS Code, Claude Code, OpenCode, Droid, etc.**
