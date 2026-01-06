@@ -101,7 +101,7 @@ export class KieAiClient {
     } else if (hasImageUrls) {
       // Edit mode - Nano Banana Pro with reference images
       jobRequest = {
-        model: "google/nano-banana-pro",
+        model: "nano-banana-pro",
         input: {
           prompt: request.prompt,
           image_input: request.image_urls, // API uses image_input, not image_urls
@@ -115,7 +115,7 @@ export class KieAiClient {
     } else {
       // Generate mode - Nano Banana Pro text-to-image
       jobRequest = {
-        model: "google/nano-banana-pro",
+        model: "nano-banana-pro",
         input: {
           prompt: request.prompt,
           ...(request.output_format && {
