@@ -414,7 +414,7 @@ export class KieAiClient {
   ): Promise<KieAiResponse<TaskResponse>> {
     // Determine mode based on presence of image_urls
     const isEdit = !!request.image_urls && request.image_urls.length > 0;
-    const isV5Lite = request.version === "5-lite";
+    const isV5Lite = request.version !== "4";
 
     let model: string;
     let input: any;
