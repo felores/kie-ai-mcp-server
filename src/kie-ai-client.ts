@@ -81,51 +81,29 @@ export class KieAiClient {
     request: NanoBananaImageRequest,
   ): Promise<KieAiResponse<ImageResponse>> {
     // Smart mode detection based on parameters
-    const hasImage = !!request.image;
-    const hasImageUrls = !!request.image_urls && request.image_urls.length > 0;
+    const hasImageInput =
+      !!request.image_input && request.image_input.length > 0;
 
-    let jobRequest: any;
+    const input: any = {
+      prompt: request.prompt,
+      ...(request.output_format && { output_format: request.output_format }),
+      ...(request.aspect_ratio && { aspect_ratio: request.aspect_ratio }),
+      ...(request.resolution && { resolution: request.resolution }),
+      ...(request.google_search && { google_search: request.google_search }),
+    };
 
-    if (hasImage) {
-      // Upscale mode (legacy, still uses old model)
-      jobRequest = {
-        model: "nano-banana-upscale",
-        input: {
-          image: request.image,
-          ...(request.scale !== undefined && { scale: request.scale }),
-          ...(request.face_enhance !== undefined && {
-            face_enhance: request.face_enhance,
-          }),
-        },
-      };
-    } else if (hasImageUrls) {
-      // Edit mode - Nano Banana Pro with reference images
-      jobRequest = {
-        model: "nano-banana-pro",
-        input: {
-          prompt: request.prompt,
-          image_input: request.image_urls, // API uses image_input, not image_urls
-          ...(request.output_format && {
-            output_format: request.output_format,
-          }),
-          ...(request.aspect_ratio && { aspect_ratio: request.aspect_ratio }),
-          ...(request.resolution && { resolution: request.resolution }),
-        },
-      };
+    if (hasImageInput) {
+      // Edit mode - with reference images
+      input.image_input = request.image_input;
     } else {
-      // Generate mode - Nano Banana Pro text-to-image
-      jobRequest = {
-        model: "nano-banana-pro",
-        input: {
-          prompt: request.prompt,
-          ...(request.output_format && {
-            output_format: request.output_format,
-          }),
-          ...(request.aspect_ratio && { aspect_ratio: request.aspect_ratio }),
-          ...(request.resolution && { resolution: request.resolution }),
-        },
-      };
+      // Generate mode - empty image_input per API docs
+      input.image_input = [];
     }
+
+    const jobRequest = {
+      model: "nano-banana-2",
+      input,
+    };
 
     return this.makeRequest<ImageResponse>(
       "/jobs/createTask",
@@ -150,7 +128,6 @@ export class KieAiClient {
     } else if (
       apiType === "nano-banana" ||
       apiType === "nano-banana-edit" ||
-      apiType === "nano-banana-upscale" ||
       apiType === "nano-banana-image"
     ) {
       return this.makeRequest<any>(`/jobs/recordInfo?taskId=${taskId}`, "GET");
@@ -168,9 +145,7 @@ export class KieAiClient {
       apiType === "wan-video" ||
       apiType === "recraft-remove-background" ||
       apiType === "ideogram-reframe" ||
-      apiType === "kling-v2-1-pro" ||
-      apiType === "kling-v2-5-turbo-text-to-video" ||
-      apiType === "kling-v2-5-turbo-image-to-video" ||
+      apiType === "kling-3.0-video" ||
       apiType === "hailuo" ||
       apiType === "sora-video" ||
       apiType === "flux2-image" ||
@@ -439,14 +414,16 @@ export class KieAiClient {
   ): Promise<KieAiResponse<TaskResponse>> {
     // Determine mode based on presence of image_urls
     const isEdit = !!request.image_urls && request.image_urls.length > 0;
-    const isV45 = request.version === "4.5";
+    const isV5Lite = request.version === "5-lite";
 
     let model: string;
     let input: any;
 
-    if (isV45) {
-      // Seedream 4.5 with 4K support
-      model = isEdit ? "seedream/4.5-edit" : "seedream/4.5-text-to-image";
+    if (isV5Lite) {
+      // Seedream 5.0 Lite
+      model = isEdit
+        ? "seedream/5-lite-image-to-image"
+        : "seedream/5-lite-text-to-image";
       input = {
         prompt: request.prompt,
         aspect_ratio: request.aspect_ratio || "1:1",
@@ -736,73 +713,35 @@ export class KieAiClient {
   async generateKlingVideo(
     request: KlingVideoRequest,
   ): Promise<KieAiResponse<TaskResponse>> {
-    // Smart mode detection based on parameters
-    const hasImageUrl = !!request.image_url;
-    const hasTailImageUrl = !!request.tail_image_url;
-    const isV26 = request.version === "2.6";
+    // Kling 3.0 - single model endpoint
+    const input: any = {
+      prompt: request.prompt,
+      duration: request.duration || "5",
+      aspect_ratio: request.aspect_ratio || "16:9",
+      mode: request.mode || "std",
+      sound: request.sound ?? false,
+    };
 
-    let model: string;
-    let input: any;
+    // Image-to-video: up to 2 images (start frame, optional end frame)
+    if (request.image_urls && request.image_urls.length > 0) {
+      input.image_urls = request.image_urls;
+    }
 
-    if (isV26) {
-      // Kling 2.6 with native audio support
-      if (hasImageUrl) {
-        // v2.6 image-to-video mode
-        model = "kling-2.6/image-to-video";
-        input = {
-          prompt: request.prompt,
-          image_urls: [request.image_url],
-          duration: request.duration || "5",
-          sound: request.sound ?? false,
-        };
-      } else {
-        // v2.6 text-to-video mode
-        model = "kling-2.6/text-to-video";
-        input = {
-          prompt: request.prompt,
-          duration: request.duration || "5",
-          aspect_ratio: request.aspect_ratio || "16:9",
-          sound: request.sound ?? false,
-        };
+    // Multi-shot mode
+    if (request.multi_shots) {
+      input.multi_shots = true;
+      if (request.multi_prompt) {
+        input.multi_prompt = request.multi_prompt;
       }
-    } else if (hasTailImageUrl) {
-      // v2.1-pro mode: start frame + end frame reference
-      model = "kling/v2-1-pro";
-      input = {
-        prompt: request.prompt,
-        image_url: request.image_url,
-        tail_image_url: request.tail_image_url,
-        duration: request.duration || "5",
-        negative_prompt:
-          request.negative_prompt || "blur, distort, and low quality",
-        cfg_scale: request.cfg_scale !== undefined ? request.cfg_scale : 0.5,
-      };
-    } else if (hasImageUrl) {
-      // v2.5-turbo image-to-video mode
-      model = "kling/v2-5-turbo-image-to-video-pro";
-      input = {
-        prompt: request.prompt,
-        image_url: request.image_url,
-        duration: request.duration || "5",
-        negative_prompt:
-          request.negative_prompt || "blur, distort, and low quality",
-        cfg_scale: request.cfg_scale !== undefined ? request.cfg_scale : 0.5,
-      };
-    } else {
-      // v2.5-turbo text-to-video mode (default)
-      model = "kling/v2-5-turbo-text-to-video-pro";
-      input = {
-        prompt: request.prompt,
-        duration: request.duration || "5",
-        aspect_ratio: request.aspect_ratio || "16:9",
-        negative_prompt:
-          request.negative_prompt || "blur, distort, and low quality",
-        cfg_scale: request.cfg_scale !== undefined ? request.cfg_scale : 0.5,
-      };
+    }
+
+    // Kling Elements (characters, objects)
+    if (request.kling_elements && request.kling_elements.length > 0) {
+      input.kling_elements = request.kling_elements;
     }
 
     const jobRequest = {
-      model,
+      model: "kling-3.0/video",
       input,
       callBackUrl: request.callBackUrl || process.env.KIE_AI_CALLBACK_URL,
     };

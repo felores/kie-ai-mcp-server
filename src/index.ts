@@ -95,7 +95,7 @@ class KieAiMcpServer {
   constructor() {
     this.server = new Server({
       name: "kie-ai-mcp-server",
-      version: "2.0.10",
+      version: "3.0.0",
     });
 
     // Initialize client with config from environment
@@ -295,11 +295,10 @@ class KieAiMcpServer {
         {
           name: "nano_banana_image",
           description:
-            "Generate, edit, and upscale images using Google's Gemini 3.0 Pro Image (Nano Banana Pro) - unified tool with 4K support, multi-reference consistency, and improved text rendering",
+            "Generate and edit images using Google's Gemini 3.1 Flash Image (Nano Banana 2) - unified tool with 4K support, up to 14 reference images, Google Search grounding, and improved text rendering. Pricing: 8 credits/1K, 12/2K, 18/4K",
           inputSchema: {
             type: "object",
             properties: {
-              // Generate/Edit mode parameters
               prompt: {
                 type: "string",
                 description:
@@ -307,34 +306,14 @@ class KieAiMcpServer {
                 minLength: 1,
                 maxLength: 5000,
               },
-              image_urls: {
+              image_input: {
                 type: "array",
                 description:
-                  "Array of reference image URLs for editing mode (up to 8 images for multi-reference)",
+                  "Array of reference image URLs for editing mode (up to 14 images for multi-reference)",
                 items: { type: "string", format: "uri" },
                 minItems: 1,
-                maxItems: 8,
+                maxItems: 14,
               },
-              // Upscale mode parameters (legacy)
-              image: {
-                type: "string",
-                format: "uri",
-                description:
-                  "URL of image to upscale (jpeg/png/webp, max 10MB) - legacy upscale mode",
-              },
-              scale: {
-                type: "integer",
-                description: "Upscale factor for upscale mode (1-4)",
-                minimum: 1,
-                maximum: 4,
-                default: 2,
-              },
-              face_enhance: {
-                type: "boolean",
-                description: "Enable face enhancement for upscale mode",
-                default: false,
-              },
-              // Common parameters for generate/edit modes
               output_format: {
                 type: "string",
                 enum: ["png", "jpg"],
@@ -345,12 +324,16 @@ class KieAiMcpServer {
                 type: "string",
                 enum: [
                   "1:1",
+                  "1:4",
+                  "1:8",
                   "2:3",
                   "3:2",
                   "3:4",
+                  "4:1",
                   "4:3",
                   "4:5",
                   "5:4",
+                  "8:1",
                   "9:16",
                   "16:9",
                   "21:9",
@@ -363,8 +346,14 @@ class KieAiMcpServer {
                 type: "string",
                 enum: ["1K", "2K", "4K"],
                 description:
-                  "Output resolution: 1K (~$0.09), 2K (~$0.09), 4K (~$0.12)",
+                  "Output resolution: 1K (8 credits), 2K (12 credits), 4K (18 credits)",
                 default: "1K",
+              },
+              google_search: {
+                type: "boolean",
+                description:
+                  "Enable Google Search grounding for factual image generation",
+                default: false,
               },
             },
             required: [],
@@ -852,7 +841,7 @@ class KieAiMcpServer {
         {
           name: "bytedance_seedream_image",
           description:
-            "Generate and edit images using ByteDance Seedream models (supports V4 and V4.5 with 4K output). V4.5 offers enhanced detail fidelity, 4K resolution, multi-image fusion up to 14 refs, and clear small-text rendering",
+            "Generate and edit images using ByteDance Seedream models (supports V4 and V5 Lite with 3K output). V5 Lite offers enhanced detail fidelity, multi-image fusion up to 14 refs, and clear small-text rendering",
           inputSchema: {
             type: "object",
             properties: {
@@ -877,9 +866,9 @@ class KieAiMcpServer {
               version: {
                 type: "string",
                 description:
-                  "Seedream version: '4' for V4 (default), '4.5' for V4.5 with 4K support and enhanced features",
-                enum: ["4", "4.5"],
-                default: "4",
+                  "Seedream version: '4' for V4, '5-lite' for V5 Lite (default) with enhanced features",
+                enum: ["4", "5-lite"],
+                default: "5-lite",
               },
               image_size: {
                 type: "string",
@@ -918,7 +907,7 @@ class KieAiMcpServer {
               },
               aspect_ratio: {
                 type: "string",
-                description: "Aspect ratio for V4.5 output (V4.5 only)",
+                description: "Aspect ratio for V5 Lite output (V5 Lite only)",
                 enum: [
                   "1:1",
                   "4:3",
@@ -934,7 +923,7 @@ class KieAiMcpServer {
               quality: {
                 type: "string",
                 description:
-                  "Output quality for V4.5 (V4.5 only): 'basic' = 2K, 'high' = 4K resolution",
+                  "Output quality for V5 Lite (V5 Lite only): 'basic' = 2K, 'high' = 3K resolution",
                 enum: ["basic", "high"],
                 default: "basic",
               },
@@ -1729,70 +1718,103 @@ class KieAiMcpServer {
         {
           name: "kling_video",
           description:
-            "Generate videos using Kling AI models (supports v2.5 text/image-to-video, v2.1-pro with start/end frames, and v2.6 with native audio generation for speech, sound effects, and ambient sound)",
+            "Generate videos using Kling 3.0 AI - supports 3-15s flexible duration, native multilingual audio, multi-shot storytelling, character elements, and std/pro quality modes",
           inputSchema: {
             type: "object",
             properties: {
               prompt: {
                 type: "string",
                 description:
-                  "Text prompt describing the desired video content (max 5000 characters). For v2.6 audio: use [Character name, voice style] format for dialogue",
+                  "Text prompt describing the desired video content (max 5000 characters). For audio: use [Character name, voice style] format for dialogue",
                 minLength: 1,
                 maxLength: 5000,
               },
-              image_url: {
-                type: "string",
+              image_urls: {
+                type: "array",
                 description:
-                  "URL of input image for image-to-video or v2.1-pro start frame (optional - if not provided, uses text-to-video)",
-                format: "uri",
-              },
-              tail_image_url: {
-                type: "string",
-                description:
-                  "URL of end frame image for v2.1-pro (optional - requires image_url, v2.5 only). When provided, uses v2.1-pro model with start and end frame reference",
-                format: "uri",
+                  "Up to 2 image URLs: first = start frame, second = end frame (optional - if not provided, uses text-to-video)",
+                items: { type: "string", format: "uri" },
+                maxItems: 2,
               },
               duration: {
                 type: "string",
-                description: "Duration of video in seconds",
-                enum: ["5", "10"],
+                description: "Duration of video in seconds (3-15)",
                 default: "5",
               },
               aspect_ratio: {
                 type: "string",
-                description:
-                  "Aspect ratio of video (text-to-video mode only, image-to-video uses 16:9/9:16/1:1)",
+                description: "Aspect ratio of video (text-to-video mode only)",
                 enum: ["16:9", "9:16", "1:1"],
                 default: "16:9",
               },
-              negative_prompt: {
+              mode: {
                 type: "string",
                 description:
-                  "Elements to avoid in the video (max 2500 characters, v2.5 only)",
-                maxLength: 2500,
-                default: "blur, distort, and low quality",
-              },
-              cfg_scale: {
-                type: "number",
-                description:
-                  "CFG (Classifier Free Guidance) scale - how close to stick to the prompt (0-1, step 0.1, v2.5 only)",
-                minimum: 0,
-                maximum: 1,
-                multipleOf: 0.1,
-                default: 0.5,
-              },
-              version: {
-                type: "string",
-                description:
-                  "Kling model version: '2.5' for v2.5-turbo (default), '2.6' for native audio support",
-                enum: ["2.5", "2.6"],
-                default: "2.5",
+                  "Quality mode: 'std' for standard (faster, cheaper), 'pro' for professional quality",
+                enum: ["std", "pro"],
+                default: "std",
               },
               sound: {
                 type: "boolean",
                 description:
-                  "Enable native audio generation including speech, sound effects, and ambient sound (v2.6 only). Pricing: with audio is 2x credits",
+                  "Enable native audio generation including multilingual speech, sound effects, and ambient sound. Pricing: with audio is 2x credits",
                 default: false,
+              },
+              multi_shots: {
+                type: "boolean",
+                description:
+                  "Enable multi-shot mode for cinematic storytelling with multiple scenes (requires multi_prompt)",
+                default: false,
+              },
+              multi_prompt: {
+                type: "array",
+                description:
+                  "Array of shot definitions for multi-shot mode. Each shot has a prompt and duration (1-12s)",
+                items: {
+                  type: "object",
+                  properties: {
+                    prompt: {
+                      type: "string",
+                      description: "Scene description for this shot",
+                    },
+                    duration: {
+                      type: "integer",
+                      description: "Duration of this shot in seconds (1-12)",
+                      minimum: 1,
+                      maximum: 12,
+                    },
+                  },
+                  required: ["prompt", "duration"],
+                },
+              },
+              kling_elements: {
+                type: "array",
+                description:
+                  "Character/object elements for consistent identity across shots. Provide name, description, and reference images/videos",
+                items: {
+                  type: "object",
+                  properties: {
+                    name: {
+                      type: "string",
+                      description: "Element name (e.g., character name)",
+                    },
+                    description: {
+                      type: "string",
+                      description: "Element description",
+                    },
+                    element_input_urls: {
+                      type: "array",
+                      description: "Reference image URLs for this element",
+                      items: { type: "string", format: "uri" },
+                    },
+                    element_input_video_urls: {
+                      type: "array",
+                      description: "Reference video URLs for this element",
+                      items: { type: "string", format: "uri" },
+                    },
+                  },
+                  required: ["name", "description"],
+                },
               },
               callBackUrl: {
                 type: "string",
@@ -2583,19 +2605,9 @@ class KieAiMcpServer {
       const response = await this.client.generateNanoBananaImage(request);
 
       // Determine mode and api_type based on parameters
-      let apiType: string;
-      let modeDescription: string;
-
-      if (request.image) {
-        apiType = "nano-banana-upscale";
-        modeDescription = "upscale";
-      } else if (request.image_urls && request.image_urls.length > 0) {
-        apiType = "nano-banana-edit";
-        modeDescription = "edit";
-      } else {
-        apiType = "nano-banana";
-        modeDescription = "generate";
-      }
+      const isEdit = !!request.image_input && request.image_input.length > 0;
+      const apiType = isEdit ? "nano-banana-edit" : "nano-banana-image";
+      const modeDescription = isEdit ? "edit" : "generate";
 
       if (response.data?.taskId) {
         await this.db.createTask({
@@ -2615,7 +2627,7 @@ class KieAiMcpServer {
                 success: true,
                 response: response,
                 mode: modeDescription,
-                message: `Nano Banana Pro image ${modeDescription} initiated`,
+                message: `Nano Banana 2 image ${modeDescription} initiated`,
               },
               null,
               2,
@@ -2627,15 +2639,13 @@ class KieAiMcpServer {
       return this.formatError("nano_banana_image", error, {
         prompt:
           "Required for generate/edit modes: text description (max 5000 chars)",
-        image_urls: "Required for edit mode: array of 1-10 image URLs to edit",
-        image:
-          "Required for upscale mode: URL of image to upscale (jpeg/png/webp, max 10MB)",
-        scale: "Optional for upscale mode: upscale factor 1-4 (default: 2)",
-        face_enhance:
-          "Optional for upscale mode: enable face enhancement (default: false)",
-        output_format: 'Optional for generate/edit modes: "png" or "jpeg"',
-        image_size:
-          'Optional for generate/edit modes: aspect ratio like "16:9", "1:1", etc.',
+        image_input:
+          "Optional for edit mode: array of up to 14 reference image URLs",
+        output_format: 'Optional: "png" or "jpg"',
+        aspect_ratio: 'Optional: aspect ratio like "16:9", "1:1", etc.',
+        resolution: 'Optional: "1K", "2K", or "4K"',
+        google_search:
+          "Optional: enable Google Search grounding (default: false)",
       });
     }
   }
@@ -2914,7 +2924,6 @@ class KieAiMcpServer {
         const imageModels = [
           "nano-banana",
           "nano-banana-edit",
-          "nano-banana-upscale",
           "nano-banana-image",
           "bytedance-seedream-image",
           "qwen-image",
@@ -2933,9 +2942,7 @@ class KieAiMcpServer {
           "sora-video",
           "sora-2",
           "sora-2-pro",
-          "kling-v2-1-pro",
-          "kling-v2-5-turbo-text-to-video",
-          "kling-v2-5-turbo-image-to-video",
+          "kling-3.0-video",
           "bytedance-seedance-video",
           "wan-video",
           "hailuo",
@@ -3557,7 +3564,7 @@ class KieAiMcpServer {
                 {
                   success: true,
                   task_id: response.data.taskId,
-                  message: `ByteDance Seedream V4 ${mode} task created successfully`,
+                  message: `ByteDance Seedream ${request.version === "4" ? "V4" : "V5 Lite"} ${mode} task created successfully`,
                   parameters: {
                     mode: mode,
                     prompt:
@@ -3588,7 +3595,7 @@ class KieAiMcpServer {
         };
       } else {
         throw new Error(
-          response.msg || "Failed to create ByteDance Seedream V4 image task",
+          response.msg || "Failed to create ByteDance Seedream image task",
         );
       }
     } catch (error) {
@@ -4801,25 +4808,18 @@ class KieAiMcpServer {
 
       const response = await this.client.generateKlingVideo(request);
 
-      // Determine mode and api_type based on parameters
-      let apiType: string;
-      let modeDescription: string;
-
-      if (request.tail_image_url) {
-        apiType = "kling-v2-1-pro";
-        modeDescription = "v2.1-pro with start and end frame reference";
-      } else if (request.image_url) {
-        apiType = "kling-v2-5-turbo-image-to-video";
-        modeDescription = "v2.5-turbo image-to-video";
-      } else {
-        apiType = "kling-v2-5-turbo-text-to-video";
-        modeDescription = "v2.5-turbo text-to-video";
-      }
+      // Determine mode description
+      const hasImages = !!request.image_urls && request.image_urls.length > 0;
+      const modeDescription = request.multi_shots
+        ? "Kling 3.0 multi-shot"
+        : hasImages
+          ? "Kling 3.0 image-to-video"
+          : "Kling 3.0 text-to-video";
 
       if (response.data?.taskId) {
         await this.db.createTask({
           task_id: response.data.taskId,
-          api_type: apiType as any,
+          api_type: "kling-3.0-video",
           status: "pending",
         });
       }
@@ -4833,17 +4833,14 @@ class KieAiMcpServer {
                 success: true,
                 task_id: response.data?.taskId,
                 mode: modeDescription,
-                message: `Kling video generation task created successfully (${modeDescription})`,
+                message: `Kling 3.0 video generation task created successfully (${modeDescription})`,
                 parameters: {
                   prompt: request.prompt,
-                  image_url: request.image_url,
-                  tail_image_url: request.tail_image_url,
                   duration: request.duration || "5",
                   aspect_ratio: request.aspect_ratio || "16:9",
-                  negative_prompt:
-                    request.negative_prompt || "blur, distort, and low quality",
-                  cfg_scale:
-                    request.cfg_scale !== undefined ? request.cfg_scale : 0.5,
+                  mode: request.mode || "std",
+                  sound: request.sound ?? false,
+                  multi_shots: request.multi_shots ?? false,
                   callBackUrl: request.callBackUrl,
                 },
                 next_steps: [
@@ -4862,28 +4859,30 @@ class KieAiMcpServer {
       if (error instanceof z.ZodError) {
         return this.formatError("kling_video", error, {
           prompt: "Required: video description (max 5000 chars)",
-          image_url:
-            "Optional: image URL for image-to-video or v2.1-pro start frame",
-          tail_image_url:
-            "Optional: end frame image for v2.1-pro (requires image_url)",
-          duration: 'Optional: video duration "5" or "10" (default: "5")',
+          image_urls: "Optional: up to 2 image URLs (start frame, end frame)",
+          duration: 'Optional: video duration "3"-"15" (default: "5")',
           aspect_ratio:
-            'Optional: aspect ratio for text-to-video "16:9", "9:16", or "1:1" (default: "16:9")',
-          negative_prompt: "Optional: things to avoid (max 2500 chars)",
-          cfg_scale: "Optional: CFG scale 0-1 step 0.1 (default: 0.5)",
+            'Optional: aspect ratio "16:9", "9:16", or "1:1" (default: "16:9")',
+          mode: 'Optional: "std" or "pro" (default: "std")',
+          sound: "Optional: enable native audio (default: false)",
+          multi_shots:
+            "Optional: enable multi-shot mode (requires multi_prompt)",
+          multi_prompt:
+            "Optional: array of {prompt, duration} for multi-shot scenes",
+          kling_elements:
+            "Optional: character/object elements for identity consistency",
           callBackUrl:
-            "Optional: callback URL for notifications (uses KIE_AI_CALLBACK_URL env var if not provided)",
+            "Optional: callback URL (uses KIE_AI_CALLBACK_URL env var if not provided)",
         });
       }
 
       return this.formatError("kling_video", error, {
         prompt: "Required: text description for video generation",
-        image_url: "Optional: image URL for image-to-video generation",
-        tail_image_url: "Optional: end frame image for v2.1-pro model",
-        duration: "Optional: video duration in seconds (5 or 10)",
+        image_urls: "Optional: up to 2 image URLs for image-to-video",
+        duration: "Optional: video duration 3-15 seconds",
         aspect_ratio: "Optional: aspect ratio (16:9, 9:16, 1:1)",
-        negative_prompt: "Optional: content to avoid in generation",
-        cfg_scale: "Optional: guidance scale for prompt adherence",
+        mode: "Optional: quality mode (std or pro)",
+        sound: "Optional: enable native audio generation",
         callBackUrl: "Optional: URL for task completion notifications",
       });
     }

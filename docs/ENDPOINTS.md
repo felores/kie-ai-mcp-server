@@ -34,8 +34,8 @@ This document maps Kie.ai platform endpoints to MCP server tools. Use this to:
 ### Image Tools (8)
 | MCP Tool | Kie.ai Models | Status |
 |----------|---------------|--------|
-| `nano_banana_image` | Nano Banana Pro (generate/edit/upscale) | ✅ Updated 2025-12-06 |
-| `bytedance_seedream_image` | Seedream V4/V4.5 (text-to-image/edit, 4K) | ✅ Updated 2025-12-08 |
+| `nano_banana_image` | Nano Banana 2 / Gemini 3.1 Flash (generate/edit) | ✅ Updated 2026-02-28 |
+| `bytedance_seedream_image` | Seedream V4/V5 Lite (text-to-image/edit) | ✅ Updated 2026-02-28 |
 | `qwen_image` | Qwen (text-to-image/edit) | ✅ |
 | `openai_4o_image` | GPT-4o Image | ✅ |
 | `flux_kontext_image` | Flux Kontext Pro/Max | ✅ |
@@ -55,7 +55,7 @@ This document maps Kie.ai platform endpoints to MCP server tools. Use this to:
 | `wan_video` | Wan 2.5 (text/image-to-video) | ✅ |
 | `wan_animate` | Wan 2.2 Animate (animation/replace) | ✅ Added 2025-12-06 |
 | `hailuo_video` | Hailuo (standard/pro) | ✅ |
-| `kling_video` | Kling v2.1-pro, v2.5-turbo, v2.6 (native audio) | ✅ Updated 2025-12-08 |
+| `kling_video` | Kling 3.0 (text/image-to-video, multi-shot, native audio) | ✅ Updated 2026-02-28 |
 
 ### Audio Tools (3)
 | MCP Tool | Kie.ai Models | Status |

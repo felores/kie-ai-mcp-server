@@ -1,31 +1,30 @@
 import { z } from "zod";
 
 // Zod schemas for request validation
-// Nano Banana Pro - powered by Gemini 3.0 Pro Image
+// Nano Banana 2 - powered by Gemini 3.1 Flash Image
 export const NanoBananaImageSchema = z
   .object({
     // Text-to-image parameters
     prompt: z.string().min(1).max(5000).optional(),
 
-    // Edit mode parameters - up to 8 reference images for multi-reference
-    image_urls: z.array(z.string().url()).min(1).max(8).optional(),
-
-    // Upscale mode parameters (legacy, still supported)
-    image: z.string().url().optional(),
-    scale: z.number().int().min(1).max(4).default(2).optional(),
-    face_enhance: z.boolean().default(false).optional(),
+    // Edit mode parameters - up to 14 reference images for multi-reference
+    image_input: z.array(z.string().url()).min(1).max(14).optional(),
 
     // Common parameters for generate/edit modes
     output_format: z.enum(["png", "jpg"]).default("png").optional(),
     aspect_ratio: z
       .enum([
         "1:1",
+        "1:4",
+        "1:8",
         "2:3",
         "3:2",
         "3:4",
+        "4:1",
         "4:3",
         "4:5",
         "5:4",
+        "8:1",
         "9:16",
         "16:9",
         "21:9",
@@ -33,31 +32,23 @@ export const NanoBananaImageSchema = z
       ])
       .default("1:1")
       .optional(),
-    // New: Resolution support for Pro (1K, 2K, 4K)
     resolution: z.enum(["1K", "2K", "4K"]).default("1K").optional(),
+    google_search: z.boolean().default(false).optional(),
   })
   .refine(
     (data) => {
       // Smart mode detection and validation
       const hasPrompt = !!data.prompt;
-      const hasImageUrls = !!data.image_urls && data.image_urls.length > 0;
-      const hasImage = !!data.image;
-      const hasScale = data.scale !== undefined;
+      const hasImageInput = !!data.image_input && data.image_input.length > 0;
 
-      // Upscale mode: requires image, optional scale
-      if (hasImage) {
-        // For upscale mode, prompt and image_urls should not be provided
-        return !hasPrompt && !hasImageUrls;
+      // Edit mode: requires prompt and image_input
+      if (hasImageInput) {
+        return hasPrompt;
       }
 
-      // Edit mode: requires prompt and image_urls
-      if (hasImageUrls) {
-        return hasPrompt && !hasImage && !hasScale;
-      }
-
-      // Generate mode: requires prompt, no image or image_urls
+      // Generate mode: requires prompt only
       if (hasPrompt) {
-        return !hasImage && !hasImageUrls && !hasScale;
+        return true;
       }
 
       // No valid mode detected
@@ -65,7 +56,7 @@ export const NanoBananaImageSchema = z
     },
     {
       message:
-        "Invalid parameter combination. Provide either: 1) prompt only (generate mode), 2) prompt + image_urls (edit mode), or 3) image (+ scale) (upscale mode)",
+        "Invalid parameter combination. Provide either: 1) prompt only (generate mode), or 2) prompt + image_input (edit mode)",
       path: [],
     },
   );
@@ -295,8 +286,8 @@ export const WanVideoSchema = z
 export const ByteDanceSeedreamImageSchema = z.object({
   prompt: z.string().min(1).max(5000),
   image_urls: z.array(z.string().url()).min(1).max(14).optional(),
-  // Version selection: "4" for Seedream V4, "4.5" for Seedream 4.5 with 4K support
-  version: z.enum(["4", "4.5"]).default("4").optional(),
+  // Version selection: "4" for Seedream V4, "5-lite" for Seedream 5.0 Lite
+  version: z.enum(["4", "5-lite"]).default("5-lite").optional(),
   // V4 parameters
   image_size: z
     .enum([
@@ -315,7 +306,7 @@ export const ByteDanceSeedreamImageSchema = z.object({
   image_resolution: z.enum(["1K", "2K", "4K"]).default("1K").optional(),
   max_images: z.number().int().min(1).max(6).default(1).optional(),
   seed: z.number().optional(),
-  // V4.5 parameters
+  // V5 Lite parameters (same as V4.5: aspect_ratio, quality)
   aspect_ratio: z
     .enum(["1:1", "4:3", "3:4", "16:9", "9:16", "2:3", "3:2", "21:9"])
     .default("1:1")
@@ -730,66 +721,63 @@ export const IdeogramReframeSchema = z
 
 export type IdeogramReframeRequest = z.infer<typeof IdeogramReframeSchema>;
 
-// Kling Video - Unified tool for text-to-video, image-to-video (supports v2.5 and v2.6 with native audio)
+// Kling 3.0 Video - text-to-video, image-to-video with native audio, multi-shots, and elements
 export const KlingVideoSchema = z
   .object({
     prompt: z.string().min(1).max(5000),
-    image_url: z.string().url().optional(),
-    tail_image_url: z.string().url().optional(),
-    duration: z.enum(["5", "10"]).default("5").optional(),
-    aspect_ratio: z.enum(["16:9", "9:16", "1:1"]).default("16:9").optional(),
-    negative_prompt: z
+    // Up to 2 images: first = start frame, second = end frame
+    image_urls: z.array(z.string().url()).max(2).optional(),
+    duration: z
       .string()
-      .max(2500)
-      .default("blur, distort, and low quality")
+      .refine(
+        (val) => {
+          const num = parseInt(val);
+          return !isNaN(num) && num >= 3 && num <= 15;
+        },
+        {
+          message: "Duration must be a string number between 3 and 15",
+        },
+      )
+      .default("5")
       .optional(),
-    cfg_scale: z.number().min(0).max(1).multipleOf(0.1).default(0.5).optional(),
-    // Kling 2.6 specific parameters
-    version: z.enum(["2.5", "2.6"]).default("2.5").optional(),
+    aspect_ratio: z.enum(["16:9", "9:16", "1:1"]).default("16:9").optional(),
+    mode: z.enum(["std", "pro"]).default("std").optional(),
     sound: z.boolean().default(false).optional(),
+    multi_shots: z.boolean().default(false).optional(),
+    multi_prompt: z
+      .array(
+        z.object({
+          prompt: z.string(),
+          duration: z.number().int().min(1).max(12),
+        }),
+      )
+      .optional(),
+    kling_elements: z
+      .array(
+        z.object({
+          name: z.string(),
+          description: z.string(),
+          element_input_urls: z.array(z.string().url()).optional(),
+          element_input_video_urls: z.array(z.string().url()).optional(),
+        }),
+      )
+      .optional(),
     callBackUrl: z.string().url().optional(),
   })
   .refine(
     (data) => {
-      // Validate mode requirements
-      const hasImageUrl = !!data.image_url;
-      const hasTailImageUrl = !!data.tail_image_url;
-      const isV26 = data.version === "2.6";
-
-      // sound parameter is only valid for v2.6
-      if (data.sound && !isV26) {
+      // multi_shots requires multi_prompt
+      if (
+        data.multi_shots &&
+        (!data.multi_prompt || data.multi_prompt.length === 0)
+      ) {
         return false;
       }
-
-      // v2.6 doesn't support tail_image_url (start+end frame mode)
-      if (isV26 && hasTailImageUrl) {
-        return false;
-      }
-
-      // v2.1-pro mode: requires image_url, optional tail_image_url for start+end frame reference (v2.5 only)
-      if (hasTailImageUrl) {
-        return hasImageUrl; // tail_image_url requires image_url
-      }
-
-      // image-to-video mode: requires image_url, no tail_image_url
-      if (hasImageUrl && !hasTailImageUrl) {
-        // aspect_ratio should not be provided for image-to-video
-        return (
-          !data.aspect_ratio ||
-          ["16:9", "9:16", "1:1"].includes(data.aspect_ratio)
-        );
-      }
-
-      // text-to-video mode: no image_url or tail_image_url, aspect_ratio allowed
-      if (!hasImageUrl && !hasTailImageUrl) {
-        return true;
-      }
-
-      return false;
+      return true;
     },
     {
       message:
-        "Invalid parameter combination. Choose mode: 1) prompt only (text-to-video), 2) prompt + image_url (image-to-video), or 3) prompt + image_url + tail_image_url (v2.1-pro with start+end frames, v2.5 only). Note: sound parameter requires version='2.6'",
+        "multi_shots requires multi_prompt array with at least one shot definition",
       path: [],
     },
   );
@@ -975,7 +963,6 @@ export interface TaskRecord {
   api_type:
     | "nano-banana"
     | "nano-banana-edit"
-    | "nano-banana-upscale"
     | "nano-banana-image"
     | "veo3"
     | "suno"
@@ -991,9 +978,7 @@ export interface TaskRecord {
     | "flux-kontext-image"
     | "recraft-remove-background"
     | "ideogram-reframe"
-    | "kling-v2-1-pro"
-    | "kling-v2-5-turbo-text-to-video"
-    | "kling-v2-5-turbo-image-to-video"
+    | "kling-3.0-video"
     | "hailuo"
     | "sora-video"
     | "flux2-image"

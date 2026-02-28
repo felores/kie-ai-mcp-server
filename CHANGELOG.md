@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0] - 2026-02-28
+
+### Breaking Changes
+- **Nano Banana 2**: Upgraded from Gemini 3.0 Pro Image (Nano Banana Pro) to Gemini 3.1 Flash Image (Nano Banana 2)
+  - Removed: `image` (upscale), `scale`, `face_enhance` parameters - upscale mode removed
+  - Renamed: `image_urls` → `image_input` (now supports up to 14 images, was 8)
+  - Added: `google_search` parameter for Google Search grounding
+  - Added aspect ratios: `1:4`, `1:8`, `4:1`, `8:1`
+  - Model ID changed: `nano-banana-pro` → `nano-banana-2`
+  - Pricing: 8 credits/1K, 12/2K, 18/4K
+
+- **Seedream 5.0 Lite**: Upgraded from Seedream V4.5 to V5 Lite as default version
+  - Version enum changed: `["4", "4.5"]` → `["4", "5-lite"]`, default `"5-lite"`
+  - V5 Lite quality: basic = 2K, high = 3K (was 4K for V4.5)
+  - Model IDs: `seedream/5-lite-text-to-image`, `seedream/5-lite-image-to-image`
+
+- **Kling 3.0**: Complete upgrade from v2.5/v2.6/v2.1-pro to Kling 3.0
+  - Removed: `image_url`, `tail_image_url`, `negative_prompt`, `cfg_scale`, `version` parameters
+  - Added: `image_urls` (array, up to 2 for start/end frames)
+  - Added: `mode` (`std`/`pro`) for quality selection
+  - Added: `multi_shots` + `multi_prompt` for cinematic multi-shot storytelling
+  - Added: `kling_elements` for character/object identity consistency
+  - Duration changed: fixed `["5", "10"]` → flexible `3-15` seconds
+  - Single model endpoint: `kling-3.0/video`
+  - Native multilingual audio via `sound` parameter
+
+- **TaskRecord api_type**: Removed `nano-banana-upscale`, `kling-v2-1-pro`, `kling-v2-5-turbo-text-to-video`, `kling-v2-5-turbo-image-to-video`. Added `kling-3.0-video`
+
 ## [2.0.10] - 2025-01-05
 
 ### Fixed

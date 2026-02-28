@@ -109,16 +109,16 @@ Reduce cognitive load by enabling only the tools you need:
 - **OpenAI Sora 2**: Advanced video generation with text/image/storyboard modes (unified)
 - **Runway Aleph**: Advanced video editing with object removal and style transfer
 - **Suno V5**: Professional music generation with realistic vocals up to 8 minutes
-- **Nano Banana Pro**: Lightning-fast image generation, editing, and upscaling (unified tool)
+- **Nano Banana 2**: Lightning-fast image generation and editing with Google Search grounding (unified tool)
 - **ElevenLabs**: Studio-quality text-to-speech and sound effects
 - **ByteDance Seedance**: High-quality video with text-to-video and image-to-video (unified)
-- **ByteDance Seedream V4**: Advanced image generation and editing with unified interface
+- **ByteDance Seedream V5 Lite**: Advanced image generation and editing with unified interface
 - **Qwen**: Powerful image generation and editing with acceleration options (unified)
 - **OpenAI 4o Image**: Advanced image generation, editing, and variant creation with GPT-4o (unified)
 - **Flux Kontext**: Professional image generation and editing with advanced features (unified)
 - **Alibaba Wan 2.5**: High-quality video generation with text-to-video and image-to-video (unified)
 - **Hailuo 02**: Professional video generation with text-to-video and image-to-video modes (unified, standard/pro quality)
-- **Kling Video**: Multi-tier video generation with v2.1-pro control and v2.5-turbo speed
+- **Kling 3.0**: Advanced video generation with 3-15s duration, multi-shot storytelling, and native audio
 - **Midjourney AI**: Industry-leading image and video generation with multiple modes (unified)
 - **Recraft Remove Background**: Professional AI-powered background removal
 - **Ideogram V3 Reframe**: Intelligent image reframing and aspect ratio conversion
