@@ -41,6 +41,7 @@ import {
   GrokImagineSchema,
   InfiniTalkSchema,
   KlingAvatarSchema,
+  TopazUpscaleImageSchema,
   KieAiConfig,
 } from "./types.js";
 
@@ -60,6 +61,7 @@ class KieAiMcpServer {
       "flux_kontext_image",
       "flux2_image",
       "z_image",
+      "topaz_upscale_image",
       "recraft_remove_background",
       "ideogram_reframe",
       "midjourney_generate", // Also generates images (6 modes: txt2img, img2img, style ref, omni ref, video SD/HD)
@@ -95,7 +97,7 @@ class KieAiMcpServer {
   constructor() {
     this.server = new Server({
       name: "kie-ai-mcp-server",
-      version: "3.0.0",
+      version: "3.0.1",
     });
 
     // Initialize client with config from environment
@@ -1634,6 +1636,36 @@ class KieAiMcpServer {
           },
         },
         {
+          name: "topaz_upscale_image",
+          description:
+            "Upscale and enhance images using Topaz Labs AI upscaler. Increases resolution with high-fidelity detail restoration, natural texture reconstruction, and improved clarity. Supports 1x-8x upscaling (max output 20,000px per side). Pricing: 10 credits (≤2K), 20 credits (4K), 40 credits (8K).",
+          inputSchema: {
+            type: "object",
+            properties: {
+              image_url: {
+                type: "string",
+                description:
+                  "URL of image to upscale (JPEG, PNG, WEBP, max 10MB)",
+                format: "uri",
+              },
+              upscale_factor: {
+                type: "string",
+                description:
+                  "Upscale factor: 1x (enhance only), 2x (default), 4x, or 8x. Max output dimension is 20,000px.",
+                enum: ["1", "2", "4", "8"],
+                default: "2",
+              },
+              callBackUrl: {
+                type: "string",
+                description:
+                  "Optional: URL for task completion notifications (uses KIE_AI_CALLBACK_URL env var if not provided)",
+                format: "uri",
+              },
+            },
+            required: ["image_url"],
+          },
+        },
+        {
           name: "recraft_remove_background",
           description:
             "Remove backgrounds from images using Recraft AI background removal model",
@@ -2140,6 +2172,9 @@ class KieAiMcpServer {
           case "wan_video":
             return await this.handleWanVideo(args);
 
+          case "topaz_upscale_image":
+            return await this.handleTopazUpscaleImage(args);
+
           case "recraft_remove_background":
             return await this.handleRecraftRemoveBackground(args);
 
@@ -2348,6 +2383,17 @@ class KieAiMcpServer {
           },
 
           // Specialized Tools
+          {
+            uri: "kie://models/topaz-upscale",
+            name: "Topaz Image Upscale",
+            description:
+              "AI-powered image upscaling with detail restoration (1x-8x)",
+            mimeType: "text/markdown",
+            annotations: {
+              audience: ["assistant"],
+              priority: 0.5,
+            },
+          },
           {
             uri: "kie://models/recraft-bg-removal",
             name: "Recraft Background Removal",
@@ -2829,6 +2875,32 @@ class KieAiMcpServer {
             if (apiData.errorMessage) {
               errorMessage = apiData.errorMessage;
             }
+          } else if (localTask?.api_type === "topaz-upscale") {
+            // Topaz Image Upscale-specific status mapping
+            const state = apiData.state;
+            if (state === "success") status = "completed";
+            else if (state === "fail") status = "failed";
+            else if (state === "waiting") status = "processing";
+
+            // Parse resultJson for Topaz Image Upscale
+            if (apiData.resultJson) {
+              try {
+                parsedResult = JSON.parse(apiData.resultJson);
+                if (
+                  parsedResult.resultUrls &&
+                  parsedResult.resultUrls.length > 0
+                ) {
+                  resultUrl = parsedResult.resultUrls[0];
+                }
+              } catch (e) {
+                // Invalid JSON in resultJson
+              }
+            }
+
+            // Extract error message for Topaz Image Upscale
+            if (apiData.failMsg) {
+              errorMessage = apiData.failMsg;
+            }
           } else if (localTask?.api_type === "recraft-remove-background") {
             // Recraft Remove Background-specific status mapping
             const state = apiData.state;
@@ -2929,6 +3001,7 @@ class KieAiMcpServer {
           "qwen-image",
           "openai-4o-image",
           "flux-kontext-image",
+          "topaz-upscale",
           "recraft-remove-background",
           "ideogram-reframe",
           "midjourney",
@@ -4651,6 +4724,74 @@ class KieAiMcpServer {
     }
   }
 
+  private async handleTopazUpscaleImage(args: any) {
+    try {
+      const request = TopazUpscaleImageSchema.parse(args);
+
+      // Use intelligent callback URL fallback
+      request.callBackUrl = this.getCallbackUrl(request.callBackUrl);
+
+      const response = await this.client.generateTopazUpscaleImage(request);
+
+      if (response.code === 200 && response.data?.taskId) {
+        // Store task in database
+        await this.db.createTask({
+          task_id: response.data.taskId,
+          api_type: "topaz-upscale",
+          status: "pending",
+        });
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(
+                {
+                  success: true,
+                  task_id: response.data.taskId,
+                  message: "Topaz Image Upscale task created successfully",
+                  parameters: {
+                    image_url: request.image_url,
+                    upscale_factor: request.upscale_factor,
+                    callBackUrl: request.callBackUrl,
+                  },
+                  next_steps: [
+                    "Use get_task_status to check generation progress",
+                    "Task completion will be sent to the provided callback URL",
+                    "Upscaling typically takes 30-90 seconds depending on image size and upscale factor",
+                  ],
+                },
+                null,
+                2,
+              ),
+            },
+          ],
+        };
+      } else {
+        throw new Error(
+          response.msg || "Failed to create Topaz Image Upscale task",
+        );
+      }
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return this.formatError("topaz_upscale_image", error, {
+          image_url:
+            "Required: URL of image to upscale (JPEG, PNG, WEBP, max 10MB)",
+          upscale_factor:
+            'Optional: Upscale factor "1", "2" (default), "4", or "8". Max output dimension is 20,000px.',
+          callBackUrl:
+            "Optional: URL for task completion notifications (uses KIE_AI_CALLBACK_URL env var if not provided)",
+        });
+      }
+
+      return this.formatError("topaz_upscale_image", error, {
+        image_url: "Required: URL of image to upscale",
+        upscale_factor: 'Optional: Upscale factor "1", "2", "4", or "8"',
+        callBackUrl: "Optional: URL for task completion notifications",
+      });
+    }
+  }
+
   private async handleRecraftRemoveBackground(args: any) {
     try {
       const request = RecraftRemoveBackgroundSchema.parse(args);
@@ -5401,6 +5542,12 @@ class KieAiMcpServer {
         quality: "premium",
       },
       {
+        name: "topaz_upscale_image",
+        status: "available",
+        category: "image",
+        quality: "professional",
+      },
+      {
         name: "recraft_remove_background",
         status: "available",
         category: "image",
@@ -5911,6 +6058,7 @@ These guidelines ensure optimal balance between quality requirements and cost ma
       "flux-kontext": "flux_kontext_image.md",
       "openai-4o-image": "openai_4o-image.md",
       "nano-banana": "google_nano-banana.md",
+      "topaz-upscale": "topaz_image-upscale.md",
       "recraft-bg-removal": "recraft_remove_background.md",
       "ideogram-reframe": "ideogram_reframe_image.md",
 

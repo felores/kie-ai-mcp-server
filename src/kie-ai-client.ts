@@ -25,6 +25,7 @@ import {
   GrokImagineRequest,
   InfiniTalkRequest,
   KlingAvatarRequest,
+  TopazUpscaleImageRequest,
   ImageResponse,
   TaskResponse,
 } from "./types.js";
@@ -149,7 +150,8 @@ export class KieAiClient {
       apiType === "hailuo" ||
       apiType === "sora-video" ||
       apiType === "flux2-image" ||
-      apiType === "wan-animate"
+      apiType === "wan-animate" ||
+      apiType === "topaz-upscale"
     ) {
       return this.makeRequest<any>(`/jobs/recordInfo?taskId=${taskId}`, "GET");
     } else if (apiType === "runway-aleph-video") {
@@ -1069,6 +1071,25 @@ export class KieAiClient {
     const jobRequest = {
       model: "infinitalk/from-audio",
       input,
+      callBackUrl: request.callBackUrl || process.env.KIE_AI_CALLBACK_URL,
+    };
+
+    return this.makeRequest<TaskResponse>(
+      "/jobs/createTask",
+      "POST",
+      jobRequest,
+    );
+  }
+
+  async generateTopazUpscaleImage(
+    request: TopazUpscaleImageRequest,
+  ): Promise<KieAiResponse<TaskResponse>> {
+    const jobRequest = {
+      model: "topaz/image-upscale",
+      input: {
+        image_url: request.image_url,
+        upscale_factor: request.upscale_factor || "2",
+      },
       callBackUrl: request.callBackUrl || process.env.KIE_AI_CALLBACK_URL,
     };
 

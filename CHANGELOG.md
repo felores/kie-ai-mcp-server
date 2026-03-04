@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.1] - 2026-03-04
+
+### Added
+- **Topaz Image Upscale**: New `topaz_upscale_image` tool for AI-powered image enhancement and upscaling
+  - Supports 1x, 2x, 4x, and 8x upscale factors
+  - High-fidelity detail restoration and natural texture reconstruction
+  - Max output dimension: 20,000 pixels per side
+  - Pricing: 10 credits (≤2K), 20 credits (4K), 40 credits (8K)
+  - Model ID: `topaz/image-upscale`
+
 ## [3.0.0] - 2026-02-28
 
 ### Breaking Changes

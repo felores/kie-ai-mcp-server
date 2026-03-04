@@ -23,7 +23,7 @@ This document maps Kie.ai platform endpoints to MCP server tools. Use this to:
 
 ---
 
-## Current MCP Tools (23 total)
+## Current MCP Tools (24 total)
 
 ### Utility Tools
 | MCP Tool | Description |
@@ -31,7 +31,7 @@ This document maps Kie.ai platform endpoints to MCP server tools. Use this to:
 | `list_tasks` | List recent tasks with status filter |
 | `get_task_status` | Check status of a generation task |
 
-### Image Tools (8)
+### Image Tools (9)
 | MCP Tool | Kie.ai Models | Status |
 |----------|---------------|--------|
 | `nano_banana_image` | Nano Banana 2 / Gemini 3.1 Flash (generate/edit) | ✅ Updated 2026-02-28 |
@@ -40,6 +40,7 @@ This document maps Kie.ai platform endpoints to MCP server tools. Use this to:
 | `openai_4o_image` | GPT-4o Image | ✅ |
 | `flux_kontext_image` | Flux Kontext Pro/Max | ✅ |
 | `flux2_image` | Flux 2 Pro/Flex (text/image-to-image) | ✅ Added 2025-12-06 |
+| `topaz_upscale_image` | Topaz Image Upscale (1x-8x) | ✅ Added 2026-03-04 |
 | `ideogram_reframe` | Ideogram V3 Reframe | ✅ |
 | `recraft_remove_background` | Recraft Remove Background | ✅ |
 

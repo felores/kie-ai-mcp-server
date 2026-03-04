@@ -671,6 +671,15 @@ export const FluxKontextImageSchema = z
 
 export type FluxKontextImageRequest = z.infer<typeof FluxKontextImageSchema>;
 
+// Topaz Image Upscale - AI-powered image enhancement and upscaling
+export const TopazUpscaleImageSchema = z.object({
+  image_url: z.string().url(),
+  upscale_factor: z.enum(["1", "2", "4", "8"]).default("2"),
+  callBackUrl: z.string().url().optional(),
+});
+
+export type TopazUpscaleImageRequest = z.infer<typeof TopazUpscaleImageSchema>;
+
 // Recraft Remove Background
 export const RecraftRemoveBackgroundSchema = z
   .object({
@@ -986,7 +995,8 @@ export interface TaskRecord {
     | "z-image"
     | "grok-imagine"
     | "infinitalk"
-    | "kling-avatar";
+    | "kling-avatar"
+    | "topaz-upscale";
   status: "pending" | "processing" | "completed" | "failed";
   created_at: string;
   updated_at: string;
