@@ -304,9 +304,9 @@ class KieAiMcpServer {
               prompt: {
                 type: "string",
                 description:
-                  "Text prompt for image generation or editing (max 5000 chars)",
+                  "Text prompt for image generation or editing (max 20000 chars). Nano Banana models support up to 20K characters.",
                 minLength: 1,
-                maxLength: 5000,
+                maxLength: 20000,
               },
               image_input: {
                 type: "array",
@@ -850,7 +850,7 @@ class KieAiMcpServer {
               prompt: {
                 type: "string",
                 description:
-                  "Text prompt for image generation or editing (max 5000 characters)",
+                  "Text prompt for image generation or editing. V4: max 5000 chars, V5 Lite: max 3000 chars (API returns 500 error if exceeded)",
                 minLength: 1,
                 maxLength: 5000,
               },
