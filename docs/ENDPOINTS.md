@@ -50,7 +50,7 @@ This document maps Kie.ai platform endpoints to MCP server tools. Use this to:
 | `sora_video` | Sora 2 (text/image-to-video, storyboard) | ✅ |
 | `veo3_generate_video` | Veo 3/3.1 (text/image-to-video) | ✅ |
 | `veo3_get_1080p_video` | Veo 3 1080p retrieval | ✅ |
-| `bytedance_seedance_video` | SeedAnce (lite/pro) | ✅ |
+| `bytedance_seedance_video` | Seedance 2.0 (standard/fast, multimodal refs, native audio) | ✅ Updated 2026-04-16 |
 | `runway_aleph_video` | Runway Aleph | ✅ |
 | `midjourney_generate` | Midjourney (image/video) | ✅ |
 | `wan_video` | Wan 2.5 (text/image-to-video) | ✅ |

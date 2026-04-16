@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.0] - 2026-04-16
+
+### Breaking Changes
+- **Seedance 2.0**: Upgraded from Seedance v1 (lite/pro) to Seedance 2.0
+  - Removed: `quality`, `image_url`, `end_image_url`, `camera_fixed`, `seed`, `enable_safety_checker` parameters
+  - Renamed: `image_url` → `first_frame_url`, `end_image_url` → `last_frame_url`
+  - Changed: `duration` from string (2-12s) to integer (4-15s)
+  - Changed: `resolution` now supports 480p/720p only (removed 1080p)
+  - Model IDs changed: `bytedance/v1-{lite,pro}-{text,image}-to-video` → `bytedance/seedance-2` / `bytedance/seedance-2-fast`
+
+### Added
+- `mode` parameter: `"standard"` (seedance-2) or `"fast"` (seedance-2-fast)
+- `reference_image_urls`: Up to 9 reference images for style/subject guidance
+- `reference_video_urls`: Up to 3 reference videos for motion/style guidance
+- `reference_audio_urls`: Up to 3 reference audio clips for sound-guided generation
+- `generate_audio`: Native audio generation (default: true)
+- `web_search`: Web search for prompt enhancement (default: false)
+- `nsfw_checker`: Content filtering (default: false)
+- `adaptive` aspect ratio: Automatically matches input frame dimensions
+- Prompt length expanded: 3-20000 characters (was 1-10000)
+
 ## [3.0.1] - 2026-03-04
 
 ### Added

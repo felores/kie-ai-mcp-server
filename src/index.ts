@@ -97,7 +97,7 @@ class KieAiMcpServer {
   constructor() {
     this.server = new Server({
       name: "kie-ai-mcp-server",
-      version: "3.0.1",
+      version: "3.1.0",
     });
 
     // Initialize client with config from environment
@@ -763,72 +763,100 @@ class KieAiMcpServer {
         {
           name: "bytedance_seedance_video",
           description:
-            "Generate videos using ByteDance Seedance models (unified tool for both text-to-video and image-to-video)",
+            "Generate videos with ByteDance Seedance 2.0 — multimodal inputs (image/video/audio references), native audio generation, standard and fast modes",
           inputSchema: {
             type: "object",
             properties: {
               prompt: {
                 type: "string",
                 description:
-                  "Text prompt for video generation (max 10000 characters)",
-                minLength: 1,
-                maxLength: 10000,
+                  "Text prompt for video generation (3-20000 characters)",
+                minLength: 3,
+                maxLength: 20000,
               },
-              image_url: {
+              mode: {
                 type: "string",
                 description:
-                  "URL of input image for image-to-video generation (optional - if not provided, uses text-to-video)",
+                  "Generation mode — standard (seedance-2, higher quality) or fast (seedance-2-fast, iterative workflows)",
+                enum: ["standard", "fast"],
+                default: "standard",
+              },
+              first_frame_url: {
+                type: "string",
+                description:
+                  "URL of image to use as the first frame (optional)",
                 format: "uri",
               },
-              quality: {
+              last_frame_url: {
                 type: "string",
+                description: "URL of image to use as the last frame (optional)",
+                format: "uri",
+              },
+              reference_image_urls: {
+                type: "array",
                 description:
-                  "Model quality level - lite for faster generation, pro for higher quality",
-                enum: ["lite", "pro"],
-                default: "lite",
+                  "Reference images for style/subject guidance (up to 9)",
+                items: { type: "string", format: "uri" },
+                maxItems: 9,
+              },
+              reference_video_urls: {
+                type: "array",
+                description:
+                  "Reference videos for motion/style guidance (up to 3)",
+                items: { type: "string", format: "uri" },
+                maxItems: 3,
+              },
+              reference_audio_urls: {
+                type: "array",
+                description:
+                  "Reference audio for sound-guided generation (up to 3)",
+                items: { type: "string", format: "uri" },
+                maxItems: 3,
               },
               aspect_ratio: {
                 type: "string",
                 description: "Aspect ratio of the generated video",
-                enum: ["1:1", "9:16", "16:9", "4:3", "3:4", "21:9", "9:21"],
+                enum: [
+                  "1:1",
+                  "9:16",
+                  "16:9",
+                  "4:3",
+                  "3:4",
+                  "21:9",
+                  "9:21",
+                  "adaptive",
+                ],
                 default: "16:9",
               },
               resolution: {
                 type: "string",
                 description:
-                  "Video resolution - 480p for faster generation, 720p for balance, 1080p for higher quality",
-                enum: ["480p", "720p", "1080p"],
+                  "Video resolution — 480p for faster, 720p for balance",
+                enum: ["480p", "720p"],
                 default: "720p",
               },
               duration: {
-                type: "string",
-                description: "Duration of video in seconds (2-12)",
-                pattern: "^[2-9]|1[0-2]$",
-                default: "5",
-              },
-              camera_fixed: {
-                type: "boolean",
-                description: "Whether to fix the camera position",
-                default: false,
-              },
-              seed: {
                 type: "integer",
-                description:
-                  "Random seed to control video generation. Use -1 for random",
-                minimum: -1,
-                maximum: 2147483647,
-                default: -1,
+                description: "Duration of video in seconds (4-15)",
+                minimum: 4,
+                maximum: 15,
+                default: 5,
               },
-              enable_safety_checker: {
+              generate_audio: {
                 type: "boolean",
-                description: "Enable content safety checking",
+                description: "Generate native audio for the video",
                 default: true,
               },
-              end_image_url: {
-                type: "string",
+              web_search: {
+                type: "boolean",
                 description:
-                  "URL of image the video should end with (image-to-video only)",
-                format: "uri",
+                  "Enable web search to enhance prompt understanding",
+                default: false,
+              },
+              nsfw_checker: {
+                type: "boolean",
+                description: "Enable NSFW content filtering",
+                default: false,
               },
               callBackUrl: {
                 type: "string",
@@ -2288,9 +2316,9 @@ class KieAiMcpServer {
           },
           {
             uri: "kie://models/bytedance-seedance",
-            name: "ByteDance Seedance",
+            name: "ByteDance Seedance 2.0",
             description:
-              "Professional video generation with lite/pro quality modes",
+              "Multimodal video generation with native audio, image/video/audio references, standard and fast modes",
             mimeType: "text/markdown",
             annotations: {
               audience: ["assistant"],
@@ -3519,10 +3547,8 @@ class KieAiMcpServer {
         await this.client.generateByteDanceSeedanceVideo(request);
 
       if (response.code === 200 && response.data?.taskId) {
-        // Determine mode for user feedback
-        const isImageToVideo = !!request.image_url;
-        const mode = isImageToVideo ? "Image-to-Video" : "Text-to-Video";
-        const quality = request.quality || "lite";
+        const mode = request.mode || "standard";
+        const hasFrameInput = !!request.first_frame_url;
 
         // Store task in database
         await this.db.createTask({
@@ -3539,25 +3565,36 @@ class KieAiMcpServer {
                 {
                   success: true,
                   task_id: response.data.taskId,
-                  message: `ByteDance Seedance ${mode} generation task created successfully`,
+                  message: `ByteDance Seedance 2.0 ${mode} generation task created successfully`,
                   parameters: {
-                    mode: mode,
-                    quality: quality,
+                    mode,
                     prompt:
                       request.prompt.substring(0, 100) +
                       (request.prompt.length > 100 ? "..." : ""),
                     aspect_ratio: request.aspect_ratio || "16:9",
                     resolution: request.resolution || "720p",
-                    duration: request.duration || "5",
-                    ...(isImageToVideo && { image_url: request.image_url }),
-                    ...(request.end_image_url && {
-                      end_image_url: request.end_image_url,
+                    duration: request.duration || 5,
+                    generate_audio: request.generate_audio !== false,
+                    ...(hasFrameInput && {
+                      first_frame_url: request.first_frame_url,
+                    }),
+                    ...(request.last_frame_url && {
+                      last_frame_url: request.last_frame_url,
+                    }),
+                    ...(request.reference_image_urls?.length && {
+                      reference_images: request.reference_image_urls.length,
+                    }),
+                    ...(request.reference_video_urls?.length && {
+                      reference_videos: request.reference_video_urls.length,
+                    }),
+                    ...(request.reference_audio_urls?.length && {
+                      reference_audios: request.reference_audio_urls.length,
                     }),
                   },
                   next_steps: [
                     "Use get_task_status to check generation progress",
                     "Task completion will be sent to the provided callback URL",
-                    `${mode} generation typically takes 2-5 minutes depending on quality and complexity`,
+                    `${mode} mode generation typically takes 2-5 minutes depending on duration and complexity`,
                   ],
                 },
                 null,
@@ -3576,32 +3613,35 @@ class KieAiMcpServer {
       if (error instanceof z.ZodError) {
         return this.formatError("bytedance_seedance_video", error, {
           prompt:
-            "Required: Text prompt for video generation (max 10000 characters)",
-          image_url: "Optional: URL of input image for image-to-video mode",
-          quality:
-            "Optional: Model quality - lite (faster) or pro (higher quality, default: lite)",
+            "Required: Text prompt for video generation (3-20000 characters)",
+          mode: 'Optional: Generation mode — "standard" or "fast" (default: standard)',
+          first_frame_url: "Optional: URL of image to use as first frame",
+          last_frame_url: "Optional: URL of image to use as last frame",
+          reference_image_urls:
+            "Optional: Reference images for style guidance (up to 9)",
+          reference_video_urls:
+            "Optional: Reference videos for motion guidance (up to 3)",
+          reference_audio_urls:
+            "Optional: Reference audio for sound-guided generation (up to 3)",
           aspect_ratio: "Optional: Video aspect ratio (default: 16:9)",
           resolution:
-            "Optional: Video resolution - 480p/720p/1080p (default: 720p)",
-          duration: "Optional: Video duration in seconds 2-12 (default: 5)",
-          camera_fixed: "Optional: Fix camera position (default: false)",
-          seed: "Optional: Random seed for reproducible results (default: -1 for random)",
-          enable_safety_checker:
-            "Optional: Enable content safety checking (default: true)",
-          end_image_url: "Optional: URL of ending image (image-to-video only)",
-          callBackUrl:
-            "Optional: URL for task completion notifications (uses KIE_AI_CALLBACK_URL env var if not provided)",
+            'Optional: Video resolution — "480p" or "720p" (default: 720p)',
+          duration: "Optional: Video duration in seconds 4-15 (default: 5)",
+          generate_audio: "Optional: Generate native audio (default: true)",
+          web_search:
+            "Optional: Enable web search for prompt enhancement (default: false)",
+          nsfw_checker:
+            "Optional: Enable NSFW content filtering (default: false)",
+          callBackUrl: "Optional: URL for task completion notifications",
         });
       }
 
       return this.formatError("bytedance_seedance_video", error, {
-        prompt:
-          "Required: Text prompt for video generation (max 10000 characters)",
-        image_url: "Optional: URL of input image for image-to-video mode",
-        quality: "Optional: Model quality - lite or pro",
+        prompt: "Required: Text prompt for video generation",
+        mode: 'Optional: "standard" or "fast"',
         aspect_ratio: "Optional: Video aspect ratio",
-        resolution: "Optional: Video resolution",
-        duration: "Optional: Video duration in seconds 2-12",
+        resolution: 'Optional: "480p" or "720p"',
+        duration: "Optional: Duration in seconds 4-15",
         callBackUrl: "Optional: URL for task completion notifications",
       });
     }
@@ -5744,10 +5784,10 @@ The system automatically detects user intent:
 ## 🔧 Intelligent Parameter Selection
 
 ### **Video Parameters**
-- **ByteDance Seedance**: 
-  - Default: \`quality: "lite"\`, \`resolution: "720p"\`
-  - High Quality: \`quality: "pro"\`, \`resolution: "1080p"\`
-  - Professional 720p: \`quality: "pro"\`, \`resolution: "720p"\`
+- **ByteDance Seedance 2.0**:
+  - Default: \`mode: "standard"\`, \`resolution: "720p"\`, \`generate_audio: true\`
+  - Fast/Iterative: \`mode: "fast"\`, \`resolution: "480p"\`
+  - Higher Quality: \`mode: "standard"\`, \`resolution: "720p"\`
 
 - **Veo3**:
   - Default: \`model: "veo3_fast"\`
@@ -5897,7 +5937,7 @@ These guidelines ensure optimal balance between quality requirements and cost ma
 | Model | Max Resolution | Quality Modes | Duration | Speed | Key Strengths |
 |-------|---------------|---------------|----------|-------|---------------|
 | **Google Veo3** | 1080p | veo3/veo3_fast | Default | Medium | Premium cinematic quality, 1080p support |
-| **ByteDance Seedance** | 1080p | lite/pro | 2-12s | Medium | Professional standard, quality modes |
+| **ByteDance Seedance 2.0** | 720p | standard/fast | 4-15s | Medium | Multimodal refs, native audio, adaptive aspect |
 | **Wan Video 2.5** | 1080p | Single | 5-10s | Fast | Quick generation, social media |
 | **Runway Aleph** | 1080p | Single | Source | Medium | Video-to-video editing, style transfer |
 
@@ -5905,32 +5945,33 @@ These guidelines ensure optimal balance between quality requirements and cost ma
 
 ### Default Settings (Cost-Effective)
 - **Resolution**: 720p (unless user requests high quality)
-- **Quality Mode**: lite/fast (unless user requests high quality)
-- **Model**: ByteDance Seedance lite as default
+- **Quality Mode**: standard/fast (unless user requests "fast" explicitly)
+- **Model**: ByteDance Seedance 2.0 standard as default
 
 ### High Quality Upgrades
-- **User says "high quality"**: Pro models + 1080p
-- **User says "high quality in 720p"**: Pro models + 720p
+- **User says "high quality"**: Standard mode + 720p (already default)
 - **User says "cinematic"**: Veo3 model
-- **User says "fast/quick"**: Lite models + 720p (already default)
+- **User says "fast/quick"**: Seedance fast mode + 480p
 
 ## Use Case Recommendations
 
 - **Cinematic/Premium Content**: Veo3 (model: "veo3")
-- **Professional/Commercial**: ByteDance Seedance (quality: "pro")
-- **Social Media/Fast**: Wan Video 2.5 or ByteDance lite
+- **Professional/Commercial**: ByteDance Seedance 2.0 (mode: "standard")
+- **Social Media/Fast**: ByteDance Seedance 2.0 fast or Wan Video 2.5
+- **Multimodal (refs + audio)**: ByteDance Seedance 2.0 with reference URLs
 - **Video Editing**: Runway Aleph (existing video transformation)
 
 ## Parameter Mapping
 
 ### Input Methods
 - **Text-to-Video**: All models (prompt only)
-- **Image-to-Video**: Veo3 (imageUrls), ByteDance (image_url), Wan (image_url)
+- **Image-to-Video**: Veo3 (imageUrls), Seedance (first_frame_url), Wan (image_url)
 - **Video-to-Video**: Runway Aleph (videoUrl)
+- **Multimodal Refs**: Seedance 2.0 (reference_image/video/audio_urls)
 
 ### Quality Control
 - **Veo3**: model selection (veo3 vs veo3_fast)
-- **ByteDance**: quality parameter (lite vs pro) + resolution
+- **Seedance 2.0**: mode (standard vs fast) + resolution
 - **Wan**: resolution parameter only
 - **Runway**: implicit (no quality settings)
 
@@ -5950,7 +5991,7 @@ These guidelines ensure optimal balance between quality requirements and cost ma
 ### **CRITICAL COST CONTROL RULES**
 - **Resolution**: ALWAYS use \`"720p"\` unless user explicitly requests high quality
 - **Quality Level**: ALWAYS use **lite/fast** versions unless user requests "high quality"
-- **Model Selection**: bytedance_seedance_video with \`quality: "lite"\` as default
+- **Model Selection**: bytedance_seedance_video with \`mode: "standard"\` as default
 
 ### **Quality Upgrade Logic**
 
@@ -6064,7 +6105,7 @@ These guidelines ensure optimal balance between quality requirements and cost ma
 
       // Video models
       veo3: "google_veo3-text-to-image.md",
-      "bytedance-seedance": "bytedance_seedance-v1-lite-text-to-video.md",
+      "bytedance-seedance": "bytedance_seedance-2.md",
       "wan-video": "wan_2-5-text-to-video.md",
       "runway-aleph": "runway_aleph_video.md",
       "kling-v2-1": "kling_v2-1-pro.md",

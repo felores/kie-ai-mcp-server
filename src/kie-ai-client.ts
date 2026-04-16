@@ -297,39 +297,43 @@ export class KieAiClient {
   async generateByteDanceSeedanceVideo(
     request: ByteDanceSeedanceVideoRequest,
   ): Promise<KieAiResponse<TaskResponse>> {
-    // Determine model based on quality and mode (text-to-video vs image-to-video)
-    const isImageToVideo = !!request.image_url;
-    const quality = request.quality || "lite";
-
-    let model: string;
-    if (isImageToVideo) {
-      model =
-        quality === "pro"
-          ? "bytedance/v1-pro-image-to-video"
-          : "bytedance/v1-lite-image-to-video";
-    } else {
-      model =
-        quality === "pro"
-          ? "bytedance/v1-pro-text-to-video"
-          : "bytedance/v1-lite-text-to-video";
-    }
+    // Seedance 2.0: two model variants
+    const model =
+      request.mode === "fast"
+        ? "bytedance/seedance-2-fast"
+        : "bytedance/seedance-2";
 
     const input: any = {
       prompt: request.prompt,
       aspect_ratio: request.aspect_ratio || "16:9",
       resolution: request.resolution || "720p",
-      duration: request.duration || "5",
-      camera_fixed: request.camera_fixed || false,
-      seed: request.seed !== undefined ? request.seed : -1,
-      enable_safety_checker: request.enable_safety_checker === true,
+      duration: request.duration || 5,
+      generate_audio: request.generate_audio !== false,
+      nsfw_checker: request.nsfw_checker === true,
     };
 
-    // Add image-specific parameters
-    if (isImageToVideo) {
-      input.image_url = request.image_url;
-      if (request.end_image_url) {
-        input.end_image_url = request.end_image_url;
-      }
+    // Frame control
+    if (request.first_frame_url) {
+      input.first_frame_url = request.first_frame_url;
+    }
+    if (request.last_frame_url) {
+      input.last_frame_url = request.last_frame_url;
+    }
+
+    // Multimodal references
+    if (request.reference_image_urls?.length) {
+      input.reference_image_urls = request.reference_image_urls;
+    }
+    if (request.reference_video_urls?.length) {
+      input.reference_video_urls = request.reference_video_urls;
+    }
+    if (request.reference_audio_urls?.length) {
+      input.reference_audio_urls = request.reference_audio_urls;
+    }
+
+    // Web search
+    if (request.web_search) {
+      input.web_search = true;
     }
 
     const jobRequest = {

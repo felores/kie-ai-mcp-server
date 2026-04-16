@@ -472,72 +472,84 @@ Looping ambient sound:
 **Note**: The `callBackUrl` is optional and uses automatic fallback if not provided. Sound effects generation typically takes 30-90 seconds depending on complexity.
 
 ### 10. `bytedance_seedance_video`
-Generate videos using ByteDance Seedance models (unified tool for both text-to-video and image-to-video).
+Generate videos with ByteDance Seedance 2.0 — multimodal inputs (image/video/audio references), native audio generation, standard and fast modes.
 
 **Parameters:**
-- `prompt` (string, required): Text prompt for video generation (max 10000 chars)
-- `image_url` (string, optional): URL of input image for image-to-video generation (if not provided, uses text-to-video)
-- `quality` (string, optional): Model quality level (default: "lite")
-  - `lite`: Faster generation with good quality
-  - `pro`: Higher quality with longer generation time
+- `prompt` (string, required): Text prompt for video generation (3-20000 chars)
+- `mode` (string, optional): Generation mode (default: "standard")
+  - `standard`: Higher quality (seedance-2 model)
+  - `fast`: Faster for iterative workflows (seedance-2-fast model)
+- `first_frame_url` (string, optional): URL of image to use as first frame
+- `last_frame_url` (string, optional): URL of image to use as last frame
+- `reference_image_urls` (array, optional): Reference images for style/subject guidance (up to 9)
+- `reference_video_urls` (array, optional): Reference videos for motion/style guidance (up to 3)
+- `reference_audio_urls` (array, optional): Reference audio for sound-guided generation (up to 3)
 - `aspect_ratio` (string, optional): Video aspect ratio (default: "16:9")
-  - Options: `1:1`, `9:16`, `16:9`, `4:3`, `3:4`, `21:9`, `9:21`
+  - Options: `1:1`, `9:16`, `16:9`, `4:3`, `3:4`, `21:9`, `9:21`, `adaptive`
+  - `adaptive` requires `first_frame_url`
 - `resolution` (string, optional): Video resolution (default: "720p")
   - `480p`: Faster generation
   - `720p`: Balanced quality and speed
-  - `1080p`: Highest quality
-- `duration` (string, optional): Video duration in seconds 2-12 (default: "5")
-- `camera_fixed` (boolean, optional): Whether to fix camera position (default: false)
-- `seed` (integer, optional): Random seed for reproducible results (default: -1 for random)
-- `enable_safety_checker` (boolean, optional): Enable content safety checking (default: true)
-- `end_image_url` (string, optional): URL of ending image (image-to-video only)
+- `duration` (integer, optional): Video duration in seconds 4-15 (default: 5)
+- `generate_audio` (boolean, optional): Generate native audio for the video (default: true)
+- `web_search` (boolean, optional): Enable web search to enhance prompt understanding (default: false)
+- `nsfw_checker` (boolean, optional): Enable NSFW content filtering (default: false)
 - `callBackUrl` (string, optional): URL for task completion notifications
 
 **Examples:**
 
-Text-to-video (lite quality):
+Text-to-video with audio:
 ```json
 {
   "prompt": "A serene sailing boat gently sways in the harbor at dawn, surrounded by soft Impressionist hues of pink and orange",
-  "quality": "lite",
+  "mode": "standard",
   "aspect_ratio": "16:9",
-  "duration": "5"
+  "duration": 5,
+  "generate_audio": true
 }
 ```
 
-Image-to-video (pro quality):
+Image-to-video with reference images:
 ```json
 {
   "prompt": "A golden retriever dashing through shallow surf at the beach, splashes frozen in time",
-  "image_url": "https://example.com/golden-retriever.jpg",
-  "quality": "pro",
-  "resolution": "1080p",
-  "duration": "6",
-  "camera_fixed": false
+  "first_frame_url": "https://example.com/golden-retriever.jpg",
+  "mode": "standard",
+  "resolution": "720p",
+  "duration": 6
 }
 ```
 
-Video with specific ending frame:
+Fast mode with multimodal references:
+```json
+{
+  "prompt": "Create a video matching this dance style with cinematic lighting",
+  "mode": "fast",
+  "reference_video_urls": ["https://example.com/dance-ref.mp4"],
+  "reference_audio_urls": ["https://example.com/music.mp3"],
+  "duration": 10
+}
+```
+
+Video with first and last frame:
 ```json
 {
   "prompt": "A traveler crosses an endless desert toward a glowing archway",
-  "image_url": "https://example.com/desert-traveler.jpg",
-  "end_image_url": "https://example.com/archway.jpg",
-  "quality": "pro",
-  "duration": "8"
+  "first_frame_url": "https://example.com/desert-traveler.jpg",
+  "last_frame_url": "https://example.com/archway.jpg",
+  "duration": 8
 }
 ```
 
 **Key Features:**
-- **Unified Interface**: Single tool for both text-to-video and image-to-video
-- **Smart Mode Detection**: Automatically detects mode based on presence of `image_url`
-- **Quality Options**: Lite for speed, Pro for quality
-- **Flexible Aspect Ratios**: Support for vertical, horizontal, and square formats
-- **Camera Control**: Option to fix camera position for stable shots
-- **Reproducible Results**: Seed control for consistent output
-- **Safety Features**: Built-in content safety checking
+- **Multimodal References**: Guide generation with images, videos, and audio clips
+- **Native Audio**: Automatic audio generation synchronized with video content
+- **Two Modes**: Standard for quality, Fast for iterative workflows
+- **Adaptive Aspect**: Automatically match aspect ratio to input frame
+- **Web Search**: Enhance prompts with real-world knowledge
+- **Flexible Duration**: 4-15 second videos
 
-**Note**: The `callBackUrl` is optional and uses automatic fallback if not provided. Video generation typically takes 2-5 minutes depending on quality and complexity.
+**Note**: The `callBackUrl` is optional and uses automatic fallback if not provided. Video generation typically takes 2-5 minutes depending on duration and complexity.
 
 ### 11. `bytedance_seedream_image`
 Generate and edit images using ByteDance Seedream V4 models (unified tool for both text-to-image and image editing).

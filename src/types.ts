@@ -194,47 +194,42 @@ export const ElevenLabsSoundEffectsSchema = z.object({
   callBackUrl: z.string().url().optional(),
 });
 
+// ByteDance Seedance 2.0 - Multimodal video generation with native audio
 export const ByteDanceSeedanceVideoSchema = z
   .object({
-    prompt: z.string().min(1).max(10000),
-    image_url: z.string().url().optional(),
-    quality: z.enum(["lite", "pro"]).default("lite").optional(),
+    prompt: z.string().min(3).max(20000),
+    // Mode: standard (seedance-2) or fast (seedance-2-fast)
+    mode: z.enum(["standard", "fast"]).default("standard").optional(),
+    // Frame control
+    first_frame_url: z.string().url().optional(),
+    last_frame_url: z.string().url().optional(),
+    // Multimodal references
+    reference_image_urls: z.array(z.string().url()).max(9).optional(),
+    reference_video_urls: z.array(z.string().url()).max(3).optional(),
+    reference_audio_urls: z.array(z.string().url()).max(3).optional(),
+    // Output settings
     aspect_ratio: z
-      .enum(["1:1", "9:16", "16:9", "4:3", "3:4", "21:9", "9:21"])
+      .enum(["1:1", "9:16", "16:9", "4:3", "3:4", "21:9", "9:21", "adaptive"])
       .default("16:9")
       .optional(),
-    resolution: z.enum(["480p", "720p", "1080p"]).default("720p").optional(),
-    duration: z
-      .string()
-      .refine(
-        (val) => {
-          const num = parseInt(val);
-          return !isNaN(num) && num >= 2 && num <= 12;
-        },
-        {
-          message: "Duration must be a string number between 2 and 12",
-        },
-      )
-      .default("5")
-      .optional(),
-    camera_fixed: z.boolean().default(false).optional(),
-    seed: z.number().int().min(-1).max(2147483647).default(-1).optional(),
-    enable_safety_checker: z.boolean().default(false).optional(),
-    end_image_url: z.string().url().optional(),
+    resolution: z.enum(["480p", "720p"]).default("720p").optional(),
+    duration: z.number().int().min(4).max(15).default(5).optional(),
+    // Audio & safety
+    generate_audio: z.boolean().default(true).optional(),
+    web_search: z.boolean().default(false).optional(),
+    nsfw_checker: z.boolean().default(false).optional(),
     callBackUrl: z.string().url().optional(),
   })
   .refine(
     (data) => {
-      // If image_url is provided, aspect_ratio should be limited to options supported by image-to-video models
-      if (data.image_url) {
-        const validRatios = ["1:1", "9:16", "16:9", "4:3", "3:4", "21:9"];
-        return !data.aspect_ratio || validRatios.includes(data.aspect_ratio);
+      // "adaptive" aspect_ratio only valid with first_frame_url
+      if (data.aspect_ratio === "adaptive" && !data.first_frame_url) {
+        return false;
       }
       return true;
     },
     {
-      message:
-        "Invalid aspect_ratio for image-to-video mode. Valid options: 1:1, 9:16, 16:9, 4:3, 3:4, 21:9",
+      message: "aspect_ratio 'adaptive' requires first_frame_url",
       path: ["aspect_ratio"],
     },
   );
