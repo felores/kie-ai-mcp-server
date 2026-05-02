@@ -6,7 +6,7 @@ Kie.ai offers **30-50% lower cost** than competitors with 99.9% uptime and 24/7 
 
 ## 📚 Documentation
 
-- **[Complete Tool Reference](docs/TOOLS.md)** - Detailed documentation for all 21 AI tools
+- **[Complete Tool Reference](docs/TOOLS.md)** - Detailed documentation for all 25 AI tools
 - **[Database & Task Management](docs/DATABASE.md)** - SQLite database and task lifecycle  
 - **[Administrator Configuration](docs/ADMIN.md)** - Deployment guides and environment setup
 - **[Intelligent Features](docs/INTELLIGENCE.md)** - Smart mode detection and cost optimization
@@ -33,10 +33,9 @@ The easiest way to use this server is to add it to your MCP client configuration
 
 **That's it!** No callback URL setup required - the server handles it automatically.
 
-<details>
-<summary><strong>🎛️ Filter Tools (optional - click to expand)</strong></summary>
+### 🎛️ Enable Only the Tools You Need
 
-Reduce cognitive load by enabling only the tools you need:
+25 tools is a lot. Reduce cognitive load by enabling only what you use. Add the env var to the config above:
 
 **Whitelist (enable specific tools only):**
 ```json
@@ -47,48 +46,26 @@ Reduce cognitive load by enabling only the tools you need:
       "args": ["-y", "@felores/kie-ai-mcp-server"],
       "env": {
         "KIE_AI_API_KEY": "your-api-key-here",
-        "KIE_AI_ENABLED_TOOLS": "nano_banana_image,veo3_generate_video,suno_generate_music"
+        "KIE_AI_ENABLED_TOOLS": "gpt_image_2,wan_video,suno_generate_music"
       }
     }
   }
 }
 ```
 
-**Category filter (enable by type):**
+**Category filter (enable all image + video tools):**
 ```json
-{
-  "mcpServers": {
-    "kie-ai": {
-      "command": "npx",
-      "args": ["-y", "@felores/kie-ai-mcp-server"],
-      "env": {
-        "KIE_AI_API_KEY": "your-api-key-here",
-        "KIE_AI_TOOL_CATEGORIES": "image,video"
-      }
-    }
-  }
-}
+"KIE_AI_TOOL_CATEGORIES": "image,video"
 ```
 
 **Blacklist (disable specific tools):**
 ```json
-{
-  "mcpServers": {
-    "kie-ai": {
-      "command": "npx",
-      "args": ["-y", "@felores/kie-ai-mcp-server"],
-      "env": {
-        "KIE_AI_API_KEY": "your-api-key-here",
-        "KIE_AI_DISABLED_TOOLS": "midjourney_generate,runway_aleph_video"
-      }
-    }
-  }
-}
+"KIE_AI_DISABLED_TOOLS": "midjourney_generate,runway_aleph_video"
 ```
 
-**Categories:** `image` | `video` | `audio` — Utility tools (list_tasks, get_task_status) are always enabled.
+**Categories:** `image` (9) | `video` (11) | `audio` (3) -- Utility tools (`list_tasks`, `get_task_status`) are always enabled.
 
-</details>
+**Priority:** `ENABLED_TOOLS` > `TOOL_CATEGORIES` > `DISABLED_TOOLS` > all tools (default)
 
 **For Claude Desktop:** Add this to `~/Library/Application Support/Claude/claude_desktop_config.json` (Mac) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows)
 
@@ -114,9 +91,10 @@ Reduce cognitive load by enabling only the tools you need:
 - **ByteDance Seedance**: High-quality video with text-to-video and image-to-video (unified)
 - **ByteDance Seedream V5 Lite**: Advanced image generation and editing with unified interface
 - **Qwen**: Powerful image generation and editing with acceleration options (unified)
-- **OpenAI 4o Image**: Advanced image generation, editing, and variant creation with GPT-4o (unified)
+- **GPT Image 2**: Advanced image generation and editing with up to 16 reference images (unified)
 - **Flux Kontext**: Professional image generation and editing with advanced features (unified)
-- **Alibaba Wan 2.5**: High-quality video generation with text-to-video and image-to-video (unified)
+- **Alibaba Wan 2.7**: Multi-mode video generation with T2V, I2V, R2V, and video-edit (unified)
+- **HappyHorse 1.0**: Multi-mode video generation with T2V, I2V, R2V (9 refs), and video-edit with audio
 - **Hailuo 02**: Professional video generation with text-to-video and image-to-video modes (unified, standard/pro quality)
 - **Kling 3.0**: Advanced video generation with 3-15s duration, multi-shot storytelling, and native audio
 - **Midjourney AI**: Industry-leading image and video generation with multiple modes (unified)
@@ -164,16 +142,16 @@ Your AI assistant can research and learn about available models before using the
 - `kie://guides/video-models-comparison` - Feature matrix for all video models
 - `kie://guides/quality-optimization` - Cost/quality strategies
 
-### 🛠️ 21 Unified AI Tools
+### 🛠️ 25 Unified AI Tools
 
 All tools feature **smart mode detection** - one tool does multiple things:
 
 | Category | Tools |
 |----------|-------|
-| **Image (7)** | `bytedance_seedream_image`, `qwen_image`, `nano_banana_image`, `flux_kontext_image`, `openai_4o_image`, `recraft_remove_background`, `ideogram_reframe` |
-| **Video (8)** | `veo3_generate_video`, `sora_video`, `bytedance_seedance_video`, `wan_video`, `hailuo_video`, `kling_video`, `runway_aleph_video`, `midjourney_generate` |
+| **Image (9)** | `nano_banana_image`, `bytedance_seedream_image`, `qwen_image`, `gpt_image_2`, `flux_kontext_image`, `flux2_image`, `topaz_upscale_image`, `recraft_remove_background`, `ideogram_reframe` |
+| **Video (11)** | `veo3_generate_video`, `sora_video`, `bytedance_seedance_video`, `wan_video`, `happyhorse_video`, `hailuo_video`, `kling_video`, `runway_aleph_video`, `wan_animate`, `midjourney_generate` |
 | **Audio (3)** | `suno_generate_music`, `elevenlabs_tts`, `elevenlabs_ttsfx` |
-| **Utility (3)** | `list_tasks`, `get_task_status`, `veo3_get_1080p_video` |
+| **Utility (2)** | `list_tasks`, `get_task_status` |
 
 **→ [See complete tool documentation](docs/TOOLS.md)**
 
@@ -280,8 +258,8 @@ export KIE_AI_DISABLED_TOOLS="midjourney_generate,runway_aleph_video"
 **Priority Logic**: `ENABLED_TOOLS` > `TOOL_CATEGORIES` > `DISABLED_TOOLS` > All tools (default)
 
 **Tool Categories**:
-- **image** (8): nano_banana, seedream, qwen, openai_4o, flux, recraft, ideogram, midjourney*
-- **video** (9): veo3, veo3_1080p, sora, seedance, wan, hailuo, kling, runway, midjourney*
+- **image** (9): nano_banana, seedream, qwen, gpt_image_2, flux_kontext, flux2, topaz, recraft, ideogram, midjourney*
+- **video** (11): veo3, sora, seedance, wan_video, happyhorse_video, hailuo, kling, runway, wan_animate, midjourney*
 - **audio** (3): suno, elevenlabs_tts, elevenlabs_ttsfx
 - **utility** (2): list_tasks, get_task_status ⭐ **Always enabled**
 
@@ -470,7 +448,7 @@ elevenlabs_tts: "Tap here to get started with your new profile"
 veo3_generate_video: "Professional office environment, employee training scenario"
 
 # Create corporate presentations
-openai_4o_image: "Add company logo to presentation slide, maintain professional style"
+gpt_image_2: "Add company logo to presentation slide, maintain professional style"
 
 # Produce marketing content
 suno_generate_music: "Corporate background music for promotional video"
