@@ -12,7 +12,7 @@ import {
   ByteDanceSeedreamImageRequest,
   QwenImageRequest,
   MidjourneyGenerateRequest,
-  OpenAI4oImageRequest,
+  GptImage2Request,
   FluxKontextImageRequest,
   RecraftRemoveBackgroundRequest,
   IdeogramReframeRequest,
@@ -26,6 +26,7 @@ import {
   InfiniTalkRequest,
   KlingAvatarRequest,
   TopazUpscaleImageRequest,
+  HappyHorseVideoRequest,
   ImageResponse,
   TaskResponse,
 } from "./types.js";
@@ -151,7 +152,9 @@ export class KieAiClient {
       apiType === "sora-video" ||
       apiType === "flux2-image" ||
       apiType === "wan-animate" ||
-      apiType === "topaz-upscale"
+      apiType === "topaz-upscale" ||
+      apiType === "happyhorse-video" ||
+      apiType === "gpt-image-2"
     ) {
       return this.makeRequest<any>(`/jobs/recordInfo?taskId=${taskId}`, "GET");
     } else if (apiType === "runway-aleph-video") {
@@ -161,11 +164,6 @@ export class KieAiClient {
       );
     } else if (apiType === "midjourney") {
       return this.makeRequest<any>(`/mj/record-info?taskId=${taskId}`, "GET");
-    } else if (apiType === "openai-4o-image") {
-      return this.makeRequest<any>(
-        `/gpt4o-image/record-info?taskId=${taskId}`,
-        "GET",
-      );
     } else if (apiType === "flux-kontext-image") {
       return this.makeRequest<any>(
         `/flux/kontext/record-info?taskId=${taskId}`,
@@ -200,18 +198,11 @@ export class KieAiClient {
           } catch (mjError) {
             try {
               return this.makeRequest<any>(
-                `/gpt4o-image/record-info?taskId=${taskId}`,
+                `/flux/kontext/record-info?taskId=${taskId}`,
                 "GET",
               );
-            } catch (gpt4oError) {
-              try {
-                return this.makeRequest<any>(
-                  `/flux/kontext/record-info?taskId=${taskId}`,
-                  "GET",
-                );
-              } catch (fluxError) {
-                throw error;
-              }
+            } catch (fluxError) {
+              throw error;
             }
           }
         }
@@ -373,34 +364,59 @@ export class KieAiClient {
   async generateWanVideo(
     request: WanVideoRequest,
   ): Promise<KieAiResponse<TaskResponse>> {
-    // Determine model based on mode (text-to-video vs image-to-video)
-    const isImageToVideo = !!request.image_url;
-    const model = isImageToVideo
-      ? "wan/2-5-image-to-video"
-      : "wan/2-5-text-to-video";
+    const mode =
+      request.mode ||
+      (request.video_url_edit
+        ? "video-edit"
+        : request.reference_image?.length || request.reference_video?.length
+          ? "reference-to-video"
+          : request.first_frame_url ||
+              request.last_frame_url ||
+              request.first_clip_url
+            ? "image-to-video"
+            : "text-to-video");
+
+    const modelMap: Record<string, string> = {
+      "text-to-video": "wan/2-7-text-to-video",
+      "image-to-video": "wan/2-7-image-to-video",
+      "reference-to-video": "wan/2-7-r2v",
+      "video-edit": "wan/2-7-videoedit",
+    };
+    const model = modelMap[mode];
 
     const input: any = {
       prompt: request.prompt,
-      resolution: request.resolution || "1080p",
-      negative_prompt: request.negative_prompt || "",
-      enable_prompt_expansion: request.enable_prompt_expansion !== false,
     };
 
-    // Add text-to-video specific parameters
-    if (!isImageToVideo) {
-      input.aspect_ratio = request.aspect_ratio || "16:9";
-    }
+    // Add optional fields only when provided
+    if (request.negative_prompt)
+      input.negative_prompt = request.negative_prompt;
+    if (request.audio_url) input.audio_url = request.audio_url;
+    if (request.first_frame_url)
+      input.first_frame_url = request.first_frame_url;
+    if (request.last_frame_url) input.last_frame_url = request.last_frame_url;
+    if (request.first_clip_url) input.first_clip_url = request.first_clip_url;
+    if (request.driving_audio_url)
+      input.driving_audio_url = request.driving_audio_url;
+    if (request.reference_image?.length)
+      input.reference_image = request.reference_image;
+    if (request.reference_video?.length)
+      input.reference_video = request.reference_video;
+    if (request.reference_voice)
+      input.reference_voice = request.reference_voice;
+    if (request.first_frame) input.first_frame = request.first_frame;
+    if (request.video_url_edit) input.video_url = request.video_url_edit;
+    if (request.reference_image_edit)
+      input.reference_image = request.reference_image_edit;
+    if (request.audio_setting) input.audio_setting = request.audio_setting;
+    if (request.seed !== undefined) input.seed = request.seed;
 
-    // Add image-to-video specific parameters
-    if (isImageToVideo) {
-      input.image_url = request.image_url;
-      input.duration = request.duration || "5";
-    }
-
-    // Add optional seed
-    if (request.seed !== undefined) {
-      input.seed = request.seed;
-    }
+    input.resolution = request.resolution || "1080p";
+    input.ratio = request.ratio || "16:9";
+    input.duration = request.duration || 5;
+    input.prompt_extend = request.prompt_extend !== false;
+    input.watermark = request.watermark || false;
+    input.nsfw_checker = request.nsfw_checker || false;
 
     const jobRequest = {
       model,
@@ -595,39 +611,80 @@ export class KieAiClient {
     return this.makeRequest<TaskResponse>("/mj/generate", "POST", payload);
   }
 
-  async generateOpenAI4oImage(
-    request: OpenAI4oImageRequest,
+  async generateGptImage2(
+    request: GptImage2Request,
   ): Promise<KieAiResponse<TaskResponse>> {
-    // Build request payload
-    const payload: any = {
-      size: request.size,
-      nVariants: request.nVariants,
+    const hasInputUrls = request.input_urls && request.input_urls.length > 0;
+    const model = hasInputUrls
+      ? "gpt-image-2-image-to-image"
+      : "gpt-image-2-text-to-image";
+
+    const input: any = {
+      prompt: request.prompt,
+    };
+    if (hasInputUrls) input.input_urls = request.input_urls;
+    if (request.aspect_ratio) input.aspect_ratio = request.aspect_ratio;
+    if (request.resolution) input.resolution = request.resolution;
+
+    const jobRequest = {
+      model,
+      input,
       callBackUrl: request.callBackUrl || process.env.KIE_AI_CALLBACK_URL,
-      isEnhance: request.isEnhance || false,
-      uploadCn: request.uploadCn || false,
-      enableFallback: request.enableFallback !== false, // Default to true
-      fallbackModel: request.fallbackModel || "FLUX_MAX",
     };
 
-    // Add prompt if provided
-    if (request.prompt) {
-      payload.prompt = request.prompt;
-    }
+    return this.makeRequest<TaskResponse>(
+      "/jobs/createTask",
+      "POST",
+      jobRequest,
+    );
+  }
 
-    // Add image URLs if provided
-    if (request.filesUrl && request.filesUrl.length > 0) {
-      payload.filesUrl = request.filesUrl;
-    }
+  async generateHappyHorseVideo(
+    request: HappyHorseVideoRequest,
+  ): Promise<KieAiResponse<TaskResponse>> {
+    const mode =
+      request.mode ||
+      (request.video_url
+        ? "video-edit"
+        : request.reference_image?.length
+          ? "reference-to-video"
+          : request.image_urls?.length
+            ? "image-to-video"
+            : "text-to-video");
 
-    // Add mask URL if provided
-    if (request.maskUrl) {
-      payload.maskUrl = request.maskUrl;
-    }
+    const modelMap: Record<string, string> = {
+      "text-to-video": "happyhorse/text-to-video",
+      "image-to-video": "happyhorse/image-to-video",
+      "reference-to-video": "happyhorse/reference-to-video",
+      "video-edit": "happyhorse/video-edit",
+    };
+    const model = modelMap[mode];
+
+    const input: any = { prompt: request.prompt };
+
+    if (request.image_urls?.length) input.image_urls = request.image_urls;
+    if (request.reference_image?.length)
+      input.reference_image = request.reference_image;
+    if (request.video_url) input.video_url = request.video_url;
+    if (request.reference_image_edit?.length)
+      input.reference_image_edit = request.reference_image_edit;
+    if (request.audio_setting) input.audio_setting = request.audio_setting;
+    if (request.seed !== undefined) input.seed = request.seed;
+
+    input.resolution = request.resolution || "1080p";
+    input.aspect_ratio = request.aspect_ratio || "16:9";
+    input.duration = request.duration || 5;
+
+    const jobRequest = {
+      model,
+      input,
+      callBackUrl: request.callBackUrl || process.env.KIE_AI_CALLBACK_URL,
+    };
 
     return this.makeRequest<TaskResponse>(
-      "/gpt4o-image/generate",
+      "/jobs/createTask",
       "POST",
-      payload,
+      jobRequest,
     );
   }
 

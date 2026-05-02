@@ -248,33 +248,82 @@ export const RunwayAlephVideoSchema = z.object({
   callBackUrl: z.string().url().optional(),
 });
 
-export const WanVideoSchema = z
+export const Wan27VideoSchema = z
   .object({
-    prompt: z.string().min(1).max(800),
-    image_url: z.string().url().optional(),
-    aspect_ratio: z.enum(["16:9", "9:16", "1:1"]).default("16:9").optional(),
+    mode: z
+      .enum([
+        "text-to-video",
+        "image-to-video",
+        "reference-to-video",
+        "video-edit",
+      ])
+      .optional(),
+    prompt: z.string().min(1).max(5000),
+    negative_prompt: z.string().max(500).optional(),
+    // T2V
+    audio_url: z.string().url().optional(),
+    // I2V
+    first_frame_url: z.string().url().optional(),
+    last_frame_url: z.string().url().optional(),
+    first_clip_url: z.string().url().optional(),
+    driving_audio_url: z.string().url().optional(),
+    // R2V
+    reference_image: z.array(z.string().url()).max(5).optional(),
+    reference_video: z.array(z.string().url()).max(5).optional(),
+    reference_voice: z.string().url().optional(),
+    first_frame: z.string().url().optional(),
+    // Video Edit
+    video_url_edit: z.string().url().optional(),
+    reference_image_edit: z.string().url().optional(),
+    audio_setting: z.enum(["auto", "origin"]).optional(),
+    // Common
     resolution: z.enum(["720p", "1080p"]).default("1080p").optional(),
-    duration: z.enum(["5", "10"]).default("5").optional(),
-    negative_prompt: z.string().max(500).default("").optional(),
-    enable_prompt_expansion: z.boolean().default(true).optional(),
-    seed: z.number().optional(),
+    ratio: z
+      .enum(["16:9", "9:16", "1:1", "4:3", "3:4"])
+      .default("16:9")
+      .optional(),
+    duration: z.number().int().min(2).max(15).default(5).optional(),
+    prompt_extend: z.boolean().default(true).optional(),
+    watermark: z.boolean().default(false).optional(),
+    seed: z.number().int().min(0).max(2147483647).optional(),
+    nsfw_checker: z.boolean().default(false).optional(),
     callBackUrl: z.string().url().optional(),
   })
   .refine(
     (data) => {
-      // If image_url is provided, duration should be limited to options supported by image-to-video model
-      if (data.image_url) {
-        return (
-          !data.aspect_ratio ||
-          ["16:9", "9:16", "1:1"].includes(data.aspect_ratio)
-        );
+      const mode =
+        data.mode ||
+        (data.video_url_edit
+          ? "video-edit"
+          : data.reference_image || data.reference_video
+            ? "reference-to-video"
+            : data.first_frame_url || data.last_frame_url || data.first_clip_url
+              ? "image-to-video"
+              : "text-to-video");
+      if (
+        mode === "image-to-video" &&
+        !data.first_frame_url &&
+        !data.last_frame_url &&
+        !data.first_clip_url
+      ) {
+        return false;
+      }
+      if (
+        mode === "reference-to-video" &&
+        !data.reference_image?.length &&
+        !data.reference_video?.length
+      ) {
+        return false;
+      }
+      if (mode === "video-edit" && !data.video_url_edit) {
+        return false;
       }
       return true;
     },
     {
       message:
-        "Invalid aspect_ratio for image-to-video mode. Valid options: 16:9, 9:16, 1:1",
-      path: ["aspect_ratio"],
+        "Invalid parameter combination for the detected mode. Ensure required inputs are provided.",
+      path: [],
     },
   );
 
@@ -399,6 +448,62 @@ export const KlingAvatarSchema = z.object({
 });
 
 export type KlingAvatarRequest = z.infer<typeof KlingAvatarSchema>;
+
+// HappyHorse 1.0 Video - Alibaba ATH multi-mode video generation
+export const HappyHorseVideoSchema = z
+  .object({
+    mode: z
+      .enum([
+        "text-to-video",
+        "image-to-video",
+        "reference-to-video",
+        "video-edit",
+      ])
+      .optional(),
+    prompt: z.string().min(1).max(5000),
+    // I2V
+    image_urls: z.array(z.string().url()).max(1).optional(),
+    // R2V
+    reference_image: z.array(z.string().url()).max(9).optional(),
+    // Video Edit
+    video_url: z.string().url().optional(),
+    reference_image_edit: z.array(z.string().url()).max(5).optional(),
+    audio_setting: z.enum(["auto", "origin"]).optional(),
+    // Common
+    resolution: z.enum(["720p", "1080p"]).default("1080p").optional(),
+    aspect_ratio: z
+      .enum(["16:9", "9:16", "1:1", "4:3", "3:4"])
+      .default("16:9")
+      .optional(),
+    duration: z.number().int().min(3).max(15).default(5).optional(),
+    seed: z.number().int().min(0).max(2147483647).optional(),
+    callBackUrl: z.string().url().optional(),
+  })
+  .refine(
+    (data) => {
+      const mode =
+        data.mode ||
+        (data.video_url
+          ? "video-edit"
+          : data.reference_image?.length
+            ? "reference-to-video"
+            : data.image_urls?.length
+              ? "image-to-video"
+              : "text-to-video");
+      if (mode === "image-to-video" && !data.image_urls?.length) return false;
+      if (mode === "reference-to-video" && !data.reference_image?.length)
+        return false;
+      if (mode === "video-edit" && !data.video_url) return false;
+      return true;
+    },
+    {
+      message:
+        "Invalid parameter combination for the detected mode. Ensure required inputs are provided.",
+      path: [],
+    },
+  );
+
+export type HappyHorseVideoRequest = z.infer<typeof HappyHorseVideoSchema>;
 
 export const QwenImageSchema = z
   .object({
@@ -560,52 +665,16 @@ export const MidjourneyGenerateSchema = z
     },
   );
 
-export const OpenAI4oImageSchema = z
-  .object({
-    prompt: z.string().min(1).max(5000).optional(),
-    filesUrl: z.array(z.string().url()).max(5).optional(),
-    size: z.enum(["1:1", "3:2", "2:3"]).default("1:1"),
-    nVariants: z.number().int().min(1).max(4).default(4),
-    maskUrl: z.string().url().optional(),
-    callBackUrl: z.string().url().optional(),
-    isEnhance: z.boolean().default(false).optional(),
-    uploadCn: z.boolean().default(false).optional(),
-    enableFallback: z.boolean().default(true).optional(),
-    fallbackModel: z
-      .enum(["GPT_IMAGE_1", "FLUX_MAX"])
-      .default("FLUX_MAX")
-      .optional(),
-  })
-  .refine(
-    (data) => {
-      // Validate mode detection and requirements
-      const hasPrompt = !!data.prompt;
-      const hasImages = data.filesUrl && data.filesUrl.length > 0;
-      const hasMask = !!data.maskUrl;
-
-      // At least one of prompt or filesUrl must be provided
-      if (!hasPrompt && !hasImages) {
-        return false;
-      }
-
-      // If maskUrl is provided, filesUrl must also be provided
-      if (hasMask && !hasImages) {
-        return false;
-      }
-
-      // If multiple images provided, maskUrl should not be used (API ignores it)
-      if (hasMask && hasImages && data.filesUrl!.length > 1) {
-        return false;
-      }
-
-      return true;
-    },
-    {
-      message:
-        "Invalid parameter combination: provide either prompt (text-to-image), filesUrl (image variants), or both filesUrl+maskUrl (image editing). At least one of prompt or filesUrl is required.",
-      path: [],
-    },
-  );
+export const GptImage2Schema = z.object({
+  prompt: z.string().min(1).max(20000),
+  input_urls: z.array(z.string().url()).max(16).optional(),
+  aspect_ratio: z
+    .enum(["auto", "1:1", "9:16", "16:9", "4:3", "3:4"])
+    .default("auto")
+    .optional(),
+  resolution: z.enum(["1K", "2K", "4K"]).default("1K").optional(),
+  callBackUrl: z.string().url().optional(),
+});
 
 // TypeScript types
 export type NanoBananaImageRequest = z.infer<typeof NanoBananaImageSchema>;
@@ -619,7 +688,7 @@ export type ByteDanceSeedanceVideoRequest = z.infer<
   typeof ByteDanceSeedanceVideoSchema
 >;
 export type RunwayAlephVideoRequest = z.infer<typeof RunwayAlephVideoSchema>;
-export type WanVideoRequest = z.infer<typeof WanVideoSchema>;
+export type WanVideoRequest = z.infer<typeof Wan27VideoSchema>;
 export type ByteDanceSeedreamImageRequest = z.infer<
   typeof ByteDanceSeedreamImageSchema
 >;
@@ -627,7 +696,7 @@ export type QwenImageRequest = z.infer<typeof QwenImageSchema>;
 export type MidjourneyGenerateRequest = z.infer<
   typeof MidjourneyGenerateSchema
 >;
-export type OpenAI4oImageRequest = z.infer<typeof OpenAI4oImageSchema>;
+export type GptImage2Request = z.infer<typeof GptImage2Schema>;
 
 // Flux Kontext Image - Unified text-to-image and image editing
 export const FluxKontextImageSchema = z
@@ -978,7 +1047,7 @@ export interface TaskRecord {
     | "bytedance-seedream-image"
     | "qwen-image"
     | "midjourney"
-    | "openai-4o-image"
+    | "gpt-image-2"
     | "flux-kontext-image"
     | "recraft-remove-background"
     | "ideogram-reframe"
@@ -991,7 +1060,8 @@ export interface TaskRecord {
     | "grok-imagine"
     | "infinitalk"
     | "kling-avatar"
-    | "topaz-upscale";
+    | "topaz-upscale"
+    | "happyhorse-video";
   status: "pending" | "processing" | "completed" | "failed";
   created_at: string;
   updated_at: string;

@@ -26,9 +26,9 @@ import {
   ByteDanceSeedreamImageSchema,
   QwenImageSchema,
   RunwayAlephVideoSchema,
-  WanVideoSchema,
+  Wan27VideoSchema,
   MidjourneyGenerateSchema,
-  OpenAI4oImageSchema,
+  GptImage2Schema,
   FluxKontextImageSchema,
   RecraftRemoveBackgroundSchema,
   IdeogramReframeSchema,
@@ -42,6 +42,7 @@ import {
   InfiniTalkSchema,
   KlingAvatarSchema,
   TopazUpscaleImageSchema,
+  HappyHorseVideoSchema,
   KieAiConfig,
 } from "./types.js";
 
@@ -57,7 +58,7 @@ class KieAiMcpServer {
       "nano_banana_image",
       "bytedance_seedream_image",
       "qwen_image",
-      "openai_4o_image",
+      "gpt_image_2",
       "flux_kontext_image",
       "flux2_image",
       "z_image",
@@ -73,6 +74,7 @@ class KieAiMcpServer {
       "bytedance_seedance_video",
       "wan_video",
       "wan_animate",
+      "happyhorse_video",
       "hailuo_video",
       "kling_video",
       "runway_aleph_video",
@@ -97,7 +99,7 @@ class KieAiMcpServer {
   constructor() {
     this.server = new Server({
       name: "kie-ai-mcp-server",
-      version: "3.1.0",
+      version: "3.2.0",
     });
 
     // Initialize client with config from environment
@@ -1443,45 +1445,36 @@ class KieAiMcpServer {
           },
         },
         {
-          name: "openai_4o_image",
+          name: "gpt_image_2",
           description:
-            "Generate images using OpenAI GPT-4o models (unified tool for text-to-image, image editing, and image variants)",
+            "Generate images using GPT Image 2 (text-to-image and image-to-image with up to 16 reference images)",
           inputSchema: {
             type: "object",
             properties: {
               prompt: {
                 type: "string",
                 description:
-                  "Text prompt describing the desired image (max 5000 characters)",
-                maxLength: 5000,
+                  "Text prompt describing the desired image (max 20000 characters)",
+                maxLength: 20000,
               },
-              filesUrl: {
+              input_urls: {
                 type: "array",
                 description:
-                  "Array of up to 5 image URLs for editing or variants",
-                items: {
-                  type: "string",
-                  format: "uri",
-                },
-                maxItems: 5,
+                  "Array of up to 16 image URLs for image-to-image mode. Omit for text-to-image.",
+                items: { type: "string", format: "uri" },
+                maxItems: 16,
               },
-              size: {
+              aspect_ratio: {
                 type: "string",
                 description: "Image aspect ratio",
-                enum: ["1:1", "3:2", "2:3"],
-                default: "1:1",
+                enum: ["auto", "1:1", "9:16", "16:9", "4:3", "3:4"],
+                default: "auto",
               },
-              nVariants: {
+              resolution: {
                 type: "string",
-                description: "Number of image variations to generate",
-                enum: ["1", "2", "4"],
-                default: "4",
-              },
-              maskUrl: {
-                type: "string",
-                description:
-                  "Mask image URL for precise editing (black areas will be modified, white areas preserved)",
-                format: "uri",
+                description: "Output resolution",
+                enum: ["1K", "2K", "4K"],
+                default: "1K",
               },
               callBackUrl: {
                 type: "string",
@@ -1489,31 +1482,8 @@ class KieAiMcpServer {
                   "Optional: URL for task completion notifications (uses KIE_AI_CALLBACK_URL env var if not provided)",
                 format: "uri",
               },
-              isEnhance: {
-                type: "boolean",
-                description:
-                  "Enable prompt enhancement for specialized scenarios like 3D renders",
-                default: false,
-              },
-              uploadCn: {
-                type: "boolean",
-                description: "Route uploads via China servers",
-                default: false,
-              },
-              enableFallback: {
-                type: "boolean",
-                description:
-                  "Enable automatic fallback to backup models if GPT-4o is unavailable",
-                default: true,
-              },
-              fallbackModel: {
-                type: "string",
-                description: "Backup model to use when fallback is enabled",
-                enum: ["GPT_IMAGE_1", "FLUX_MAX"],
-                default: "FLUX_MAX",
-              },
             },
-            required: [],
+            required: ["prompt"],
           },
         },
         {
@@ -1598,65 +1568,143 @@ class KieAiMcpServer {
         {
           name: "wan_video",
           description:
-            "Generate videos using Alibaba Wan 2.5 models (unified tool for both text-to-video and image-to-video)",
+            "Generate videos using Alibaba Wan 2.7 (text-to-video, image-to-video, reference-to-video, video-edit with native audio support)",
           inputSchema: {
             type: "object",
             properties: {
+              mode: {
+                type: "string",
+                description:
+                  "Generation mode: text-to-video (default), image-to-video, reference-to-video, or video-edit. Auto-detected from parameters if omitted.",
+                enum: [
+                  "text-to-video",
+                  "image-to-video",
+                  "reference-to-video",
+                  "video-edit",
+                ],
+              },
               prompt: {
                 type: "string",
                 description:
-                  "Text prompt for video generation (max 800 characters)",
+                  "Text prompt for video generation (max 5000 characters)",
                 minLength: 1,
-                maxLength: 800,
-              },
-              image_url: {
-                type: "string",
-                description:
-                  "URL of input image for image-to-video generation (optional - if not provided, uses text-to-video)",
-                format: "uri",
-              },
-              aspect_ratio: {
-                type: "string",
-                description:
-                  "Aspect ratio of the generated video (text-to-video only)",
-                enum: ["16:9", "9:16", "1:1"],
-                default: "16:9",
-              },
-              resolution: {
-                type: "string",
-                description:
-                  "Video resolution - 720p for faster generation, 1080p for higher quality",
-                enum: ["720p", "1080p"],
-                default: "1080p",
-              },
-              duration: {
-                type: "string",
-                description:
-                  "Duration of video in seconds (image-to-video only)",
-                enum: ["5", "10"],
-                default: "5",
+                maxLength: 5000,
               },
               negative_prompt: {
                 type: "string",
                 description:
                   "Negative prompt to describe content to avoid (max 500 characters)",
                 maxLength: 500,
-                default: "",
               },
-              enable_prompt_expansion: {
+              audio_url: {
+                type: "string",
+                description:
+                  "Audio URL for text-to-video with audio (T2V mode only)",
+                format: "uri",
+              },
+              first_frame_url: {
+                type: "string",
+                description: "URL of first frame image for image-to-video mode",
+                format: "uri",
+              },
+              last_frame_url: {
+                type: "string",
+                description: "URL of last frame image for image-to-video mode",
+                format: "uri",
+              },
+              first_clip_url: {
+                type: "string",
+                description: "URL of first video clip for image-to-video mode",
+                format: "uri",
+              },
+              driving_audio_url: {
+                type: "string",
+                description: "Audio URL to drive facial expressions (I2V mode)",
+                format: "uri",
+              },
+              reference_image: {
+                type: "array",
+                description:
+                  "Reference images for reference-to-video mode (up to 5)",
+                items: { type: "string", format: "uri" },
+                maxItems: 5,
+              },
+              reference_video: {
+                type: "array",
+                description:
+                  "Reference videos for reference-to-video mode (up to 5)",
+                items: { type: "string", format: "uri" },
+                maxItems: 5,
+              },
+              reference_voice: {
+                type: "string",
+                description: "Voice reference URL for R2V mode",
+                format: "uri",
+              },
+              first_frame: {
+                type: "string",
+                description: "First frame image URL for R2V mode",
+                format: "uri",
+              },
+              video_url_edit: {
+                type: "string",
+                description: "Video URL to edit (video-edit mode)",
+                format: "uri",
+              },
+              reference_image_edit: {
+                type: "string",
+                description: "Reference image URL for video-edit mode",
+                format: "uri",
+              },
+              audio_setting: {
+                type: "string",
+                description: "Audio handling for video-edit: auto or origin",
+                enum: ["auto", "origin"],
+              },
+              resolution: {
+                type: "string",
+                description: "Video resolution",
+                enum: ["720p", "1080p"],
+                default: "1080p",
+              },
+              ratio: {
+                type: "string",
+                description: "Aspect ratio of the generated video",
+                enum: ["16:9", "9:16", "1:1", "4:3", "3:4"],
+                default: "16:9",
+              },
+              duration: {
+                type: "integer",
+                description: "Duration in seconds (2-15)",
+                minimum: 2,
+                maximum: 15,
+                default: 5,
+              },
+              prompt_extend: {
                 type: "boolean",
                 description:
-                  "Whether to enable prompt rewriting using LLM (improves short prompts but increases processing time)",
+                  "Enable prompt rewriting using LLM for better results",
                 default: true,
+              },
+              watermark: {
+                type: "boolean",
+                description: "Add watermark to generated video",
+                default: false,
               },
               seed: {
                 type: "integer",
-                description: "Random seed for reproducible results",
+                description:
+                  "Random seed for reproducible results (0-2147483647)",
+                minimum: 0,
+              },
+              nsfw_checker: {
+                type: "boolean",
+                description: "Enable NSFW content filter",
+                default: false,
               },
               callBackUrl: {
                 type: "string",
-                description:
-                  "Optional: URL for task completion notifications (uses KIE_AI_CALLBACK_URL env var if not provided)",
+                description: "Optional: URL for task completion notifications",
                 format: "uri",
               },
             },
@@ -2062,6 +2110,94 @@ class KieAiMcpServer {
           },
         },
         {
+          name: "happyhorse_video",
+          description:
+            "Generate videos using Alibaba HappyHorse 1.0 (text-to-video, image-to-video, reference-to-video with up to 9 images, video-edit with native audio)",
+          inputSchema: {
+            type: "object",
+            properties: {
+              mode: {
+                type: "string",
+                description:
+                  "Generation mode: text-to-video (default), image-to-video, reference-to-video, or video-edit. Auto-detected from parameters if omitted.",
+                enum: [
+                  "text-to-video",
+                  "image-to-video",
+                  "reference-to-video",
+                  "video-edit",
+                ],
+              },
+              prompt: {
+                type: "string",
+                description:
+                  "Text prompt for video generation (max 5000 characters)",
+                minLength: 1,
+                maxLength: 5000,
+              },
+              image_urls: {
+                type: "array",
+                description: "Input image URL for image-to-video mode (max 1)",
+                items: { type: "string", format: "uri" },
+                maxItems: 1,
+              },
+              reference_image: {
+                type: "array",
+                description:
+                  "Reference images for reference-to-video mode (up to 9)",
+                items: { type: "string", format: "uri" },
+                maxItems: 9,
+              },
+              video_url: {
+                type: "string",
+                description: "Video URL to edit (video-edit mode)",
+                format: "uri",
+              },
+              reference_image_edit: {
+                type: "array",
+                description: "Reference images for video-edit mode (up to 5)",
+                items: { type: "string", format: "uri" },
+                maxItems: 5,
+              },
+              audio_setting: {
+                type: "string",
+                description: "Audio handling for video-edit: auto or origin",
+                enum: ["auto", "origin"],
+              },
+              resolution: {
+                type: "string",
+                description: "Video resolution",
+                enum: ["720p", "1080p"],
+                default: "1080p",
+              },
+              aspect_ratio: {
+                type: "string",
+                description: "Aspect ratio of the generated video",
+                enum: ["16:9", "9:16", "1:1", "4:3", "3:4"],
+                default: "16:9",
+              },
+              duration: {
+                type: "integer",
+                description: "Duration in seconds (3-15)",
+                minimum: 3,
+                maximum: 15,
+                default: 5,
+              },
+              seed: {
+                type: "integer",
+                description:
+                  "Random seed for reproducible results (0-2147483647)",
+                minimum: 0,
+              },
+              callBackUrl: {
+                type: "string",
+                description: "Optional: URL for task completion notifications",
+                format: "uri",
+              },
+            },
+            required: ["prompt"],
+          },
+        },
+        {
           name: "sora_video",
           description:
             "Generate videos using OpenAI's Sora 2 models (unified tool for text-to-video, image-to-video, and storyboard generation with standard/high quality)",
@@ -2188,8 +2324,8 @@ class KieAiMcpServer {
           case "midjourney_generate":
             return await this.handleMidjourneyGenerate(args);
 
-          case "openai_4o_image":
-            return await this.handleOpenAI4oImage(args);
+          case "gpt_image_2":
+            return await this.handleGptImage2(args);
 
           case "flux_kontext_image":
             return await this.handleFluxKontextImage(args);
@@ -2199,6 +2335,9 @@ class KieAiMcpServer {
 
           case "wan_video":
             return await this.handleWanVideo(args);
+
+          case "happyhorse_video":
+            return await this.handleHappyHorseVideo(args);
 
           case "topaz_upscale_image":
             return await this.handleTopazUpscaleImage(args);
@@ -2280,10 +2419,10 @@ class KieAiMcpServer {
             },
           },
           {
-            uri: "kie://models/openai-4o-image",
-            name: "OpenAI GPT-4o Image",
+            uri: "kie://models/gpt-image-2",
+            name: "GPT Image 2",
             description:
-              "Creative variants (up to 4), mask editing, limited aspect ratios",
+              "Text-to-image and image-to-image with up to 16 reference images",
             mimeType: "text/markdown",
             annotations: {
               audience: ["assistant"],
@@ -2327,8 +2466,20 @@ class KieAiMcpServer {
           },
           {
             uri: "kie://models/wan-video",
-            name: "Wan Video 2.5",
-            description: "Fast video generation for social media content",
+            name: "Wan 2.7 Video",
+            description:
+              "Multi-mode video generation: T2V, I2V, R2V, video-edit with audio",
+            mimeType: "text/markdown",
+            annotations: {
+              audience: ["assistant"],
+              priority: 0.6,
+            },
+          },
+          {
+            uri: "kie://models/happyhorse-video",
+            name: "HappyHorse 1.0 Video",
+            description:
+              "Multi-mode video: T2V, I2V, R2V (up to 9 refs), video-edit with audio",
             mimeType: "text/markdown",
             annotations: {
               audience: ["assistant"],
@@ -2868,25 +3019,6 @@ class KieAiMcpServer {
             if (apiData.failMsg) {
               errorMessage = apiData.failMsg;
             }
-          } else if (localTask?.api_type === "openai-4o-image") {
-            // OpenAI 4o Image-specific status mapping
-            const successFlag = apiData.successFlag;
-            if (successFlag === 1) status = "completed";
-            else if (successFlag === 2) status = "failed";
-            else if (successFlag === 0) status = "processing";
-
-            // Extract result URLs from OpenAI 4o response
-            if (
-              apiData.response?.result_urls &&
-              apiData.response.result_urls.length > 0
-            ) {
-              resultUrl = apiData.response.result_urls[0]; // Use first image URL
-            }
-
-            // Extract error message for OpenAI 4o
-            if (apiData.errorMessage) {
-              errorMessage = apiData.errorMessage;
-            }
           } else if (localTask?.api_type === "flux-kontext-image") {
             // Flux Kontext Image-specific status mapping
             const successFlag = apiData.successFlag;
@@ -3027,7 +3159,7 @@ class KieAiMcpServer {
           "nano-banana-image",
           "bytedance-seedream-image",
           "qwen-image",
-          "openai-4o-image",
+          "gpt-image-2",
           "flux-kontext-image",
           "topaz-upscale",
           "recraft-remove-background",
@@ -3046,6 +3178,7 @@ class KieAiMcpServer {
           "kling-3.0-video",
           "bytedance-seedance-video",
           "wan-video",
+          "happyhorse-video",
           "hailuo",
           "runway-aleph-video",
         ];
@@ -4338,32 +4471,21 @@ class KieAiMcpServer {
     }
   }
 
-  private async handleOpenAI4oImage(args: any) {
+  private async handleGptImage2(args: any) {
     try {
-      const request = OpenAI4oImageSchema.parse(args);
-
-      // Use intelligent callback URL fallback
+      const request = GptImage2Schema.parse(args);
       request.callBackUrl = this.getCallbackUrl(request.callBackUrl);
 
-      const response = await this.client.generateOpenAI4oImage(request);
+      const response = await this.client.generateGptImage2(request);
 
       if (response.code === 200 && response.data?.taskId) {
-        // Determine mode for user feedback
-        const hasPrompt = !!request.prompt;
-        const hasImages = request.filesUrl && request.filesUrl.length > 0;
-        const hasMask = !!request.maskUrl;
+        const mode = request.input_urls?.length
+          ? "Image-to-Image"
+          : "Text-to-Image";
 
-        let modeDisplay = "Text-to-Image";
-        if (hasMask && hasImages) {
-          modeDisplay = "Image Editing";
-        } else if (hasImages && !hasMask) {
-          modeDisplay = "Image Variants";
-        }
-
-        // Store task in database
         await this.db.createTask({
           task_id: response.data.taskId,
-          api_type: "openai-4o-image",
+          api_type: "gpt-image-2",
           status: "pending",
         });
 
@@ -4375,32 +4497,21 @@ class KieAiMcpServer {
                 {
                   success: true,
                   task_id: response.data.taskId,
-                  message: `OpenAI 4o Image ${modeDisplay} task created successfully`,
+                  message: `GPT Image 2 ${mode} task created successfully`,
                   parameters: {
-                    mode: modeDisplay,
-                    prompt: request.prompt
-                      ? request.prompt.substring(0, 100) +
-                        (request.prompt.length > 100 ? "..." : "")
-                      : undefined,
-                    size: request.size || "1:1",
-                    n_variants: request.nVariants || "4",
-                    is_enhance: request.isEnhance || false,
-                    enable_fallback: request.enableFallback !== false,
-                    fallback_model: request.fallbackModel || "FLUX_MAX",
-                    ...(hasImages && {
-                      files_url: request.filesUrl,
-                    }),
-                    ...(hasMask && {
-                      mask_url: request.maskUrl,
+                    mode,
+                    prompt:
+                      request.prompt.substring(0, 100) +
+                      (request.prompt.length > 100 ? "..." : ""),
+                    aspect_ratio: request.aspect_ratio || "auto",
+                    resolution: request.resolution || "1K",
+                    ...(request.input_urls && {
+                      input_urls: request.input_urls,
                     }),
                   },
                   next_steps: [
                     `Use get_task_status with task_id: ${response.data.taskId} to check progress`,
                     'Generated images will be available when status is "completed"',
-                  ],
-                  usage_examples: [
-                    `get_task_status: {"task_id": "${response.data.taskId}"}`,
-                    `list_tasks: {"limit": 10}`,
                   ],
                 },
                 null,
@@ -4410,51 +4521,101 @@ class KieAiMcpServer {
           ],
         };
       } else {
-        throw new Error(
-          response.msg || "Failed to create OpenAI 4o Image task",
-        );
+        throw new Error(response.msg || "Failed to create GPT Image 2 task");
       }
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return this.formatError("openai_4o_image", error, {
+        return this.formatError("gpt_image_2", error, {
           prompt:
-            "Optional: Text prompt describing the desired image (max 5000 chars)",
-          filesUrl:
-            "Optional: Array of up to 5 image URLs for editing or variants",
-          size: "Required: Image aspect ratio (1:1, 3:2, 2:3, default: 1:1)",
-          nVariants:
-            "Optional: Number of image variations (1, 2, 4, default: 4)",
-          maskUrl:
-            "Optional: Mask image URL for precise editing (black=edit, white=preserve)",
-          callBackUrl: "Optional: Webhook URL for completion notifications",
-          isEnhance:
-            "Optional: Enable prompt enhancement for specialized scenarios (default: false)",
-          uploadCn:
-            "Optional: Route uploads via China servers (default: false)",
-          enableFallback:
-            "Optional: Enable automatic fallback to backup models (default: true)",
-          fallbackModel:
-            "Optional: Backup model choice (GPT_IMAGE_1, FLUX_MAX, default: FLUX_MAX)",
+            "Required: Text prompt describing the desired image (max 20000 chars)",
+          input_urls:
+            "Optional: Array of up to 16 image URLs for image-to-image mode",
+          aspect_ratio:
+            "Optional: auto, 1:1, 9:16, 16:9, 4:3, 3:4 (default: auto)",
+          resolution: "Optional: 1K, 2K, 4K (default: 1K)",
         });
       }
-
-      return this.formatError("openai_4o_image", error, {
+      return this.formatError("gpt_image_2", error, {
         prompt:
-          "Optional: Text prompt describing the desired image (max 5000 chars)",
-        filesUrl:
-          "Optional: Array of up to 5 image URLs for editing or variants",
-        size: "Required: Image aspect ratio (1:1, 3:2, 2:3, default: 1:1)",
-        nVariants: "Optional: Number of image variations (1, 2, 4, default: 4)",
-        maskUrl:
-          "Optional: Mask image URL for precise editing (black=edit, white=preserve)",
-        callBackUrl: "Optional: Webhook URL for completion notifications",
-        isEnhance:
-          "Optional: Enable prompt enhancement for specialized scenarios (default: false)",
-        uploadCn: "Optional: Route uploads via China servers (default: false)",
-        enableFallback:
-          "Optional: Enable automatic fallback to backup models (default: true)",
-        fallbackModel:
-          "Optional: Backup model choice (GPT_IMAGE_1, FLUX_MAX, default: FLUX_MAX)",
+          "Required: Text prompt describing the desired image (max 20000 chars)",
+        input_urls:
+          "Optional: Array of up to 16 image URLs for image-to-image mode",
+        aspect_ratio:
+          "Optional: auto, 1:1, 9:16, 16:9, 4:3, 3:4 (default: auto)",
+        resolution: "Optional: 1K, 2K, 4K (default: 1K)",
+      });
+    }
+  }
+
+  private async handleHappyHorseVideo(args: any) {
+    try {
+      const request = HappyHorseVideoSchema.parse(args);
+      request.callBackUrl = this.getCallbackUrl(request.callBackUrl);
+
+      const response = await this.client.generateHappyHorseVideo(request);
+
+      if (response.code === 200 && response.data?.taskId) {
+        const mode =
+          request.mode ||
+          (request.video_url
+            ? "video-edit"
+            : request.reference_image?.length
+              ? "reference-to-video"
+              : request.image_urls?.length
+                ? "image-to-video"
+                : "text-to-video");
+
+        await this.db.createTask({
+          task_id: response.data.taskId,
+          api_type: "happyhorse-video",
+          status: "pending",
+        });
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(
+                {
+                  success: true,
+                  task_id: response.data.taskId,
+                  message: `HappyHorse 1.0 ${mode} task created successfully`,
+                  parameters: {
+                    mode,
+                    prompt:
+                      request.prompt.substring(0, 100) +
+                      (request.prompt.length > 100 ? "..." : ""),
+                    resolution: request.resolution || "1080p",
+                    aspect_ratio: request.aspect_ratio || "16:9",
+                    duration: request.duration || 5,
+                  },
+                  next_steps: [
+                    `Use get_task_status with task_id: ${response.data.taskId} to check progress`,
+                    'Video will be available when status is "completed"',
+                  ],
+                },
+                null,
+                2,
+              ),
+            },
+          ],
+        };
+      } else {
+        throw new Error(response.msg || "Failed to create HappyHorse task");
+      }
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return this.formatError("happyhorse_video", error, {
+          prompt: "Required: Text prompt for video generation (max 5000 chars)",
+          mode: "Optional: text-to-video, image-to-video, reference-to-video, video-edit",
+          image_urls: "I2V: Single image URL",
+          reference_image: "R2V: Up to 9 reference image URLs",
+          video_url: "Video Edit: Video URL to edit",
+        });
+      }
+      return this.formatError("happyhorse_video", error, {
+        prompt: "Required: Text prompt for video generation (max 5000 chars)",
+        mode: "Optional: text-to-video, image-to-video, reference-to-video, video-edit",
       });
     }
   }
@@ -4668,20 +4829,24 @@ class KieAiMcpServer {
 
   private async handleWanVideo(args: any) {
     try {
-      const request = WanVideoSchema.parse(args);
-
-      // Use intelligent callback URL fallback
+      const request = Wan27VideoSchema.parse(args);
       request.callBackUrl = this.getCallbackUrl(request.callBackUrl);
 
       const response = await this.client.generateWanVideo(request);
 
       if (response.code === 200 && response.data?.taskId) {
-        // Determine mode for user feedback
-        const isImageToVideo = !!request.image_url;
-        const mode = isImageToVideo ? "Image-to-Video" : "Text-to-Video";
-        const resolution = request.resolution || "1080p";
+        const mode =
+          request.mode ||
+          (request.video_url_edit
+            ? "video-edit"
+            : request.reference_image?.length || request.reference_video?.length
+              ? "reference-to-video"
+              : request.first_frame_url ||
+                  request.last_frame_url ||
+                  request.first_clip_url
+                ? "image-to-video"
+                : "text-to-video");
 
-        // Store task in database
         await this.db.createTask({
           task_id: response.data.taskId,
           api_type: "wan-video",
@@ -4696,29 +4861,19 @@ class KieAiMcpServer {
                 {
                   success: true,
                   task_id: response.data.taskId,
-                  message: `Alibaba Wan 2.5 ${mode} generation task created successfully`,
+                  message: `Wan 2.7 ${mode} task created successfully`,
                   parameters: {
-                    mode: mode,
+                    mode,
                     prompt:
                       request.prompt.substring(0, 100) +
                       (request.prompt.length > 100 ? "..." : ""),
-                    resolution: resolution,
-                    negative_prompt: request.negative_prompt || "",
-                    enable_prompt_expansion:
-                      request.enable_prompt_expansion !== false,
-                    ...(request.seed !== undefined && { seed: request.seed }),
-                    ...(isImageToVideo && {
-                      image_url: request.image_url,
-                      duration: request.duration || "5",
-                    }),
-                    ...(!isImageToVideo && {
-                      aspect_ratio: request.aspect_ratio || "16:9",
-                    }),
+                    resolution: request.resolution || "1080p",
+                    ratio: request.ratio || "16:9",
+                    duration: request.duration || 5,
                   },
                   next_steps: [
-                    "Use get_task_status to check generation progress",
-                    "Task completion will be sent to the provided callback URL",
-                    `${mode} generation typically takes 2-6 minutes depending on resolution and complexity`,
+                    `Use get_task_status with task_id: ${response.data.taskId} to check progress`,
+                    'Video will be available when status is "completed"',
                   ],
                 },
                 null,
@@ -4728,38 +4883,22 @@ class KieAiMcpServer {
           ],
         };
       } else {
-        throw new Error(
-          response.msg || "Failed to create Wan 2.5 video generation task",
-        );
+        throw new Error(response.msg || "Failed to create Wan 2.7 video task");
       }
     } catch (error) {
       if (error instanceof z.ZodError) {
         return this.formatError("wan_video", error, {
-          prompt:
-            "Required: Text prompt for video generation (max 800 characters)",
-          image_url: "Optional: URL of input image for image-to-video mode",
-          aspect_ratio:
-            "Optional: Video aspect ratio for text-to-video (16:9, 9:16, 1:1, default: 16:9)",
-          resolution:
-            "Optional: Video resolution - 720p or 1080p (default: 1080p)",
-          duration:
-            "Optional: Video duration for image-to-video - 5 or 10 seconds (default: 5)",
-          negative_prompt:
-            "Optional: Negative prompt to describe content to avoid (max 500 characters)",
-          enable_prompt_expansion:
-            "Optional: Enable prompt rewriting using LLM (default: true)",
-          seed: "Optional: Random seed for reproducible results",
-          callBackUrl:
-            "Optional: URL for task completion notifications (uses KIE_AI_CALLBACK_URL env var if not provided)",
+          prompt: "Required: Text prompt for video generation (max 5000 chars)",
+          mode: "Optional: text-to-video, image-to-video, reference-to-video, video-edit",
+          first_frame_url: "I2V: First frame image URL",
+          last_frame_url: "I2V: Last frame image URL",
+          reference_image: "R2V: Up to 5 reference image URLs",
+          video_url_edit: "Video Edit: Video URL to edit",
         });
       }
-
       return this.formatError("wan_video", error, {
         prompt: "Required: Text prompt for video generation",
-        image_url: "Optional: URL of input image",
-        aspect_ratio: "Optional: Video aspect ratio",
-        resolution: "Optional: Video resolution",
-        callBackUrl: "Optional: URL for task completion notifications",
+        mode: "Optional: text-to-video, image-to-video, reference-to-video, video-edit",
       });
     }
   }
@@ -5540,6 +5679,12 @@ class KieAiMcpServer {
         quality: "standard",
       },
       {
+        name: "happyhorse_video",
+        status: "available",
+        category: "video",
+        quality: "standard",
+      },
+      {
         name: "runway_aleph",
         status: "available",
         category: "video",
@@ -5558,7 +5703,7 @@ class KieAiMcpServer {
         quality: "professional",
       },
       {
-        name: "openai_4o_image",
+        name: "gpt_image_2",
         status: "available",
         category: "image",
         quality: "professional",
@@ -6097,7 +6242,7 @@ These guidelines ensure optimal balance between quality requirements and cost ma
       "bytedance-seedream": "bytedance_seedream-v4-text-to-image.md",
       "qwen-image": "qwen_text-to-image.md",
       "flux-kontext": "flux_kontext_image.md",
-      "openai-4o-image": "openai_4o-image.md",
+      "gpt-image-2": "gpt_image-2.md",
       "nano-banana": "google_nano-banana.md",
       "topaz-upscale": "topaz_image-upscale.md",
       "recraft-bg-removal": "recraft_remove_background.md",
@@ -6106,7 +6251,8 @@ These guidelines ensure optimal balance between quality requirements and cost ma
       // Video models
       veo3: "google_veo3-text-to-image.md",
       "bytedance-seedance": "bytedance_seedance-2.md",
-      "wan-video": "wan_2-5-text-to-video.md",
+      "wan-video": "wan_2-7-text-to-video.md",
+      "happyhorse-video": "happyhorse_text-to-video.md",
       "runway-aleph": "runway_aleph_video.md",
       "kling-v2-1": "kling_v2-1-pro.md",
       "kling-v2-5": "kling_v2-5-turbo-text-to-video-pro.md",

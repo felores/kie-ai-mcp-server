@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.2.0] - 2026-05-01
+
+### Breaking Changes
+- **GPT Image 2**: Replaced `openai_4o_image` tool with `gpt_image_2`
+  - Removed: `filesUrl`, `size`, `nVariants`, `maskUrl`, `isEnhance`, `uploadCn`, `enableFallback`, `fallbackModel`
+  - Added: `input_urls` (up to 16 reference images), `resolution` (1K/2K/4K), `aspect_ratio` (auto/1:1/9:16/16:9/4:3/3:4)
+  - Model IDs: `gpt-image-2-text-to-image` / `gpt-image-2-image-to-image`
+  - Now uses Market API (`/jobs/createTask`) instead of legacy `/gpt4o-image/generate`
+
+### Changed
+- **Wan 2.5 -> 2.7**: Upgraded `wan_video` tool with 4 modes
+  - Added: `mode` parameter (text-to-video, image-to-video, reference-to-video, video-edit)
+  - Added: `first_frame_url`, `last_frame_url`, `first_clip_url`, `driving_audio_url` (I2V)
+  - Added: `reference_image`, `reference_video`, `reference_voice`, `first_frame` (R2V)
+  - Added: `video_url_edit`, `reference_image_edit`, `audio_setting` (video-edit)
+  - Added: `ratio` (5 options), `prompt_extend`, `watermark`, `nsfw_checker`
+  - Model IDs: `wan/2-7-text-to-video`, `wan/2-7-image-to-video`, `wan/2-7-r2v`, `wan/2-7-videoedit`
+
+### Added
+- **HappyHorse 1.0** (`happyhorse_video`): New video tool with 4 modes
+  - text-to-video, image-to-video (1 image), reference-to-video (up to 9 images), video-edit
+  - Supports 720p/1080p, 5 aspect ratios, 3-15s duration, native audio
+  - Model IDs: `happyhorse/text-to-video`, `happyhorse/image-to-video`, `happyhorse/reference-to-video`, `happyhorse/video-edit`
+
 ## [3.1.0] - 2026-04-16
 
 ### Breaking Changes

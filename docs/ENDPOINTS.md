@@ -23,7 +23,7 @@ This document maps Kie.ai platform endpoints to MCP server tools. Use this to:
 
 ---
 
-## Current MCP Tools (24 total)
+## Current MCP Tools (25 total)
 
 ### Utility Tools
 | MCP Tool | Description |
@@ -37,14 +37,14 @@ This document maps Kie.ai platform endpoints to MCP server tools. Use this to:
 | `nano_banana_image` | Nano Banana 2 / Gemini 3.1 Flash (generate/edit) | ✅ Updated 2026-02-28 |
 | `bytedance_seedream_image` | Seedream V4/V5 Lite (text-to-image/edit) | ✅ Updated 2026-02-28 |
 | `qwen_image` | Qwen (text-to-image/edit) | ✅ |
-| `openai_4o_image` | GPT-4o Image | ✅ |
+| `gpt_image_2` | GPT Image 2 (text/image-to-image) | ✅ Replaced openai_4o_image 2026-05-01 |
 | `flux_kontext_image` | Flux Kontext Pro/Max | ✅ |
 | `flux2_image` | Flux 2 Pro/Flex (text/image-to-image) | ✅ Added 2025-12-06 |
 | `topaz_upscale_image` | Topaz Image Upscale (1x-8x) | ✅ Added 2026-03-04 |
 | `ideogram_reframe` | Ideogram V3 Reframe | ✅ |
 | `recraft_remove_background` | Recraft Remove Background | ✅ |
 
-### Video Tools (10)
+### Video Tools (11)
 | MCP Tool | Kie.ai Models | Status |
 |----------|---------------|--------|
 | `sora_video` | Sora 2 (text/image-to-video, storyboard) | ✅ |
@@ -53,8 +53,9 @@ This document maps Kie.ai platform endpoints to MCP server tools. Use this to:
 | `bytedance_seedance_video` | Seedance 2.0 (standard/fast, multimodal refs, native audio) | ✅ Updated 2026-04-16 |
 | `runway_aleph_video` | Runway Aleph | ✅ |
 | `midjourney_generate` | Midjourney (image/video) | ✅ |
-| `wan_video` | Wan 2.5 (text/image-to-video) | ✅ |
+| `wan_video` | Wan 2.7 (T2V/I2V/R2V/video-edit) | ✅ Updated 2026-05-01 |
 | `wan_animate` | Wan 2.2 Animate (animation/replace) | ✅ Added 2025-12-06 |
+| `happyhorse_video` | HappyHorse 1.0 (T2V/I2V/R2V/video-edit) | ✅ Added 2026-05-01 |
 | `hailuo_video` | Hailuo (standard/pro) | ✅ |
 | `kling_video` | Kling 3.0 (text/image-to-video, multi-shot, native audio) | ✅ Updated 2026-02-28 |
 
