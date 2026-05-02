@@ -258,7 +258,7 @@ export KIE_AI_DISABLED_TOOLS="midjourney_generate,runway_aleph_video"
 
 **Tool Categories**:
 - **image** (9): nano_banana, seedream, qwen, gpt_image_2, flux_kontext, flux2, topaz, recraft, ideogram, midjourney*
-- **video** (11): veo3, sora, seedance, wan_video, happyhorse_video, hailuo, kling, runway, wan_animate, midjourney*
+- **video** (10): veo3, seedance, wan_video, happyhorse_video, hailuo, kling, runway, wan_animate, midjourney*
 - **audio** (3): suno, elevenlabs_tts, elevenlabs_ttsfx
 - **utility** (2): list_tasks, get_task_status ⭐ **Always enabled**
 
@@ -318,12 +318,11 @@ Or if installed globally with npx:
 ### Generate Video
 ```json
 {
-  "tool": "sora_video",
+  "tool": "wan_video",
   "arguments": {
     "prompt": "A peaceful garden with blooming flowers and butterflies",
-    "model": "sora-2",
     "resolution": "1080p",
-    "duration": "10"
+    "duration": 5
   }
 }
 ```
@@ -399,7 +398,7 @@ The server includes a built-in SQLite database for persistent task tracking:
 
 ```bash
 # Generate social media video content
-sora_video: "A trendy coffee shop with latte art, cinematic lighting"
+wan_video: "A trendy coffee shop with latte art, cinematic lighting"
 
 # Create product photography
 nano_banana_image: "Luxury watch on marble surface, professional product shot"
