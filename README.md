@@ -6,7 +6,7 @@ Kie.ai offers **30-50% lower cost** than competitors with 99.9% uptime and 24/7 
 
 ## 📚 Documentation
 
-- **[Complete Tool Reference](docs/TOOLS.md)** - Detailed documentation for all 25 AI tools
+- **[Complete Tool Reference](docs/TOOLS.md)** - Detailed documentation for all 24 AI tools
 - **[Database & Task Management](docs/DATABASE.md)** - SQLite database and task lifecycle  
 - **[Administrator Configuration](docs/ADMIN.md)** - Deployment guides and environment setup
 - **[Intelligent Features](docs/INTELLIGENCE.md)** - Smart mode detection and cost optimization
@@ -83,7 +83,6 @@ The easiest way to use this server is to add it to your MCP client configuration
 ### 🚀 All AI Models in One API
 
 - **Google Veo 3**: Cinematic video generation with synchronized audio and 1080p output
-- **OpenAI Sora 2**: Advanced video generation with text/image/storyboard modes (unified)
 - **Runway Aleph**: Advanced video editing with object removal and style transfer
 - **Suno V5**: Professional music generation with realistic vocals up to 8 minutes
 - **Nano Banana 2**: Lightning-fast image generation and editing with Google Search grounding (unified tool)
@@ -142,14 +141,14 @@ Your AI assistant can research and learn about available models before using the
 - `kie://guides/video-models-comparison` - Feature matrix for all video models
 - `kie://guides/quality-optimization` - Cost/quality strategies
 
-### 🛠️ 25 Unified AI Tools
+### 🛠️ 24 Unified AI Tools
 
 All tools feature **smart mode detection** - one tool does multiple things:
 
 | Category | Tools |
 |----------|-------|
 | **Image (9)** | `nano_banana_image`, `bytedance_seedream_image`, `qwen_image`, `gpt_image_2`, `flux_kontext_image`, `flux2_image`, `topaz_upscale_image`, `recraft_remove_background`, `ideogram_reframe` |
-| **Video (11)** | `veo3_generate_video`, `sora_video`, `bytedance_seedance_video`, `wan_video`, `happyhorse_video`, `hailuo_video`, `kling_video`, `runway_aleph_video`, `wan_animate`, `midjourney_generate` |
+| **Video (10)** | `veo3_generate_video`, `bytedance_seedance_video`, `wan_video`, `happyhorse_video`, `hailuo_video`, `kling_video`, `runway_aleph_video`, `wan_animate`, `midjourney_generate` |
 | **Audio (3)** | `suno_generate_music`, `elevenlabs_tts`, `elevenlabs_ttsfx` |
 | **Utility (2)** | `list_tasks`, `get_task_status` |
 

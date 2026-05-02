@@ -23,7 +23,7 @@ This document maps Kie.ai platform endpoints to MCP server tools. Use this to:
 
 ---
 
-## Current MCP Tools (25 total)
+## Current MCP Tools (24 total)
 
 ### Utility Tools
 | MCP Tool | Description |
@@ -44,10 +44,9 @@ This document maps Kie.ai platform endpoints to MCP server tools. Use this to:
 | `ideogram_reframe` | Ideogram V3 Reframe | ✅ |
 | `recraft_remove_background` | Recraft Remove Background | ✅ |
 
-### Video Tools (11)
+### Video Tools (10)
 | MCP Tool | Kie.ai Models | Status |
 |----------|---------------|--------|
-| `sora_video` | Sora 2 (text/image-to-video, storyboard) | ✅ |
 | `veo3_generate_video` | Veo 3/3.1 (text/image-to-video) | ✅ |
 | `veo3_get_1080p_video` | Veo 3 1080p retrieval | ✅ |
 | `bytedance_seedance_video` | Seedance 2.0 (standard/fast, multimodal refs, native audio) | ✅ Updated 2026-04-16 |

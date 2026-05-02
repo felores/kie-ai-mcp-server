@@ -924,57 +924,6 @@ export const HailuoVideoSchema = z
 
 export type HailuoVideoRequest = z.infer<typeof HailuoVideoSchema>;
 
-// Sora Video - Unified tool for all 5 Sora 2 endpoints
-export const SoraVideoSchema = z
-  .object({
-    prompt: z.string().min(1).max(5000).optional(),
-    image_urls: z.array(z.string().url()).min(1).max(10).optional(),
-    aspect_ratio: z
-      .enum(["portrait", "landscape"])
-      .default("landscape")
-      .optional(),
-    n_frames: z.enum(["10", "15", "25"]).default("10").optional(),
-    size: z.enum(["standard", "high"]).default("standard").optional(),
-    remove_watermark: z.boolean().default(true).optional(),
-    callBackUrl: z.string().url().optional(),
-  })
-  .refine(
-    (data) => {
-      // Smart mode validation based on input parameters
-      const hasPrompt = !!data.prompt;
-      const hasImages = !!data.image_urls?.length;
-
-      // Storyboard mode: no prompt required, but images required
-      if (!hasPrompt && !hasImages) {
-        return false; // Need either prompt or images
-      }
-
-      // Storyboard mode: images only, no prompt
-      if (!hasPrompt && hasImages) {
-        return data.n_frames !== "10"; // Storyboard supports 15s, 25s (not 10s)
-      }
-
-      // Text-to-video mode: prompt only, no images
-      if (hasPrompt && !hasImages) {
-        return true; // All parameters valid
-      }
-
-      // Image-to-video mode: prompt + images
-      if (hasPrompt && hasImages) {
-        return true; // All parameters valid
-      }
-
-      return true;
-    },
-    {
-      message:
-        "Invalid parameter combination. For storyboard mode: provide image_urls without prompt. For text-to-video: provide prompt only. For image-to-video: provide both prompt and image_urls.",
-      path: [],
-    },
-  );
-
-export type SoraVideoRequest = z.infer<typeof SoraVideoSchema>;
-
 // Flux-2 Image - Unified text-to-image and image-to-image (Pro/Flex)
 export const Flux2ImageSchema = z
   .object({
@@ -1053,7 +1002,6 @@ export interface TaskRecord {
     | "ideogram-reframe"
     | "kling-3.0-video"
     | "hailuo"
-    | "sora-video"
     | "flux2-image"
     | "wan-animate"
     | "z-image"

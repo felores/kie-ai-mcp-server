@@ -18,7 +18,6 @@ import {
   IdeogramReframeRequest,
   KlingVideoRequest,
   HailuoVideoRequest,
-  SoraVideoRequest,
   Flux2ImageRequest,
   WanAnimateRequest,
   ZImageRequest,
@@ -149,7 +148,6 @@ export class KieAiClient {
       apiType === "ideogram-reframe" ||
       apiType === "kling-3.0-video" ||
       apiType === "hailuo" ||
-      apiType === "sora-video" ||
       apiType === "flux2-image" ||
       apiType === "wan-animate" ||
       apiType === "topaz-upscale" ||
@@ -860,72 +858,6 @@ export class KieAiClient {
       if (quality === "standard") {
         input.duration = request.duration || "6";
       }
-    }
-
-    const jobRequest = {
-      model,
-      input,
-      callBackUrl: request.callBackUrl || process.env.KIE_AI_CALLBACK_URL,
-    };
-
-    return this.makeRequest<TaskResponse>(
-      "/jobs/createTask",
-      "POST",
-      jobRequest,
-    );
-  }
-
-  async generateSoraVideo(
-    request: SoraVideoRequest,
-  ): Promise<KieAiResponse<TaskResponse>> {
-    // Smart mode detection based on parameters
-    const hasPrompt = !!request.prompt;
-    const hasImages = !!request.image_urls?.length;
-
-    let model: string;
-    let input: any;
-
-    if (!hasPrompt && hasImages) {
-      // Storyboard mode: images only, no prompt
-      model = "openai/sora-2-storyboard";
-      input = {
-        image_urls: request.image_urls,
-        aspect_ratio: request.aspect_ratio || "landscape",
-        n_frames: request.n_frames || "15", // Storyboard defaults to 15s
-        size: request.size || "standard",
-        remove_watermark: request.remove_watermark !== false,
-      };
-    } else if (hasPrompt && !hasImages) {
-      // Text-to-video mode
-      const isHighQuality = request.size === "high";
-      model = isHighQuality
-        ? "openai/sora-2-pro-text-to-video"
-        : "openai/sora-2-text-to-video";
-      input = {
-        prompt: request.prompt,
-        aspect_ratio: request.aspect_ratio || "landscape",
-        n_frames: request.n_frames || "10",
-        size: request.size || "standard",
-        remove_watermark: request.remove_watermark !== false,
-      };
-    } else if (hasPrompt && hasImages) {
-      // Image-to-video mode
-      const isHighQuality = request.size === "high";
-      model = isHighQuality
-        ? "openai/sora-2-pro-image-to-video"
-        : "openai/sora-2-image-to-video";
-      input = {
-        prompt: request.prompt,
-        image_urls: request.image_urls,
-        aspect_ratio: request.aspect_ratio || "landscape",
-        n_frames: request.n_frames || "10",
-        size: request.size || "standard",
-        remove_watermark: request.remove_watermark !== false,
-      };
-    } else {
-      throw new Error(
-        "Invalid parameters: must provide either prompt (for text-to-video) or image_urls (for storyboard), or both (for image-to-video)",
-      );
     }
 
     const jobRequest = {
